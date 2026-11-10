@@ -2,7 +2,7 @@
   "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
   "slides": {
     "T01": {
-      "status": "skipped"
+      "status": "visible"
     }
   },
   "threads": {
