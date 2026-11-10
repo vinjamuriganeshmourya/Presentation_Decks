@@ -32,6 +32,7 @@ export default {
       if (url.pathname === '/api/state' && req.method === 'GET') res = await getState(url, env, ctx)
       else if (url.pathname === '/api/auth' && req.method === 'POST') res = await auth(req, env)
       else if (url.pathname === '/api/save' && req.method === 'POST') res = await save(req, env)
+      else if (url.pathname === '/api/comment' && req.method === 'POST') res = await comment(req, env)
       else if (url.pathname === '/api/status' && req.method === 'GET') res = await status(url, env)
       else if (url.pathname === '/api/deployed' && req.method === 'POST') res = await deployed(req, env)
       else if (url.pathname === '/' || url.pathname === '/api/health') res = json({ ok: true, service: 'presentation-decks-live' })
@@ -220,7 +221,7 @@ function validatePatches(patches) {
   if (!ids.length) throw httpError(400, 'nothing to save')
   if (ids.length > 500) throw httpError(400, 'too many slides in one save')
   for (const id of ids) {
-    if (!SLIDE_RE.test(id)) throw httpError(400, `bad slide id: ${id}`)
+    if (!SLIDE_RE.test(id) || id.startsWith(THREAD_PREFIX)) throw httpError(400, `bad slide id: ${id}`)
     const p = patches[id]
     if (!p || typeof p !== 'object') throw httpError(400, `bad patch for ${id}`)
     for (const [field, value] of Object.entries(p)) {
@@ -257,17 +258,67 @@ async function save(req, env) {
   }
   const deck = String(body.deck || '')
   if (!DECK_RE.test(deck)) throw httpError(400, 'bad deck id')
+  const editor = cleanName(body.editor)
+  const changes = validatePatches(body.patches)
+  const r = await commitAndPublish(env, deck, changes, editor, (session, slug) => `deck-edit(${session}/${slug}): ${summarize(changes)}`)
+  return json(r)
+}
+
+const cleanName = (v) => String(v || '').slice(0, 60).replace(/[^\p{L}\p{N} ._@'-]/gu, '').trim() || null
+const ID_RE = /^[a-z0-9]{6,32}$/
+const THREAD_PREFIX = '@t:'
+
+/** Apply one change row to the repo document. Thread rows: slide `@t:<id>`, field `root` | `resolved` | `r:<replyId>`. */
+function applyChange(doc, c) {
+  if (c.slide.startsWith(THREAD_PREFIX)) {
+    const tid = c.slide.slice(THREAD_PREFIX.length)
+    doc.threads ||= {}
+    const t = doc.threads[tid]
+    if (c.field === 'root') {
+      if (c.value === null) delete doc.threads[tid]
+      else doc.threads[tid] = { replies: {}, resolved: false, ...(t || {}), ...c.value }
+    } else if (!t) {
+      /* a reply/resolve for a thread someone deleted meanwhile: dropped */
+    } else if (c.field === 'resolved') {
+      t.resolved = !!c.value
+    } else if (c.field.startsWith('r:')) {
+      const rid = c.field.slice(2)
+      t.replies ||= {}
+      if (c.value === null) delete t.replies[rid]
+      else t.replies[rid] = { ...(t.replies[rid] || {}), ...c.value }
+    }
+    return
+  }
+  const s = (doc.slides[c.slide] ||= {})
+  if (c.field === 'comment' && !c.value.trim()) delete s.comment
+  else s[c.field] = c.value
+  if (!Object.keys(s).length) delete doc.slides[c.slide]
+}
+
+/** The value a D1 row carries: the FULL merged value from the document, so a viewer never sees half a thread. */
+function rowValue(doc, c) {
+  if (!c.slide.startsWith(THREAD_PREFIX)) return c.value
+  const t = doc.threads?.[c.slide.slice(THREAD_PREFIX.length)]
+  if (c.field === 'root') {
+    if (!t) return null
+    const { replies, resolved, ...root } = t
+    return root
+  }
+  if (!t) return null
+  if (c.field === 'resolved') return !!t.resolved
+  return t.replies?.[c.field.slice(2)] ?? null
+}
+
+/** Re-read the deck's edits file, merge these changes, commit (retrying on a race), then publish them to D1. */
+async function commitAndPublish(env, deck, changes, editor, describe) {
   const [course, session, slug] = deck.split('/')
   const path = `${course}/${session}/edits/${slug}.json`
-  const editor = String(body.editor || '').slice(0, 60).replace(/[^\p{L}\p{N} ._@-]/gu, '') || null
-  const changes = validatePatches(body.patches)
-
-  /* 1. the repo: re-read, merge only these fields, write with the file sha; retry on a race */
   let commitSha = null
   let noop = false
-  for (let attempt = 0; attempt < 5 && !commitSha && !noop; attempt++) {
+  let doc
+  for (let attempt = 0; attempt < 6 && !commitSha && !noop; attempt++) {
     const getRes = await gh(env, `/contents/${encodeURI(path)}?ref=${env.BRANCH}`)
-    let doc = { deck, slides: {} }
+    doc = { deck, slides: {} }
     let fileSha
     if (getRes.ok) {
       const file = await getRes.json()
@@ -282,19 +333,15 @@ async function save(req, env) {
       throw httpError(502, `GitHub read failed (${getRes.status})`)
     }
     const before = JSON.stringify(doc)
-    for (const c of changes) {
-      const s = (doc.slides[c.slide] ||= {})
-      if (c.field === 'comment' && !c.value.trim()) delete s.comment
-      else s[c.field] = c.value
-      if (!Object.keys(s).length) delete doc.slides[c.slide]
-    }
+    for (const c of changes) applyChange(doc, c)
     doc.deck = deck
     doc.slides = Object.fromEntries(Object.entries(doc.slides).sort(([a], [b]) => a.localeCompare(b)))
+    if (doc.threads && !Object.keys(doc.threads).length) delete doc.threads
     if (JSON.stringify(doc) === before) {
       noop = true
       break
     }
-    const message = `deck-edit(${session}/${slug}): ${summarize(changes)}${editor ? ` [by ${editor}]` : ''}`
+    const message = `${describe(session, slug)}${editor ? ` [by ${editor}]` : ''}`
     const putRes = await gh(env, `/contents/${encodeURI(path)}`, {
       method: 'PUT',
       body: JSON.stringify({ message, content: b64encode(JSON.stringify(doc, null, 2) + '\n'), branch: env.BRANCH, ...(fileSha ? { sha: fileSha } : {}) }),
@@ -309,20 +356,67 @@ async function save(req, env) {
       throw httpError(502, `GitHub write failed (${putRes.status})`)
     }
   }
-  if (noop) {
-    return json({ ok: true, noop: true, sha: (await getMeta(env, 'deployed_sha')) || null })
-  }
+  if (noop) return { ok: true, noop: true, sha: (await getMeta(env, 'deployed_sha')) || null }
   if (!commitSha) throw httpError(409, 'could not merge with concurrent saves, try again')
 
-  /* 2. the shared layer: every viewer sees it on their next poll */
   const now = Date.now()
   const stmt = env.DB.prepare(
     `INSERT INTO pending (deck, slide, field, value, sha, editor, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(deck, slide, field) DO UPDATE SET value = excluded.value, sha = excluded.sha, editor = excluded.editor, updated_at = excluded.updated_at
      WHERE excluded.updated_at >= pending.updated_at`,
   )
-  await env.DB.batch(changes.map((c) => stmt.bind(deck, c.slide, c.field, JSON.stringify(c.value), commitSha, editor, now)))
-  return json({ ok: true, sha: commitSha, path, changes: changes.length })
+  await env.DB.batch(changes.map((c) => stmt.bind(deck, c.slide, c.field, JSON.stringify(rowValue(doc, c)), commitSha, editor, now)))
+  return { ok: true, sha: commitSha, path, changes: changes.length }
+}
+
+/** One comment action, published at once: add | reply | edit | resolve | delete. */
+async function comment(req, env) {
+  await requireEditor(req, env)
+  let body
+  try {
+    body = await req.json()
+  } catch {
+    throw httpError(400, 'bad json')
+  }
+  const deck = String(body.deck || '')
+  if (!DECK_RE.test(deck)) throw httpError(400, 'bad deck id')
+  const author = cleanName(body.author) || 'Editor'
+  const op = String(body.op || '')
+  const tid = String(body.thread || '')
+  const rid = body.reply == null ? null : String(body.reply)
+  if (!ID_RE.test(tid)) throw httpError(400, 'bad thread id')
+  if (rid !== null && !ID_RE.test(rid)) throw httpError(400, 'bad reply id')
+  const text = typeof body.text === 'string' ? body.text.replace(/\r\n/g, '\n').trim() : ''
+  const needText = op === 'add' || op === 'reply' || op === 'edit'
+  if (needText && (!text || text.length > 4000)) throw httpError(400, 'comment text must be 1-4000 characters')
+  const T = THREAD_PREFIX + tid
+  const now = Date.now()
+  let changes
+  let what
+  if (op === 'add') {
+    const slide = String(body.slide || '')
+    if (!SLIDE_RE.test(slide) || slide.startsWith(THREAD_PREFIX)) throw httpError(400, 'bad slide id')
+    changes = [{ slide: T, field: 'root', value: { slide, author, text, at: now } }]
+    what = `comment on ${slide}`
+  } else if (op === 'reply') {
+    if (!rid) throw httpError(400, 'reply id required')
+    changes = [
+      { slide: T, field: `r:${rid}`, value: { author, text, at: now } },
+      { slide: T, field: 'resolved', value: false },
+    ]
+    what = 'reply'
+  } else if (op === 'edit') {
+    changes = [{ slide: T, field: rid ? `r:${rid}` : 'root', value: { text, edited: now } }]
+    what = 'edit comment'
+  } else if (op === 'resolve') {
+    changes = [{ slide: T, field: 'resolved', value: !!body.resolved }]
+    what = body.resolved ? 'resolve thread' : 'reopen thread'
+  } else if (op === 'delete') {
+    changes = [{ slide: T, field: rid ? `r:${rid}` : 'root', value: null }]
+    what = rid ? 'delete reply' : 'delete thread'
+  } else throw httpError(400, 'bad op')
+  const r = await commitAndPublish(env, deck, changes, author, (session, slug) => `deck-comment(${session}/${slug}): ${what}`)
+  return json(r)
 }
 
 async function status(url, env) {

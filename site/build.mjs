@@ -132,6 +132,17 @@ function takeFileState(html) {
   return { html: html.slice(0, m.index) + html.slice(m.index + m[0].length), fileState }
 }
 
+/** The deck's comment threads: { [threadId]: { slide, author, text, at, edited?, resolved, replies: { [id]: {...} } } } */
+function readThreads(p) {
+  const raw = readJson(p, {}) || {}
+  const out = {}
+  for (const [id, t] of Object.entries(raw.threads || {})) {
+    if (!t || typeof t !== 'object' || typeof t.slide !== 'string' || typeof t.text !== 'string') continue
+    out[id] = { ...t, resolved: !!t.resolved, replies: t.replies && typeof t.replies === 'object' ? t.replies : {} }
+  }
+  return out
+}
+
 /** The deck's edit source: { slides: { [id]: { status?, comment? } } } */
 function readEdits(p) {
   const raw = readJson(p, {}) || {}
@@ -217,7 +228,8 @@ function build() {
         const { html, fileState } = transformDeck(src, site)
         const slides = bakedSlides(fileState, readEdits(path.join(ROOT, editsRel)))
         const contentHash = createHash('sha1').update(src).digest('hex').slice(0, 12)
-        const state = { deck: id, sha: SHA, builtAt: BUILT_AT, contentHash, slides }
+        const threads = readThreads(path.join(ROOT, editsRel))
+        const state = { deck: id, sha: SHA, builtAt: BUILT_AT, contentHash, slides, threads }
         const boot = {
           id,
           title,
@@ -230,6 +242,7 @@ function build() {
           sha: SHA,
           builtAt: BUILT_AT,
           slides,
+          threads,
           textEdits: fileState?.edits || {},
         }
         const tags =

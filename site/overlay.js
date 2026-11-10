@@ -7,8 +7,15 @@
  * the deck's held-back module. Polls for changes and reloads in place when the
  * set of visible slides changes. `#slide-N` opens slide N.
  *
- * EDITOR (?edit=1): password gate, then a side panel to skip / delete / comment
- * on slides with undo/redo. Changes stay in this browser until Save.
+ * COMMENTS (both modes): shared threads per slide (comment, reply, edit,
+ * resolve, delete). Everyone can read them; posting needs the editor password.
+ * Each action is published at once through the Worker and committed to the repo.
+ *
+ * EDITOR (?edit=1): password gate, then a panel to skip / delete slides with
+ * undo/redo; those changes stay in this browser until Save.
+ *
+ * Every panel DOCKS beside the deck (right, or bottom on a phone): the deck is
+ * resized to the space left, never covered.
  */
 ;(function () {
   'use strict'
@@ -23,7 +30,10 @@
   var BOOT_TIMEOUT = 2500
   var POLL_VIEW = 12000
   var POLL_EDIT = 6000
+  var POLL_COMMENTS = 4000
   var POLL_STATUS = 5000
+  var DOCK_W = 380
+  var THREAD = '@t:'
   var LS = {
     draft: 'deck-editor:draft:' + DECK,
     pending: 'deck-editor:pending:' + DECK,
@@ -31,6 +41,7 @@
     pw: 'deck-editor:pw',
     goto: 'deck-site:goto:' + DECK,
     reloads: 'deck-site:reloads:' + DECK,
+    panel: 'deck-site:comments-open',
   }
 
   /* ------------------------------------------------------------ storage + fetch helpers */
@@ -99,10 +110,35 @@
     if (!WORKER) return Promise.resolve(null)
     return fetchJson(WORKER + '/api/state?deck=' + encodeURIComponent(DECK), {}, timeout).catch(function () { return null })
   }
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    })
+  }
+  function when(at) {
+    var s = Math.max(0, Math.round((Date.now() - at) / 1000))
+    if (s < 45) return 'just now'
+    var m = Math.round(s / 60)
+    if (m < 60) return m + ' min ago'
+    var h = Math.round(m / 60)
+    if (h < 24) return h + ' hour' + (h === 1 ? '' : 's') + ' ago'
+    var d = new Date(at)
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  }
 
   /* ------------------------------------------------------------ state model */
 
-  /** baked slides + live rows -> { id: { status, comment } } (only non-default fields) */
+  function isThreadRow(r) {
+    return String(r.slide).indexOf(THREAD) === 0
+  }
+  function byTime(a, b) {
+    return (a.updatedAt || 0) - (b.updatedAt || 0)
+  }
+
+  /** baked slides + live rows -> { id: { status, comment } } */
   function mergeState(baked, rows) {
     var out = {}
     var id
@@ -114,19 +150,47 @@
       if (baked[id].comment) out[id].comment = baked[id].comment
     }
     ;(rows || [])
-      .slice()
-      .sort(function (a, b) { return (a.updatedAt || 0) - (b.updatedAt || 0) })
+      .filter(function (r) { return !isThreadRow(r) })
+      .sort(byTime)
       .forEach(function (r) {
         var s = (out[r.slide] = out[r.slide] || {})
         s[r.field] = r.value
       })
     return out
   }
+
+  /** baked threads + live rows -> { threadId: thread } */
+  function mergeThreads(baked, rows) {
+    var out = JSON.parse(JSON.stringify(baked || {}))
+    ;(rows || [])
+      .filter(isThreadRow)
+      .sort(byTime)
+      .forEach(function (r) {
+        var tid = r.slide.slice(THREAD.length)
+        if (r.field === 'root') {
+          if (r.value === null) out[tid] = null
+          else {
+            var prev = out[tid] || { replies: {}, resolved: false }
+            var next = Object.assign({}, prev, r.value)
+            next.replies = prev.replies || {}
+            out[tid] = next
+          }
+        } else if (out[tid]) {
+          if (r.field === 'resolved') out[tid].resolved = !!r.value
+          else if (r.field.indexOf('r:') === 0) {
+            var rid = r.field.slice(2)
+            out[tid].replies = out[tid].replies || {}
+            if (r.value === null) delete out[tid].replies[rid]
+            else out[tid].replies[rid] = r.value
+          }
+        }
+      })
+    for (var k in out) if (!out[k]) delete out[k]
+    return out
+  }
+
   function statusOf(st, id) {
     return (st[id] && st[id].status) || 'visible'
-  }
-  function commentOf(st, id) {
-    return (st[id] && st[id].comment) || ''
   }
   function hiddenOf(st) {
     var out = []
@@ -176,7 +240,6 @@
       })()
     })
   }
-  /** Go to a slide by its number in the deck's ACTIVE list. */
   function gotoActive(n) {
     location.hash = '#/' + n
   }
@@ -197,40 +260,45 @@
     var s = d.slides[(d.current || 1) - 1]
     return s ? s.id : null
   }
+  function slideInfo(id) {
+    var d = deckApi()
+    if (!d) return null
+    for (var i = 0; i < d.all.length; i++) if (d.all[i].id === id) return d.all[i]
+    return null
+  }
 
-  Promise.all([fetchBaked(BOOT_TIMEOUT), fetchLive(BOOT_TIMEOUT)]).then(function (res) {
-    var baked = res[0]
-    var live = res[1]
-    var bakedSlides = baked && baked.slides ? baked.slides : SITE.slides
-    if (baked && baked.sha) boot.bakedSha = baked.sha
-    boot.contentHash = baked && baked.contentHash ? baked.contentHash : null
-    boot.baked = bakedSlides
-    boot.rows = (live && live.rows) || []
-    boot.state = mergeState(bakedSlides, boot.rows)
-    var hidden = hiddenOf(boot.state)
-    boot.hiddenSig = hidden.join('\n')
-    window.__DECK_STATE__ = { view: 'student', hidden: EDIT ? [] : hidden, edits: SITE.textEdits || {} }
-    return domReady().then(function () {
-      startDeck()
-      return whenDeck()
+  Promise.all([fetchBaked(BOOT_TIMEOUT), fetchLive(BOOT_TIMEOUT)])
+    .then(function (res) {
+      var baked = res[0]
+      var live = res[1]
+      boot.baked = baked && baked.slides ? baked.slides : SITE.slides
+      boot.bakedThreads = baked && baked.threads ? baked.threads : SITE.threads || {}
+      if (baked && baked.sha) boot.bakedSha = baked.sha
+      boot.contentHash = baked && baked.contentHash ? baked.contentHash : null
+      boot.rows = (live && live.rows) || []
+      boot.state = mergeState(boot.baked, boot.rows)
+      var hidden = hiddenOf(boot.state)
+      boot.hiddenSig = hidden.join('\n')
+      window.__DECK_STATE__ = { view: 'student', hidden: EDIT ? [] : hidden, edits: SITE.textEdits || {} }
+      return domReady().then(function () {
+        startDeck()
+        return whenDeck()
+      })
     })
-  }).then(function (d) {
-    if (!d) return
-    var gotoAfterReload = sget(LS.goto, 'session')
-    if (gotoAfterReload) {
-      sset(LS.goto, null, 'session')
-      gotoId(gotoAfterReload)
-    } else if (EDIT && wantSlide) {
-      /* #slide-N counts viewer-visible slides; the editor shows every slide */
-      var visible = d.all.filter(function (s) { return statusOf(boot.state, s.id) === 'visible' })
-      var target = visible[wantSlide - 1]
-      if (target) gotoId(target.id)
-    }
-    if (EDIT) startEditor(d)
-    else startViewerPolling()
-  })
-
-  /* ------------------------------------------------------------ viewer: live updates */
+    .then(function (d) {
+      if (!d) return
+      var gotoAfterReload = sget(LS.goto, 'session')
+      if (gotoAfterReload) {
+        sset(LS.goto, null, 'session')
+        gotoId(gotoAfterReload)
+      } else if (EDIT && wantSlide) {
+        /* #slide-N counts viewer-visible slides; the editor shows every slide */
+        var visible = d.all.filter(function (s) { return statusOf(boot.state, s.id) === 'visible' })
+        var target = visible[wantSlide - 1]
+        if (target) gotoId(target.id)
+      }
+      startUi(d)
+    })
 
   function reloadKeepingSlide() {
     var log = jget(LS.reloads, 'session', []).filter(function (t) { return Date.now() - t < 60000 })
@@ -242,45 +310,49 @@
     location.replace(location.pathname + location.search)
   }
 
-  function startViewerPolling() {
-    function poll() {
-      if (document.hidden) return
-      Promise.all([fetchBaked(8000), fetchLive(8000)]).then(function (res) {
-        var baked = res[0]
-        var live = res[1]
-        if (!baked && !live) return
-        /* the deck itself was re-published with new content: take it */
-        if (baked && baked.contentHash && boot.contentHash && baked.contentHash !== boot.contentHash) return reloadKeepingSlide()
-        var st = mergeState(baked && baked.slides ? baked.slides : boot.baked, live ? live.rows : boot.rows)
-        if (hiddenOf(st).join('\n') !== boot.hiddenSig) reloadKeepingSlide()
-      })
-    }
-    setInterval(poll, POLL_VIEW)
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) poll()
-    })
-  }
+  /* ------------------------------------------------------------ UI (both modes) */
 
-  /* ------------------------------------------------------------ editor */
-
-  function startEditor(deck) {
-    var ed = {
+  function startUi(deck) {
+    var ui = {
       deck: deck,
-      base: boot.state,
       baked: boot.baked,
+      bakedThreads: boot.bakedThreads,
       rows: boot.rows,
-      local: jget(LS.draft, 'local', {}) || {},
+      base: boot.state,
+      threads: mergeThreads(boot.bakedThreads, boot.rows),
+      local: EDIT ? jget(LS.draft, 'local', {}) || {} : {},
       undo: [],
       redo: [],
-      pending: jget(LS.pending, 'local', null),
+      pending: EDIT ? jget(LS.pending, 'local', null) : null,
       saving: false,
-      current: null,
-      collapsed: false,
+      open: EDIT ? true : sget(LS.panel, 'local') === '1',
+      tab: 'comments',
       filter: 'all',
-      msg: '',
-      msgKind: '',
-      commentSnap: false,
+      showResolved: false,
+      replyTo: null,
+      editing: null,
+      busy: false,
+      current: null,
     }
+
+    /* --- docking: the deck gets the space the panel does not use --- */
+    var dockCss = document.createElement('style')
+    dockCss.id = 'deck-dock-css'
+    dockCss.textContent =
+      'html.deck-dock-r .deck-viewport{width:calc(100% - ' + DOCK_W + 'px)!important;transition:width .2s ease}' +
+      'html.deck-dock-b .deck-viewport{height:52dvh!important;height:52vh!important}' +
+      '@supports (height:1dvh){html.deck-dock-b .deck-viewport{height:52dvh!important}}'
+    document.head.appendChild(dockCss)
+    var phone = window.matchMedia('(max-width: 760px)')
+    function applyDock() {
+      var full = !!document.fullscreenElement
+      var docked = ui.open && !full
+      document.documentElement.classList.toggle('deck-dock-r', docked && !phone.matches)
+      document.documentElement.classList.toggle('deck-dock-b', docked && phone.matches)
+      window.dispatchEvent(new Event('resize'))
+    }
+    document.addEventListener('fullscreenchange', applyDock)
+    if (phone.addEventListener) phone.addEventListener('change', applyDock)
 
     /* --- shadow DOM UI, isolated from the deck's styles --- */
     var host = document.createElement('div')
@@ -290,49 +362,60 @@
     document.body.appendChild(host)
     var root = host.attachShadow({ mode: 'open' })
     root.innerHTML =
-      '<style>' + EDITOR_CSS + '</style>' +
+      '<style>' + CSS + '</style>' +
       '<div class="badge" hidden></div>' +
-      '<aside class="panel" part="panel">' +
-      '  <header><div class="ttl"><span class="pill">Edit mode</span><span class="deck"></span></div>' +
-      '    <button class="icon collapse" title="Collapse panel">⟩</button></header>' +
+      '<button class="fab" hidden title="Comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="fab-n"></span></button>' +
+      '<aside class="panel ' + (EDIT ? 'edit' : 'view') + '" aria-label="' + (EDIT ? 'Edit panel' : 'Comments') + '">' +
+      '  <header><div class="ttl"><span class="pill">' + (EDIT ? 'Edit mode' : 'Comments') + '</span><span class="deck"></span></div>' +
+      '    <button class="icon close" title="' + (EDIT ? 'Collapse panel' : 'Close comments') + '">✕</button></header>' +
       '  <section class="cur">' +
       '    <div class="cur-h"><span class="cur-n"></span><span class="cur-id"></span></div>' +
       '    <div class="cur-label"></div>' +
-      '    <div class="seg" role="group" aria-label="Slide status">' +
-      '      <button data-status="visible">Visible</button><button data-status="skipped">Skip</button><button data-status="deleted">Delete</button>' +
-      '    </div>' +
-      '    <label class="lbl" for="cmt">Comment</label>' +
-      '    <textarea id="cmt" rows="3" placeholder="Note for this slide (visible to editors)"></textarea>' +
-      '    <div class="row"><button class="ghost copy-slide">Copy slide link</button><span class="hint"></span></div>' +
+      (EDIT
+        ? '    <div class="seg" role="group" aria-label="Slide status">' +
+          '      <button data-status="visible">Visible</button><button data-status="skipped">Skip</button><button data-status="deleted">Delete</button>' +
+          '    </div>' +
+          '    <div class="row"><button class="ghost copy-slide">Copy slide link</button><span class="hint"></span></div>'
+        : '') +
       '  </section>' +
-      '  <section class="tools">' +
-      '    <button class="ghost undo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="ghost redo" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>' +
-      '    <button class="primary save">Save</button>' +
+      (EDIT
+        ? '  <section class="tools">' +
+          '    <button class="ghost undo" title="Undo (Ctrl+Z)">↶ Undo</button><button class="ghost redo" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>' +
+          '    <button class="primary save">Save</button>' +
+          '  </section>' +
+          '  <div class="msg" role="status" aria-live="polite"></div>' +
+          '  <nav class="tabs"><button data-tab="comments" class="on">Comments <span class="tab-n"></span></button><button data-tab="slides">Slides</button></nav>'
+        : '  <div class="msg" role="status" aria-live="polite"></div>') +
+      '  <section class="comments">' +
+      '    <div class="threads"></div>' +
+      '    <label class="resolved-toggle"><input type="checkbox" class="show-resolved"> Show resolved <span class="res-n"></span></label>' +
+      '    <div class="composer"></div>' +
       '  </section>' +
-      '  <div class="msg" role="status" aria-live="polite"></div>' +
-      '  <section class="list-wrap">' +
-      '    <div class="list-h"><span>Slides</span><select class="filter"><option value="all">All</option><option value="changed">Unsaved changes</option><option value="hidden">Skipped / deleted</option><option value="comment">With comments</option></select></div>' +
-      '    <ol class="list"></ol>' +
-      '  </section>' +
+      (EDIT
+        ? '  <section class="list-wrap" hidden>' +
+          '    <div class="list-h"><span>Slides</span><select class="filter"><option value="all">All</option><option value="changed">Unsaved changes</option><option value="hidden">Skipped / deleted</option><option value="comment">With comments</option></select></div>' +
+          '    <ol class="list"></ol>' +
+          '  </section>'
+        : '') +
       '</aside>' +
-      '<button class="tab" hidden title="Open edit panel">✎ Edit</button>' +
-      '<div class="gate" hidden><form class="gate-box"><h2>Editor sign-in</h2><p>Enter the editor password to edit <b class="gdeck"></b>.</p>' +
+      '<button class="tab-open" hidden title="Open edit panel">✎ Edit</button>' +
+      '<div class="gate" hidden><form class="gate-box"><h2>Editor sign-in</h2><p class="gwhy"></p>' +
       '<input type="password" class="gpw" autocomplete="current-password" placeholder="Editor password" required>' +
-      '<input type="text" class="gname" autocomplete="nickname" placeholder="Your name (shown in commit messages)" maxlength="60">' +
-      '<div class="gerr"></div><div class="row"><a class="ghost exit" href="#">View only</a><button class="primary" type="submit">Unlock</button></div></form></div>'
+      '<input type="text" class="gname" autocomplete="nickname" placeholder="Your name (shown on comments and commits)" maxlength="60">' +
+      '<div class="gerr"></div><div class="row"><button type="button" class="ghost gcancel">' + (EDIT ? 'View only' : 'Cancel') + '</button><button class="primary" type="submit">Sign in</button></div></form></div>'
 
     var $ = function (sel) { return root.querySelector(sel) }
     var panel = $('.panel')
     var badge = $('.badge')
-    var tab = $('.tab')
-    var ta = $('#cmt')
+    var fab = $('.fab')
+    var msgEl = $('.msg')
+    var threadsEl = $('.threads')
+    var composer = $('.composer')
     var saveBtn = $('.save')
     var undoBtn = $('.undo')
     var redoBtn = $('.redo')
     var list = $('.list')
-    var msgEl = $('.msg')
     $('.deck').textContent = SITE.title
-    $('.gdeck').textContent = SITE.title
 
     /* keys typed in the panel never reach the deck's (window, capture) navigation */
     var inPanel = function (e) {
@@ -348,7 +431,7 @@
       function (e) {
         var mod = e.ctrlKey || e.metaKey
         var k = (e.key || '').toLowerCase()
-        if (mod && !isField(e) && (k === 'z' || k === 'y')) {
+        if (EDIT && mod && !isField(e) && (k === 'z' || k === 'y')) {
           e.preventDefault()
           e.stopImmediatePropagation()
           if (k === 'y' || e.shiftKey) doRedo()
@@ -366,152 +449,349 @@
       host.addEventListener(t, function (e) { e.stopPropagation() })
     })
 
-    /* --- model --- */
-    function eff(id) {
-      var l = ed.local[id] || {}
-      return {
-        status: l.status !== undefined ? l.status : statusOf(ed.base, id),
-        comment: l.comment !== undefined ? l.comment : commentOf(ed.base, id),
-      }
+    function password() {
+      return sget(LS.pw, 'session')
     }
-    function prune() {
-      for (var id in ed.local) {
-        var l = ed.local[id]
-        if (l.status !== undefined && l.status === statusOf(ed.base, id)) delete l.status
-        if (l.comment !== undefined && l.comment === commentOf(ed.base, id)) delete l.comment
-        if (l.status === undefined && l.comment === undefined) delete ed.local[id]
-      }
+    function myName() {
+      return sget(LS.name, 'local') || ''
     }
-    function changeCount() {
-      var n = 0
-      for (var id in ed.local) n += Object.keys(ed.local[id]).length
-      return n
-    }
-    function persistDraft() {
-      sset(LS.draft, changeCount() ? JSON.stringify(ed.local) : null, 'local')
-    }
-    function snapshot() {
-      return JSON.stringify(ed.local)
-    }
-    function mutate(fn, opts) {
-      if (!opts || !opts.noHistory) {
-        ed.undo.push(snapshot())
-        if (ed.undo.length > 200) ed.undo.shift()
-        ed.redo = []
-      }
-      fn()
-      prune()
-      persistDraft()
-      render()
-    }
-    function doUndo() {
-      if (!ed.undo.length) return
-      ed.redo.push(snapshot())
-      ed.local = JSON.parse(ed.undo.pop())
-      ed.commentSnap = false
-      prune()
-      persistDraft()
-      render(true)
-    }
-    function doRedo() {
-      if (!ed.redo.length) return
-      ed.undo.push(snapshot())
-      ed.local = JSON.parse(ed.redo.pop())
-      ed.commentSnap = false
-      prune()
-      persistDraft()
-      render(true)
-    }
-    function setStatus(id, status) {
-      mutate(function () {
-        ;(ed.local[id] = ed.local[id] || {}).status = status
-      })
-    }
-
-    /* viewer numbering of a slide (what #slide-N means), or null if hidden */
-    function viewerNumber(id) {
-      var n = 0
-      for (var i = 0; i < ed.deck.all.length; i++) {
-        var s = ed.deck.all[i]
-        if (statusOf(ed.base, s.id) === 'visible') n++
-        if (s.id === id) return statusOf(ed.base, s.id) === 'visible' ? n : null
-      }
-      return null
-    }
-
     function flash(text, kind) {
-      ed.msg = text
-      ed.msgKind = kind || ''
       msgEl.textContent = text
       msgEl.className = 'msg ' + (kind || '')
       clearTimeout(flash.t)
       if (kind !== 'sticky') flash.t = setTimeout(function () { msgEl.textContent = ''; msgEl.className = 'msg' }, 6000)
     }
 
+    /* --- panel open / close --- */
+    function setOpen(open) {
+      ui.open = open
+      panel.classList.toggle('hide', !open)
+      if (EDIT) $('.tab-open').hidden = open
+      else sset(LS.panel, open ? '1' : null, 'local')
+      applyDock()
+      render()
+    }
+    $('.close').addEventListener('click', function () { setOpen(false) })
+    $('.tab-open').addEventListener('click', function () { setOpen(true) })
+    fab.addEventListener('click', function () { setOpen(!ui.open) })
+
+    /* --- edit model (status only; comments publish immediately) --- */
+    function eff(id) {
+      var l = ui.local[id] || {}
+      return { status: l.status !== undefined ? l.status : statusOf(ui.base, id) }
+    }
+    function prune() {
+      for (var id in ui.local) {
+        var l = ui.local[id]
+        if (l.status !== undefined && l.status === statusOf(ui.base, id)) delete l.status
+        delete l.comment
+        if (l.status === undefined) delete ui.local[id]
+      }
+    }
+    function changeCount() {
+      return Object.keys(ui.local).length
+    }
+    function persistDraft() {
+      if (EDIT) sset(LS.draft, changeCount() ? JSON.stringify(ui.local) : null, 'local')
+    }
+    function mutate(fn) {
+      ui.undo.push(JSON.stringify(ui.local))
+      if (ui.undo.length > 200) ui.undo.shift()
+      ui.redo = []
+      fn()
+      prune()
+      persistDraft()
+      render()
+    }
+    function doUndo() {
+      if (!ui.undo.length) return
+      ui.redo.push(JSON.stringify(ui.local))
+      ui.local = JSON.parse(ui.undo.pop())
+      prune()
+      persistDraft()
+      render()
+    }
+    function doRedo() {
+      if (!ui.redo.length) return
+      ui.undo.push(JSON.stringify(ui.local))
+      ui.local = JSON.parse(ui.redo.pop())
+      prune()
+      persistDraft()
+      render()
+    }
+    function viewerNumber(id) {
+      var n = 0
+      var all = (deckApi() || ui.deck).all
+      for (var i = 0; i < all.length; i++) {
+        var vis = statusOf(ui.base, all[i].id) === 'visible'
+        if (vis) n++
+        if (all[i].id === id) return vis ? n : null
+      }
+      return null
+    }
+
+    /* --- comments --- */
+    function threadsFor(id) {
+      var out = []
+      for (var k in ui.threads) {
+        var t = ui.threads[k]
+        if (t && t.slide === id) out.push(Object.assign({ id: k }, t))
+      }
+      return out.sort(function (a, b) { return a.at - b.at })
+    }
+    function openCount(id) {
+      return threadsFor(id).filter(function (t) { return !t.resolved }).length
+    }
+    function repliesOf(t) {
+      var out = []
+      for (var k in t.replies || {}) out.push(Object.assign({ id: k }, t.replies[k]))
+      return out.sort(function (a, b) { return a.at - b.at })
+    }
+
+    function commentAction(body, okMsg) {
+      if (!password()) {
+        showGate('Sign in with the editor password to comment.')
+        return Promise.resolve(false)
+      }
+      ui.busy = true
+      renderComments(true)
+      body.deck = DECK
+      body.author = myName() || 'Editor'
+      return fetchJson(
+        WORKER + '/api/comment',
+        { method: 'POST', headers: { 'content-type': 'application/json', 'x-editor-password': password() }, body: JSON.stringify(body) },
+        30000,
+      )
+        .then(function () {
+          ui.busy = false
+          if (okMsg) flash(okMsg, 'ok')
+          return refresh().then(function () { return true })
+        })
+        .catch(function (err) {
+          ui.busy = false
+          if (err.status === 401) {
+            sset(LS.pw, null, 'session')
+            showGate('Password rejected. Sign in again; your text is kept.')
+          } else flash('Could not post: ' + err.message, 'err')
+          renderComments(true)
+          return false
+        })
+    }
+
+    var lastCommentsSig = ''
+    function renderComments(force) {
+      var cid = currentId()
+      var signed = !!password()
+      var all = threadsFor(cid)
+      var open = all.filter(function (t) { return !t.resolved })
+      var resolved = all.length - open.length
+      var sig = JSON.stringify([cid, ui.threads, ui.showResolved, ui.replyTo, ui.editing, signed, ui.busy])
+      if (!force && sig === lastCommentsSig) return
+      /* never wipe text someone is typing */
+      var active = root.activeElement
+      if (!force && active && active.tagName === 'TEXTAREA' && threadsEl.contains(active)) return
+      lastCommentsSig = sig
+      var shown = ui.showResolved ? all : open
+      var html = ''
+      shown.forEach(function (t) {
+        html += '<article class="thread' + (t.resolved ? ' resolved' : '') + '" data-t="' + t.id + '">' + msgHtml(t, t.id, null, signed)
+        repliesOf(t).forEach(function (r) {
+          html += '<div class="reply">' + msgHtml(r, t.id, r.id, signed) + '</div>'
+        })
+        if (signed) {
+          if (ui.replyTo === t.id)
+            html +=
+              '<div class="reply-box"><textarea class="reply-text" rows="2" placeholder="Reply…"></textarea>' +
+              '<div class="row"><button class="ghost act" data-act="cancel-reply">Cancel</button><button class="primary act" data-act="post-reply" data-t="' + t.id + '"' + (ui.busy ? ' disabled' : '') + '>Reply</button></div></div>'
+          else
+            html +=
+              '<div class="t-actions"><button class="link act" data-act="reply" data-t="' + t.id + '">Reply</button>' +
+              '<button class="link act" data-act="' + (t.resolved ? 'reopen' : 'resolve') + '" data-t="' + t.id + '">' + (t.resolved ? 'Reopen' : 'Resolve') + '</button></div>'
+        }
+        html += '</article>'
+      })
+      if (!shown.length) html = '<p class="empty">' + (resolved && !ui.showResolved ? 'No open comments on this slide.' : 'No comments on this slide yet.') + '</p>'
+      threadsEl.innerHTML = html
+      $('.resolved-toggle').hidden = !resolved
+      $('.res-n').textContent = resolved ? '(' + resolved + ')' : ''
+      if (signed) {
+        if (!composer.querySelector('.new-text'))
+          composer.innerHTML =
+            '<textarea class="new-text" rows="3" placeholder="Add a comment on this slide…"></textarea>' +
+            '<div class="row"><span class="as"></span><button class="primary act" data-act="post">Comment</button></div>'
+        composer.querySelector('.as').textContent = 'as ' + (myName() || 'Editor')
+        composer.querySelector('[data-act=post]').disabled = ui.busy
+        composer.querySelector('[data-act=post]').textContent = ui.busy ? 'Posting…' : 'Comment'
+      } else {
+        composer.innerHTML = '<button class="ghost wide act" data-act="signin">Sign in to comment</button>'
+      }
+      var rt = threadsEl.querySelector('.reply-text')
+      if (rt && ui.replyDraft) rt.value = ui.replyDraft
+      var et = threadsEl.querySelector('.edit-text')
+      if (et && ui.editDraft != null) et.value = ui.editDraft
+    }
+    function msgHtml(m, tid, rid, signed) {
+      var key = tid + ':' + (rid || '')
+      var editing = ui.editing === key
+      var body = editing
+        ? '<textarea class="edit-text" rows="3">' + esc(m.text) + '</textarea><div class="row"><button class="ghost act" data-act="cancel-edit">Cancel</button>' +
+          '<button class="primary act" data-act="save-edit" data-t="' + tid + '" data-r="' + (rid || '') + '"' + (ui.busy ? ' disabled' : '') + '>Save</button></div>'
+        : '<div class="text">' + esc(m.text) + '</div>'
+      return (
+        '<div class="m-h"><span class="avatar">' + esc((m.author || '?').trim().charAt(0).toUpperCase() || '?') + '</span>' +
+        '<span class="who">' + esc(m.author || 'Editor') + '</span><span class="when" title="' + esc(new Date(m.at).toLocaleString()) + '">' + when(m.at) + (m.edited ? ' · edited' : '') + '</span>' +
+        (signed && !editing
+          ? '<span class="m-tools"><button class="link act" data-act="edit" data-t="' + tid + '" data-r="' + (rid || '') + '" title="Edit">Edit</button>' +
+            '<button class="link act danger" data-act="delete" data-t="' + tid + '" data-r="' + (rid || '') + '" title="Delete">Delete</button></span>'
+          : '') +
+        '</div>' + body
+      )
+    }
+
+    root.addEventListener('input', function (e) {
+      var t = e.composedPath()[0]
+      if (t.classList && t.classList.contains('reply-text')) ui.replyDraft = t.value
+      if (t.classList && t.classList.contains('edit-text')) ui.editDraft = t.value
+    })
+    root.addEventListener('click', function (e) {
+      var b = e.composedPath()[0].closest && e.composedPath()[0].closest('.act')
+      if (!b) return
+      var act = b.getAttribute('data-act')
+      var tid = b.getAttribute('data-t')
+      var rid = b.getAttribute('data-r') || null
+      var cid = currentId()
+      if (act === 'signin') return showGate('Sign in with the editor password to comment.')
+      if (act === 'post') {
+        var ta = composer.querySelector('.new-text')
+        var text = ta.value.trim()
+        if (!text || !cid) return
+        commentAction({ op: 'add', thread: uid(), slide: cid, text: text }, 'Comment posted. Everyone can see it.').then(function (ok) {
+          if (ok) ta.value = ''
+        })
+      } else if (act === 'reply') {
+        ui.replyTo = tid
+        ui.replyDraft = ''
+        renderComments(true)
+        var r = threadsEl.querySelector('.reply-text')
+        if (r) r.focus()
+      } else if (act === 'cancel-reply') {
+        ui.replyTo = null
+        renderComments(true)
+      } else if (act === 'post-reply') {
+        var rtext = (ui.replyDraft || '').trim()
+        if (!rtext) return
+        commentAction({ op: 'reply', thread: tid, reply: uid(), text: rtext }).then(function (ok) {
+          if (ok) {
+            ui.replyTo = null
+            ui.replyDraft = ''
+            renderComments(true)
+          }
+        })
+      } else if (act === 'resolve' || act === 'reopen') {
+        commentAction({ op: 'resolve', thread: tid, resolved: act === 'resolve' }, act === 'resolve' ? 'Thread resolved.' : 'Thread reopened.')
+      } else if (act === 'edit') {
+        ui.editing = tid + ':' + (rid || '')
+        ui.editDraft = null
+        renderComments(true)
+        var et = threadsEl.querySelector('.edit-text')
+        if (et) et.focus()
+      } else if (act === 'cancel-edit') {
+        ui.editing = null
+        renderComments(true)
+      } else if (act === 'save-edit') {
+        var etext = threadsEl.querySelector('.edit-text').value.trim()
+        if (!etext) return
+        commentAction({ op: 'edit', thread: tid, reply: rid, text: etext }).then(function (ok) {
+          if (ok) {
+            ui.editing = null
+            ui.editDraft = null
+            renderComments(true)
+          }
+        })
+      } else if (act === 'delete') {
+        if (!window.confirm(rid ? 'Delete this reply?' : 'Delete this comment thread and its replies?')) return
+        commentAction({ op: 'delete', thread: tid, reply: rid }, rid ? 'Reply deleted.' : 'Thread deleted.')
+      }
+    })
+    $('.show-resolved').addEventListener('change', function (e) {
+      ui.showResolved = e.target.checked
+      renderComments(true)
+    })
+
     /* --- render --- */
     var lastListSig = ''
-    function render(forceComment) {
-      var d = deckApi() || ed.deck
-      ed.deck = d
+    function render() {
+      var d = deckApi() || ui.deck
+      ui.deck = d
       var cid = currentId()
-      var cur = null
-      for (var i = 0; i < d.all.length; i++) if (d.all[i].id === cid) cur = d.all[i]
-      var e = cid ? eff(cid) : { status: 'visible', comment: '' }
-      $('.cur-n').textContent = cur ? 'Slide ' + cur.n + ' / ' + d.all.length : ''
-      $('.cur-id').textContent = cid || ''
+      var cur = slideInfo(cid)
+      if (ui.current !== cid) {
+        ui.replyTo = null
+        ui.editing = null
+        ui.current = cid
+      }
+      var n = cur ? (EDIT ? cur.n : (d.current || cur.n)) : 0
+      $('.cur-n').textContent = cur ? 'Slide ' + n + ' / ' + (EDIT ? d.all.length : d.total) : ''
+      $('.cur-id').textContent = EDIT ? cid || '' : ''
       $('.cur-label').textContent = cur ? cur.label || cur.section || '' : ''
-      root.querySelectorAll('.seg button').forEach(function (b) {
-        b.classList.toggle('on', b.getAttribute('data-status') === e.status)
-        var dirty = cid && ed.local[cid] && ed.local[cid].status !== undefined
-        b.classList.toggle('dirty', !!dirty && b.getAttribute('data-status') === e.status)
-      })
-      if (forceComment || root.activeElement !== ta || ed.current !== cid) {
-        ta.value = e.comment
-        if (ed.current !== cid) ed.commentSnap = false
-      }
-      ta.setAttribute('data-slide', cid || '')
-      ta.classList.toggle('dirty', !!(cid && ed.local[cid] && ed.local[cid].comment !== undefined))
-      var vn = cid ? viewerNumber(cid) : null
-      $('.copy-slide').disabled = !vn
-      $('.hint').textContent = vn ? '#slide-' + vn : 'hidden from viewers'
-      if (e.status !== 'visible' || e.comment) {
-        badge.hidden = false
-        badge.className = 'badge ' + e.status
-        badge.textContent =
-          (e.status === 'deleted' ? 'Deleted · hidden from viewers' : e.status === 'skipped' ? 'Skipped · hidden from viewers' : '') +
-          (e.comment ? (e.status !== 'visible' ? '  ·  ' : '') + '💬 ' + (e.comment.length > 80 ? e.comment.slice(0, 80) + '…' : e.comment) : '')
-      } else badge.hidden = true
-      ed.current = cid
 
-      var n = changeCount()
-      undoBtn.disabled = !ed.undo.length
-      redoBtn.disabled = !ed.redo.length
-      if (ed.saving || ed.pending) {
-        saveBtn.disabled = true
-        saveBtn.textContent = ed.saving ? 'Building…' : 'Building…'
-        saveBtn.title = ed.pending ? 'Waiting for the live build to include commit ' + ed.pending.sha.slice(0, 7) : ''
-      } else {
-        saveBtn.disabled = n === 0
-        saveBtn.textContent = n ? 'Save (' + n + ')' : 'Save'
-        saveBtn.title = n ? 'Commit your changes and publish them to every viewer' : 'No unsaved changes'
-      }
+      var oc = cid ? openCount(cid) : 0
+      fab.hidden = EDIT || ui.open || !!document.fullscreenElement
+      fab.classList.toggle('has', oc > 0)
+      root.querySelector('.fab-n').textContent = oc ? String(oc) : ''
+      fab.title = oc ? oc + ' comment' + (oc === 1 ? '' : 's') + ' on this slide' : 'Comments'
 
-      /* the slide list, only rebuilt when something in it changed */
-      var sig = JSON.stringify([d.all.length, cid, ed.filter, ed.local, ed.base])
+      if (EDIT) {
+        var e = cid ? eff(cid) : { status: 'visible' }
+        root.querySelectorAll('.seg button').forEach(function (b) {
+          b.classList.toggle('on', b.getAttribute('data-status') === e.status)
+          var dirty = cid && ui.local[cid] && ui.local[cid].status !== undefined
+          b.classList.toggle('dirty', !!dirty && b.getAttribute('data-status') === e.status)
+        })
+        var vn = cid ? viewerNumber(cid) : null
+        $('.copy-slide').disabled = !vn
+        $('.hint').textContent = vn ? '#slide-' + vn : 'hidden from viewers'
+        if (e.status !== 'visible') {
+          badge.hidden = false
+          badge.className = 'badge ' + e.status
+          badge.textContent = e.status === 'deleted' ? 'Deleted · hidden from viewers' : 'Skipped · hidden from viewers'
+        } else badge.hidden = true
+        $('.tab-n').textContent = oc ? '(' + oc + ')' : ''
+
+        var nc = changeCount()
+        undoBtn.disabled = !ui.undo.length
+        redoBtn.disabled = !ui.redo.length
+        if (ui.saving || ui.pending) {
+          saveBtn.disabled = true
+          saveBtn.textContent = 'Building…'
+          saveBtn.title = ui.pending ? 'Waiting for the live build to include commit ' + ui.pending.sha.slice(0, 7) : ''
+        } else {
+          saveBtn.disabled = nc === 0
+          saveBtn.textContent = nc ? 'Save (' + nc + ')' : 'Save'
+          saveBtn.title = nc ? 'Commit your changes and publish them to every viewer' : 'No unsaved changes'
+        }
+        renderList(d, cid)
+      }
+      if (ui.open && (!EDIT || ui.tab === 'comments')) renderComments(false)
+    }
+    function renderList(d, cid) {
+      if (ui.tab !== 'slides') return
+      var sig = JSON.stringify([d.all.length, cid, ui.filter, ui.local, ui.base, ui.threads])
       if (sig === lastListSig) return
       lastListSig = sig
       var html = ''
       d.all.forEach(function (s) {
         var x = eff(s.id)
-        var dirty = !!ed.local[s.id]
-        if (ed.filter === 'changed' && !dirty) return
-        if (ed.filter === 'hidden' && x.status === 'visible') return
-        if (ed.filter === 'comment' && !x.comment) return
+        var dirty = !!ui.local[s.id]
+        var c = openCount(s.id)
+        if (ui.filter === 'changed' && !dirty) return
+        if (ui.filter === 'hidden' && x.status === 'visible') return
+        if (ui.filter === 'comment' && !c) return
         html +=
           '<li data-id="' + esc(s.id) + '" class="' + (s.id === cid ? 'here ' : '') + x.status + (dirty ? ' dirty' : '') + '">' +
           '<span class="n">' + s.n + '</span><span class="nm">' + esc(s.label || s.id) + '</span>' +
           (x.status !== 'visible' ? '<span class="st">' + (x.status === 'deleted' ? 'DEL' : 'SKIP') + '</span>' : '') +
-          (x.comment ? '<span class="cm" title="' + esc(x.comment) + '">💬</span>' : '') +
+          (c ? '<span class="cm" title="' + c + ' open comment(s)">💬' + c + '</span>' : '') +
           (dirty ? '<span class="dot" title="Unsaved change"></span>' : '') +
           '</li>'
       })
@@ -519,70 +799,60 @@
       var curLi = list.querySelector('li.here')
       if (curLi && curLi.scrollIntoView && !render.userScrolled) curLi.scrollIntoView({ block: 'nearest' })
     }
-    function esc(s) {
-      return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] })
-    }
 
-    /* --- events --- */
-    root.querySelectorAll('.seg button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var id = currentId()
-        if (id) setStatus(id, b.getAttribute('data-status'))
+    /* --- edit-mode events --- */
+    if (EDIT) {
+      root.querySelectorAll('.seg button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = currentId()
+          if (!id) return
+          mutate(function () {
+            ;(ui.local[id] = ui.local[id] || {}).status = b.getAttribute('data-status')
+          })
+        })
       })
-    })
-    ta.addEventListener('focus', function () { ed.commentSnap = false })
-    ta.addEventListener('input', function () {
-      /* the slide whose comment the box is showing, never whatever slide is on screen right now */
-      var id = ta.getAttribute('data-slide')
-      if (!id) return
-      /* one undo step per stretch of typing */
-      mutate(
-        function () {
-          ;(ed.local[id] = ed.local[id] || {}).comment = ta.value
-        },
-        { noHistory: ed.commentSnap },
-      )
-      ed.commentSnap = true
-    })
-    ta.addEventListener('blur', function () { ed.commentSnap = false })
-    undoBtn.addEventListener('click', doUndo)
-    redoBtn.addEventListener('click', doRedo)
-    saveBtn.addEventListener('click', doSave)
-    $('.filter').addEventListener('change', function (e) {
-      ed.filter = e.target.value
-      render()
-    })
-    list.addEventListener('click', function (e) {
-      var li = e.target.closest('li[data-id]')
-      if (li) gotoId(li.getAttribute('data-id'))
-    })
-    $('.copy-slide').addEventListener('click', function () {
-      var id = currentId()
-      var vn = id && viewerNumber(id)
-      if (!vn) return
-      var url = location.origin + location.pathname + '#slide-' + vn
-      copyText(url).then(function () { flash('Copied ' + url, 'ok') })
-    })
-    $('.collapse').addEventListener('click', function () {
-      ed.collapsed = true
-      panel.classList.add('hide')
-      tab.hidden = false
-    })
-    tab.addEventListener('click', function () {
-      ed.collapsed = false
-      panel.classList.remove('hide')
-      tab.hidden = true
-    })
-
-    /* --- auth gate --- */
-    function password() {
-      return sget(LS.pw, 'session')
+      undoBtn.addEventListener('click', doUndo)
+      redoBtn.addEventListener('click', doRedo)
+      saveBtn.addEventListener('click', doSave)
+      root.querySelectorAll('.tabs button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          ui.tab = b.getAttribute('data-tab')
+          root.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b) })
+          $('.comments').hidden = ui.tab !== 'comments'
+          $('.list-wrap').hidden = ui.tab !== 'slides'
+          lastListSig = ''
+          lastCommentsSig = ''
+          render()
+        })
+      })
+      $('.filter').addEventListener('change', function (e) {
+        ui.filter = e.target.value
+        render()
+      })
+      list.addEventListener('click', function (e) {
+        var li = e.target.closest('li[data-id]')
+        if (li) gotoId(li.getAttribute('data-id'))
+      })
+      list.addEventListener('scroll', function () {
+        render.userScrolled = true
+        clearTimeout(render.st)
+        render.st = setTimeout(function () { render.userScrolled = false }, 2500)
+      })
+      $('.copy-slide').addEventListener('click', function () {
+        var id = currentId()
+        var vn = id && viewerNumber(id)
+        if (!vn) return
+        var url = location.origin + location.pathname + '#slide-' + vn
+        copyText(url).then(function () { flash('Copied ' + url, 'ok') })
+      })
     }
-    function showGate(err) {
-      var g = $('.gate')
-      g.hidden = false
-      $('.gerr').textContent = err || ''
-      $('.gname').value = sget(LS.name, 'local') || ''
+
+    /* --- auth gate (shared) --- */
+    function showGate(why) {
+      $('.gate').hidden = false
+      $('.gwhy').textContent = why || 'Enter the editor password for ' + SITE.title + '.'
+      $('.gerr').textContent = ''
+      $('.gname').value = myName()
       setTimeout(function () { $('.gpw').focus() }, 30)
     }
     $('.gate-box').addEventListener('submit', function (e) {
@@ -595,64 +865,68 @@
           sset(LS.pw, pw, 'session')
           sset(LS.name, name || null, 'local')
           $('.gate').hidden = true
+          $('.gpw').value = ''
           panel.classList.add('ready')
+          lastCommentsSig = ''
           render()
         })
         .catch(function (err) {
           $('.gerr').textContent = err.status === 401 ? 'Wrong password.' : 'Could not reach the edit service (' + err.message + ').'
         })
     })
-    $('.exit').addEventListener('click', function (e) {
-      e.preventDefault()
+    $('.gcancel').addEventListener('click', function () {
+      if (!EDIT) {
+        $('.gate').hidden = true
+        return
+      }
       var p = new URLSearchParams(location.search)
       p.delete('edit')
       var q = p.toString()
       location.href = location.pathname + (q ? '?' + q : '') + location.hash
     })
 
-    /* --- save --- */
+    /* --- save (edit mode, slide status) --- */
     function doSave() {
-      if (ed.saving || ed.pending || !changeCount()) return
-      ed.saving = true
+      if (ui.saving || ui.pending || !changeCount()) return
+      ui.saving = true
       saveBtn.disabled = true
       saveBtn.textContent = 'Building…'
-      var patches = JSON.parse(JSON.stringify(ed.local))
+      var patches = JSON.parse(JSON.stringify(ui.local))
       fetchJson(
         WORKER + '/api/save',
         {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'x-editor-password': password() || '' },
-          body: JSON.stringify({ deck: DECK, patches: patches, editor: sget(LS.name, 'local') || '' }),
+          body: JSON.stringify({ deck: DECK, patches: patches, editor: myName() }),
         },
         30000,
       )
         .then(function (r) {
-          ed.saving = false
-          /* what was saved becomes the base; anything typed since stays local */
+          ui.saving = false
           var now = Date.now()
           for (var id in patches) {
             for (var f in patches[id]) {
-              ed.rows.push({ slide: id, field: f, value: patches[id][f], sha: r.sha, updatedAt: now })
-              if (ed.local[id] && ed.local[id][f] === patches[id][f]) delete ed.local[id][f]
+              ui.rows.push({ slide: id, field: f, value: patches[id][f], sha: r.sha, updatedAt: now })
+              if (ui.local[id] && ui.local[id][f] === patches[id][f]) delete ui.local[id][f]
             }
           }
-          ed.base = mergeState(ed.baked, ed.rows)
-          ed.undo = []
-          ed.redo = []
+          ui.base = mergeState(ui.baked, ui.rows)
+          ui.undo = []
+          ui.redo = []
           prune()
           persistDraft()
           if (r.noop || !r.sha) {
             flash('Nothing new to save: the repo already has these values.', 'ok')
           } else {
-            ed.pending = { sha: r.sha, at: now }
-            sset(LS.pending, JSON.stringify(ed.pending), 'local')
+            ui.pending = { sha: r.sha, at: now }
+            sset(LS.pending, JSON.stringify(ui.pending), 'local')
             flash('Saved as ' + r.sha.slice(0, 7) + '. Every viewer sees it now; rebuilding the site…', 'sticky')
             watchPending()
           }
-          render(true)
+          render()
         })
         .catch(function (err) {
-          ed.saving = false
+          ui.saving = false
           if (err.status === 401) {
             sset(LS.pw, null, 'session')
             showGate('Password rejected, sign in again. Your changes are kept.')
@@ -660,19 +934,18 @@
           render()
         })
     }
-
     function watchPending() {
-      if (!ed.pending || watchPending.on) return
+      if (!ui.pending || watchPending.on) return
       watchPending.on = true
       ;(function tick() {
-        if (!ed.pending) {
+        if (!ui.pending) {
           watchPending.on = false
           return
         }
-        fetchJson(WORKER + '/api/status?sha=' + ed.pending.sha, {}, 15000)
+        fetchJson(WORKER + '/api/status?sha=' + ui.pending.sha, {}, 15000)
           .then(function (s) {
             if (s.live) {
-              ed.pending = null
+              ui.pending = null
               sset(LS.pending, null, 'local')
               watchPending.on = false
               flash('Live build now includes your save (' + s.sha.slice(0, 7) + ').', 'ok')
@@ -682,47 +955,58 @@
             }
             setTimeout(tick, POLL_STATUS)
           })
-          .catch(function () {
-            setTimeout(tick, POLL_STATUS * 2)
-          })
+          .catch(function () { setTimeout(tick, POLL_STATUS * 2) })
       })()
     }
 
-    /* --- keep the base in step with other editors and with rebuilds --- */
+    /* --- keep in step with other editors, comments and rebuilds --- */
     function refresh() {
       return Promise.all([fetchBaked(10000), fetchLive(10000)]).then(function (res) {
-        if (res[0] && res[0].slides) ed.baked = res[0].slides
-        if (res[1] && res[1].rows) ed.rows = res[1].rows
-        if (!res[0] && !res[1]) return
-        ed.base = mergeState(ed.baked, ed.rows)
+        var baked = res[0]
+        var live = res[1]
+        if (!baked && !live) return
+        if (!EDIT && baked && baked.contentHash && boot.contentHash && baked.contentHash !== boot.contentHash) return reloadKeepingSlide()
+        if (baked && baked.slides) ui.baked = baked.slides
+        if (baked && baked.threads) ui.bakedThreads = baked.threads
+        if (live && live.rows) ui.rows = live.rows
+        ui.base = mergeState(ui.baked, ui.rows)
+        ui.threads = mergeThreads(ui.bakedThreads, ui.rows)
+        if (!EDIT && hiddenOf(ui.base).join('\n') !== boot.hiddenSig) return reloadKeepingSlide()
         prune()
         persistDraft()
         render()
       })
     }
+    ;(function loop() {
+      var wait = ui.open && (!EDIT || ui.tab === 'comments') ? POLL_COMMENTS : EDIT ? POLL_EDIT : POLL_VIEW
+      setTimeout(function () {
+        ;(document.hidden ? Promise.resolve() : refresh().catch(function () {})).then(loop)
+      }, wait)
+    })()
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refresh()
+    })
 
     /* --- go --- */
-    setInterval(render, 120)
+    setInterval(render, 150)
     window.addEventListener('hashchange', function () { setTimeout(render, 0) })
-    setInterval(function () { if (!document.hidden) refresh() }, POLL_EDIT)
-    list.addEventListener('scroll', function () {
-      render.userScrolled = true
-      clearTimeout(render.st)
-      render.st = setTimeout(function () { render.userScrolled = false }, 2500)
-    })
-    if (ed.pending && Date.now() - ed.pending.at > 24 * 3600 * 1000) {
-      ed.pending = null
-      sset(LS.pending, null, 'local')
+    if (EDIT) {
+      if (ui.pending && Date.now() - ui.pending.at > 24 * 3600 * 1000) {
+        ui.pending = null
+        sset(LS.pending, null, 'local')
+      }
+      if (ui.pending) {
+        flash('Waiting for the live build to include ' + ui.pending.sha.slice(0, 7) + '…', 'sticky')
+        watchPending()
+      }
+      prune()
+      if (changeCount()) flash('Restored ' + changeCount() + ' unsaved change(s) from this browser.', 'ok')
+      if (password()) panel.classList.add('ready')
+      else showGate('Enter the editor password to edit ' + SITE.title + '.')
+    } else {
+      panel.classList.add('ready')
     }
-    if (ed.pending) {
-      flash('Waiting for the live build to include ' + ed.pending.sha.slice(0, 7) + '…', 'sticky')
-      watchPending()
-    }
-    prune()
-    if (changeCount()) flash('Restored ' + changeCount() + ' unsaved change(s) from this browser.', 'ok')
-    render()
-    if (password()) panel.classList.add('ready')
-    else showGate()
+    setOpen(ui.open)
   }
 
   function copyText(t) {
@@ -739,13 +1023,14 @@
     }
   }
 
-  var EDITOR_CSS = [
+  var CSS = [
     ':host{all:initial}',
     '*{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
-    '.panel{pointer-events:auto;position:fixed;top:12px;right:12px;bottom:12px;width:340px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:10px;',
-    'background:rgba(255,255,255,.97);color:#111827;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 18px 50px rgba(15,23,42,.28);padding:14px;font-size:13px;transition:transform .2s ease,opacity .2s ease}',
+    /* the panel is docked: it owns a strip of the window and the deck is resized beside it */
+    '.panel{pointer-events:auto;position:fixed;top:0;right:0;bottom:0;width:' + DOCK_W + 'px;display:flex;flex-direction:column;gap:10px;',
+    'background:#fff;color:#111827;border-left:1px solid #e5e7eb;box-shadow:-8px 0 24px rgba(15,23,42,.12);padding:14px;font-size:13px;transition:transform .2s ease}',
     '.panel:not(.ready){opacity:.35;pointer-events:none}',
-    '.panel.hide{transform:translateX(calc(100% + 24px));opacity:0;pointer-events:none}',
+    '.panel.hide{transform:translateX(100%);box-shadow:none;pointer-events:none;visibility:hidden}',
     'header{display:flex;align-items:center;justify-content:space-between;gap:8px}',
     '.ttl{display:flex;flex-direction:column;gap:4px;min-width:0}',
     '.pill{align-self:flex-start;background:#2d63fb;color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px}',
@@ -753,7 +1038,7 @@
     'button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:#111827;padding:6px 10px}',
     'button:disabled{opacity:.45;cursor:not-allowed}',
     'button:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #2d63fb;outline-offset:1px}',
-    '.icon{border:none;background:transparent;font-size:18px;padding:2px 8px}',
+    '.icon{border:none;background:transparent;font-size:16px;padding:4px 8px;color:#6b7280}',
     '.cur{display:flex;flex-direction:column;gap:7px;border:1px solid #eef0f3;border-radius:10px;padding:10px;background:#f9fafb}',
     '.cur-h{display:flex;justify-content:space-between;gap:8px;font-weight:700}',
     '.cur-id{font-family:ui-monospace,Menlo,monospace;font-weight:500;color:#6b7280;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}',
@@ -763,16 +1048,37 @@
     '.seg button.on[data-status=skipped]{background:#fffbeb;border-color:#f59e0b;color:#92400e;font-weight:700}',
     '.seg button.on[data-status=deleted]{background:#fef2f2;border-color:#ef4444;color:#991b1b;font-weight:700}',
     '.seg button.dirty{box-shadow:0 0 0 2px rgba(45,99,251,.35)}',
-    '.lbl{font-weight:600;color:#374151}',
-    'textarea{width:100%;resize:vertical;min-height:60px;border:1px solid #d1d5db;border-radius:8px;padding:7px;font-size:13px;color:#111827;background:#fff}',
-    'textarea.dirty{border-color:#2d63fb}',
+    'textarea{width:100%;resize:vertical;min-height:54px;border:1px solid #d1d5db;border-radius:8px;padding:7px;font-size:13px;color:#111827;background:#fff;line-height:1.4}',
     '.row{display:flex;align-items:center;justify-content:space-between;gap:8px}',
     '.hint{color:#6b7280;font-family:ui-monospace,Menlo,monospace;font-size:11px}',
-    '.ghost{background:#fff}',
     '.tools{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px}',
     '.primary{background:#2d63fb;border-color:#2d63fb;color:#fff;font-weight:700}',
     '.primary:disabled{background:#93a9e8;border-color:#93a9e8;opacity:1}',
-    '.msg{min-height:16px;font-size:12px;color:#374151}.msg.ok{color:#047857}.msg.err{color:#b91c1c}.msg.sticky{color:#1d4ed8}',
+    '.wide{width:100%}',
+    '.msg{min-height:16px;font-size:12px;color:#374151}.msg:empty{display:none}.msg.ok{color:#047857}.msg.err{color:#b91c1c}.msg.sticky{color:#1d4ed8}',
+    '.tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-radius:10px;padding:3px;gap:3px;background:#f3f4f6}',
+    '.tabs button{border:none;background:transparent;font-weight:600;color:#4b5563;padding:6px}',
+    '.tabs button.on{background:#fff;color:#111827;box-shadow:0 1px 2px rgba(0,0,0,.08)}',
+    '.comments{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}',
+    '.threads{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px}',
+    '.thread{border:1px solid #e5e7eb;border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:6px;background:#fff}',
+    '.thread.resolved{background:#f9fafb;opacity:.75}',
+    '.reply{border-top:1px solid #f3f4f6;padding-top:6px;margin-left:10px}',
+    '.m-h{display:flex;align-items:center;gap:6px;min-width:0}',
+    '.avatar{width:22px;height:22px;border-radius:50%;background:#e0e7ff;color:#3730a3;display:grid;place-items:center;font-weight:700;font-size:11px;flex:none}',
+    '.who{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.when{color:#6b7280;font-size:11px;white-space:nowrap}',
+    '.m-tools{margin-left:auto;display:flex;gap:2px}',
+    '.text{white-space:pre-wrap;word-wrap:break-word;color:#1f2937;line-height:1.45}',
+    '.link{border:none;background:none;padding:2px 4px;color:#2d63fb;font-weight:600;font-size:12px}',
+    '.link.danger{color:#b91c1c}',
+    '.m-tools .link{color:#6b7280;font-weight:500;font-size:11px}',
+    '.t-actions{display:flex;gap:6px}',
+    '.reply-box{display:flex;flex-direction:column;gap:6px}',
+    '.empty{color:#6b7280;margin:6px 2px}',
+    '.resolved-toggle{display:flex;align-items:center;gap:6px;color:#4b5563;font-size:12px}',
+    '.composer{display:flex;flex-direction:column;gap:6px;border-top:1px solid #eef0f3;padding-top:8px}',
+    '.as{color:#6b7280;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.list-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}',
     '.list-h{display:flex;justify-content:space-between;align-items:center;font-weight:700}',
     'select{font:inherit;border:1px solid #d1d5db;border-radius:6px;padding:3px 6px;background:#fff;color:#111827}',
@@ -787,18 +1093,25 @@
     '.nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.st{font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;background:#fee2e2;color:#991b1b}',
     '.skipped .st{background:#fef3c7;color:#92400e}',
+    '.cm{font-size:11px;color:#4b5563}',
     '.dot{width:8px;height:8px;border-radius:50%;background:#2d63fb;flex:none}',
-    '.tab{pointer-events:auto;position:fixed;right:12px;top:12px;background:#2d63fb;color:#fff;border:none;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25)}',
-    '.badge{pointer-events:none;position:fixed;top:12px;left:50%;transform:translateX(-50%);max-width:min(640px,calc(100vw - 400px));padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;',
-    'background:rgba(17,24,39,.88);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.25)}',
+    '.tab-open{pointer-events:auto;position:fixed;right:12px;top:12px;background:#2d63fb;color:#fff;border:none;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25)}',
+    '.fab{pointer-events:auto;position:fixed;right:16px;bottom:16px;height:40px;min-width:40px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.25);',
+    'background:rgba(17,24,39,.55);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;backdrop-filter:blur(6px);opacity:.75;transition:opacity .15s}',
+    '.fab:hover,.fab.has{opacity:1}.fab.has{background:#2d63fb;border-color:#2d63fb}',
+    '.fab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}',
+    '.fab-n:empty{display:none}',
+    '.badge{pointer-events:none;position:fixed;top:12px;left:calc((100% - ' + DOCK_W + 'px) / 2);transform:translateX(-50%);max-width:min(560px,calc(100vw - ' + (DOCK_W + 40) + 'px));padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;',
+    'color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.25)}',
     '.badge.deleted{background:rgba(185,28,28,.92)}.badge.skipped{background:rgba(180,83,9,.92)}',
     '.gate{pointer-events:auto;position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}',
     '.gate-box{background:#fff;color:#111827;border-radius:14px;padding:20px;width:min(380px,100%);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.35)}',
     '.gate-box h2{margin:0;font-size:18px}.gate-box p{margin:0;color:#4b5563;font-size:13px}',
     '.gate-box input{font:inherit;font-size:14px;padding:9px 10px;border:1px solid #d1d5db;border-radius:8px}',
     '.gerr{min-height:16px;color:#b91c1c;font-size:12px}',
-    '.exit{color:#374151;text-decoration:none;border:1px solid #d1d5db;border-radius:8px;padding:6px 10px;font-size:13px}',
     '[hidden]{display:none!important}',
-    '@media (max-width:700px){.panel{top:auto;height:55vh;left:8px;right:8px;bottom:8px;width:auto}.badge{max-width:calc(100vw - 24px)}}',
+    /* phone: the panel docks along the bottom and the deck takes the top half */
+    '@media (max-width:760px){.panel{top:auto;left:0;width:auto;height:48dvh;border-left:none;border-top:1px solid #e5e7eb;box-shadow:0 -8px 24px rgba(15,23,42,.12)}',
+    '.panel.hide{transform:translateY(100%)}.badge{left:50%;max-width:calc(100vw - 24px)}}',
   ].join('\n')
 })()
