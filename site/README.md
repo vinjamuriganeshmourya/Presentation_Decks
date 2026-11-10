@@ -22,11 +22,14 @@ Edit service (Cloudflare Worker + D1): https://presentation-decks-live.presentat
 
 ## Edit and save
 
-1. Open a deck with `?edit=1` (or the gallery's **Edit** link) and enter the editor password.
-2. Per slide: **Visible / Skip / Delete**, a **Comment**, **Undo / Redo** (Ctrl+Z, Ctrl+Shift+Z). Changes stay in your browser until you save.
-3. **Save** commits to `<course>/<session>/edits/<slug>.json` and publishes immediately to every viewer. The button reads *Building…* until the live site has been rebuilt with that commit.
+1. Open a deck with `?edit=1` (or the gallery's **Edit** button) and enter the editor password.
+2. The deck's own toolbar gains, just before fullscreen: a **comments** icon (opens the edit panel on its Comments tab), then **Undo**, **Redo** and **Save** (Ctrl+Z / Ctrl+Shift+Z still work). A dot on Save means unsaved changes; while a save is building it reads *Building…*.
+3. In the deck's grid (**Jump to a slide**, `G`), every card shows the slide's state (visible / skipped / deleted, "· unsaved" until saved) and has **Skip / Unskip** and **Delete / Restore**.
+4. The edit panel (closed by default, opened from the comments icon) keeps every control: Download, Visible / Skip / Delete for the current slide, Copy slide link, Undo / Redo / Save, the Comments and Slides tabs. It takes the deck toolbar's look (colours and fonts are read from the deck).
+5. Changes stay in your browser until **Save**, which commits to `<course>/<session>/edits/<slug>.json` and publishes immediately to every viewer. Save reads *Building…* until the live site has been rebuilt with that commit.
 
-Skipped and deleted slides are both hidden from viewers; deleted ones are struck through in the editor and can be restored at any time.
+The toolbar and grid controls are placed into the deck's own DOM by `overlay.js` and call exactly what the panel's buttons call; viewer mode (no `?edit=1`) gets none of them.
+Skipped and deleted slides are both hidden from viewers; deleted ones can be restored at any time.
 `#slide-N` counts the slides viewers see.
 
 ## Gallery and navigation

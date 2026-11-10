@@ -415,7 +415,7 @@
       redo: [],
       pending: EDIT ? jget(LS.pending, 'local', null) : null,
       saving: false,
-      open: EDIT ? true : sget(LS.panel, 'local') === '1',
+      open: EDIT ? false : sget(LS.panel, 'local') === '1',
       tab: 'comments',
       filter: 'all',
       showResolved: false,
@@ -559,13 +559,14 @@
       msgEl.className = 'msg ' + (kind || '')
       clearTimeout(flash.t)
       if (kind !== 'sticky') flash.t = setTimeout(function () { msgEl.textContent = ''; msgEl.className = 'msg' }, 6000)
+      if (EDIT && !ui.open && text) toast(text)
     }
 
     /* --- panel open / close --- */
     function setOpen(open) {
       ui.open = open
       panel.classList.toggle('hide', !open)
-      if (EDIT) $('.tab-open').hidden = open
+      if (EDIT) $('.tab-open').hidden = open || deckUi.mounted
       else sset(LS.panel, open ? '1' : null, 'local')
       applyDock()
       render()
@@ -872,6 +873,7 @@
           saveBtn.title = nc ? 'Commit your changes and publish them to every viewer' : 'No unsaved changes'
         }
         renderList(d, cid)
+        syncDeckUi(d, cid, oc, nc)
       }
       if (ui.open && (!EDIT || ui.tab === 'comments')) renderComments(false)
     }
@@ -905,11 +907,7 @@
     if (EDIT) {
       root.querySelectorAll('.seg button').forEach(function (b) {
         b.addEventListener('click', function () {
-          var id = currentId()
-          if (!id) return
-          mutate(function () {
-            ;(ui.local[id] = ui.local[id] || {}).status = b.getAttribute('data-status')
-          })
+          setStatus(currentId(), b.getAttribute('data-status'))
         })
       })
       undoBtn.addEventListener('click', doUndo)
@@ -948,6 +946,237 @@
         copyText(url).then(function () { flash('Copied ' + url, 'ok') })
       })
     }
+
+
+    /* --- EDIT MODE, DECK-NATIVE CONTROLS (UI only) ---
+       Undo / Redo / Save and a Comments button live in the deck's own toolbar, Skip / Delete on the
+       grid's cards, and the panel wears the toolbar's look. Every one of them calls what the panel's
+       own buttons call (the toolbar buttons literally click them), so behaviour is unchanged. */
+    function setStatus(id, status) {
+      if (!id) return
+      mutate(function () {
+        ;(ui.local[id] = ui.local[id] || {}).status = status
+      })
+    }
+    var deckUi = { mounted: false, group: null, btn: {}, theme: null }
+    function svgIcon(paths) {
+      return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>'
+    }
+    var TB_ICON = {
+      comments: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+      undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+      redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+      save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7V4"/><path d="M8 20v-6h8v6"/>',
+    }
+    /* the deck's own colours and fonts, read from its stylesheet so the edit UI matches every deck */
+    function deckTheme() {
+      var probe = document.createElement('div')
+      probe.setAttribute('aria-hidden', 'true')
+      probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none'
+      probe.innerHTML = '<span class="font-body text-ink">a</span><span class="font-heading text-muted">a</span><span class="bg-brand"></span><span class="bg-warning"></span><span class="bg-danger"></span>'
+      document.body.appendChild(probe)
+      var c = probe.children
+      var cs = function (i) { return getComputedStyle(c[i]) }
+      var t = { body: cs(0).fontFamily, ink: cs(0).color, heading: cs(1).fontFamily, muted: cs(1).color, brand: cs(2).backgroundColor, warning: cs(3).backgroundColor, danger: cs(4).backgroundColor }
+      probe.remove()
+      var unset = function (v) { return !v || v === 'rgba(0, 0, 0, 0)' || v === 'transparent' }
+      var rgb = function (v, dflt) { var m = /rgba?\(([^)]+)\)/.exec(v || ''); return m ? m[1].split(',').slice(0, 3).map(function (x) { return x.trim() }).join(',') : dflt }
+      var muted = rgb(t.muted, '107,127,149')
+      return {
+        font: t.body || 'inherit',
+        heading: t.heading || t.body || 'inherit',
+        ink: t.ink || '#0f172a',
+        muted: 'rgb(' + muted + ')',
+        line: 'rgba(' + muted + ',.2)',
+        hover: 'rgba(' + muted + ',.1)',
+        brand: unset(t.brand) ? '#2D63FB' : t.brand,
+        warning: unset(t.warning) ? '#f59e0b' : t.warning,
+        danger: unset(t.danger) ? '#ef4444' : t.danger,
+      }
+    }
+    function applyTheme() {
+      var th = (deckUi.theme = deckTheme())
+      var map = { font: '--d-font', heading: '--d-heading', ink: '--d-ink', muted: '--d-muted', line: '--d-line', hover: '--d-hover', brand: '--d-brand', warning: '--d-warning', danger: '--d-danger' }
+      for (var k in map) {
+        host.style.setProperty(map[k], th[k])
+        document.documentElement.style.setProperty(map[k].replace('--d-', '--deck-site-'), th[k])
+      }
+      var css = document.createElement('style')
+      css.id = 'deck-site-edit-css'
+      css.textContent = EDIT_LIGHT_CSS
+      document.head.appendChild(css)
+    }
+    function findFullscreen() {
+      var all = document.querySelectorAll('button[aria-label]')
+      var pick = null
+      for (var i = 0; i < all.length; i++) {
+        var b = all[i]
+        if (b.closest('[data-site-tb-group]') || !/fullscreen/i.test(b.getAttribute('aria-label'))) continue
+        if (b.offsetParent !== null) return b
+        pick = pick || b
+      }
+      return pick
+    }
+    function buildGroup(fs) {
+      var btnCls = fs.className
+      var prev = fs.previousElementSibling
+      var sepCls = prev && prev.tagName === 'SPAN' && prev.getAttribute('aria-hidden') === 'true' ? prev.className : 'mx-0.5 h-5 w-px shrink-0 bg-muted/25'
+      var sep = '<span aria-hidden="true" class="' + sepCls + '"></span>'
+      var b = function (key, label, extra) {
+        return '<button type="button" data-site-tb="' + key + '" class="' + (key === 'save' ? btnCls.replace(/\bw-8\b/, '') : btnCls) + '" aria-label="' + label + '" title="' + label + '">' + svgIcon(TB_ICON[key]) + (extra || '') + '</button>'
+      }
+      var g = document.createElement('span')
+      g.setAttribute('data-site-tb-group', '')
+      g.style.display = 'contents' /* the buttons join the toolbar's own flex row, gap and all */
+      g.innerHTML =
+        b('comments', 'Comments', '<span data-site-n hidden></span>') + sep +
+        b('undo', 'Undo (Ctrl+Z)') + b('redo', 'Redo (Ctrl+Shift+Z)') +
+        b('save', 'Save', '<span data-site-lbl></span><span data-site-dot hidden></span>') + sep
+      ;['comments', 'undo', 'redo', 'save'].forEach(function (k) {
+        var el = g.querySelector('[data-site-tb="' + k + '"]')
+        deckUi.btn[k] = el
+        el.addEventListener('click', function (e) {
+          e.stopPropagation()
+          if (k === 'comments') openComments()
+          else if (k === 'undo') undoBtn.click()
+          else if (k === 'redo') redoBtn.click()
+          else saveBtn.click()
+        })
+      })
+      return g
+    }
+    function mountToolbar() {
+      var fs = findFullscreen()
+      if (!fs) return false
+      if (!deckUi.group) deckUi.group = buildGroup(fs)
+      if (deckUi.group.nextElementSibling !== fs || !deckUi.group.isConnected) {
+        fs.parentNode.insertBefore(deckUi.group, fs)
+        fitToolbar()
+      }
+      return true
+    }
+    /* a narrow toolbar (the deck's phone layout) must not overflow: the added buttons get narrower and lose their dividers */
+    function fitToolbar() {
+      var g = deckUi.group
+      if (!g || !g.parentElement) return
+      var row = g.parentElement
+      g.removeAttribute('data-compact')
+      if (row.scrollWidth > row.clientWidth + 1) g.setAttribute('data-compact', '')
+    }
+    window.addEventListener('resize', function () { setTimeout(fitToolbar, 50) })
+    function openComments() {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {})
+      if (ui.open && ui.tab === 'comments') return setOpen(false)
+      if (ui.tab !== 'comments') $('.tabs button[data-tab="comments"]').click()
+      if (!ui.open) setOpen(true)
+    }
+
+    /* the deck's slide grid ("Jump to a slide"): Skip / Delete and the slide's state on every card */
+    function gridCards() {
+      var out = []
+      var cards = document.querySelectorAll('div[role="button"][tabindex="0"]')
+      for (var i = 0; i < cards.length; i++) {
+        var num = cards[i].querySelector(':scope > span > span.font-mono')
+        if (num && /^\d{1,3}$/.test(num.textContent.trim())) out.push({ el: cards[i], num: num })
+      }
+      return out
+    }
+    var ST_LABEL = { visible: 'visible', skipped: 'skipped', deleted: 'deleted' }
+    function syncGrid(d) {
+      var cards = gridCards()
+      var gridOpen = cards.length > 0 || !!document.querySelector('input[placeholder*="or number"]')
+      var nav = root.querySelector('.topnav')
+      if (nav) nav.classList.toggle('under-grid', gridOpen) /* the bar would cover the grid's search */
+      cards.forEach(function (c) {
+        var s = d.slides[parseInt(c.num.textContent, 10) - 1]
+        if (!s) return
+        var id = s.id
+        var card = c.el
+        var x = eff(id).status
+        var dirty = !!(ui.local[id] && ui.local[id].status !== undefined)
+        if (card.getAttribute('data-site-id') !== id) card.setAttribute('data-site-id', id)
+        if (card.getAttribute('data-site-status') !== x) card.setAttribute('data-site-status', x)
+        var pill = c.num.parentNode.querySelector('[data-site-st]')
+        if (!pill) {
+          pill = document.createElement('span')
+          pill.setAttribute('data-site-st', '')
+          c.num.parentNode.appendChild(pill)
+        }
+        var ptext = ST_LABEL[x] + (dirty ? ' · unsaved' : '')
+        if (pill.textContent !== ptext) pill.textContent = ptext
+        if (pill.getAttribute('data-st') !== x) pill.setAttribute('data-st', x)
+        var row = card.querySelector(':scope > [data-site-ctl]')
+        if (!row) {
+          row = document.createElement('span')
+          row.setAttribute('data-site-ctl', '')
+          row.className = 'mt-2 flex items-center gap-1.5'
+          row.innerHTML =
+            '<button type="button" data-act="skip" class="rounded-pill border border-white/20 px-2 py-0.5 font-heading text-[11px] font-semibold text-white/85 transition-colors hover:bg-white/15"></button>' +
+            '<button type="button" data-act="delete" class="rounded-pill border border-white/20 px-2 py-0.5 font-heading text-[11px] font-semibold text-white/85 transition-colors hover:border-danger/70 hover:bg-danger/25"></button>'
+          row.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-act]')
+            e.stopPropagation() /* a press on a control must not also jump to the slide */
+            e.preventDefault()
+            if (!btn) return
+            var sid = card.getAttribute('data-site-id')
+            var cur = eff(sid).status
+            if (btn.getAttribute('data-act') === 'skip') setStatus(sid, cur === 'skipped' ? 'visible' : 'skipped')
+            else setStatus(sid, cur === 'deleted' ? 'visible' : 'deleted')
+          })
+          /* Enter / Space press the control, not the card under it; every other key (Esc, arrows) still reaches the grid */
+          row.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+          })
+          card.appendChild(row)
+        }
+        var sk = row.firstChild
+        var dl = row.lastChild
+        var skT = x === 'skipped' ? 'Unskip' : 'Skip'
+        var dlT = x === 'deleted' ? 'Restore' : 'Delete'
+        if (sk.textContent !== skT) {
+          sk.textContent = skT
+          sk.setAttribute('aria-label', x === 'skipped' ? 'Unskip this slide' : 'Skip this slide')
+        }
+        if (dl.textContent !== dlT) {
+          dl.textContent = dlT
+          dl.setAttribute('aria-label', x === 'deleted' ? 'Restore this slide' : 'Delete this slide')
+        }
+      })
+    }
+
+    function syncDeckUi(d, cid, oc, nc) {
+      deckUi.mounted = mountToolbar()
+      $('.tab-open').hidden = ui.open || deckUi.mounted
+      badge.style.left = ui.open && !phone.matches ? '' : '50%'
+      if (deckUi.mounted) {
+        var B = deckUi.btn
+        var cn = B.comments.querySelector('[data-site-n]')
+        cn.hidden = !oc
+        cn.textContent = oc ? String(oc) : ''
+        var ct = oc ? 'Comments (' + oc + ' on this slide)' : 'Comments'
+        if (B.comments.title !== ct) {
+          B.comments.title = ct
+          B.comments.setAttribute('aria-label', ct)
+        }
+        B.comments.toggleAttribute('data-on', ui.open && ui.tab === 'comments')
+        B.undo.disabled = undoBtn.disabled
+        B.redo.disabled = redoBtn.disabled
+        var building = !!(ui.saving || ui.pending)
+        B.save.disabled = saveBtn.disabled
+        B.save.toggleAttribute('data-building', building)
+        var lbl = B.save.querySelector('[data-site-lbl]')
+        var lt = building ? 'Building…' : ''
+        if (lbl.textContent !== lt) lbl.textContent = lt
+        B.save.querySelector('[data-site-dot]').hidden = !(nc > 0 && !building)
+        var st = saveBtn.textContent + (saveBtn.title ? ' · ' + saveBtn.title : '')
+        if (B.save.title !== st) {
+          B.save.title = st
+          B.save.setAttribute('aria-label', st)
+        }
+      }
+      syncGrid(d)
+    }
+    if (EDIT) applyTheme()
 
     /* --- auth gate (shared) --- */
     function showGate(why) {
@@ -1176,6 +1405,34 @@
     }
   }
 
+  /* light-DOM styles for the controls placed INSIDE the deck (edit mode only); colours come from the deck */
+  var EDIT_LIGHT_CSS = [
+    '[data-site-tb]{position:relative}',
+    '[data-site-tb][data-on]{background:var(--deck-site-hover);color:var(--deck-site-ink)}',
+    '[data-site-tb-group][data-compact] [data-site-tb]{width:36px!important;min-width:36px!important;padding:0!important}',
+    '[data-site-tb-group][data-compact] [data-site-lbl]{display:none}',
+    '[data-site-tb-group][data-compact]>span[aria-hidden]{display:none}',
+    '[data-site-tb="save"]{min-width:32px;padding:0 8px;gap:6px}',
+    '[data-site-tb="save"][data-building]{opacity:.8!important}',
+    '[data-site-lbl]{font-size:11.5px;font-weight:600;line-height:1;white-space:nowrap}',
+    '[data-site-lbl]:empty{display:none}',
+    '[data-site-dot]{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--deck-site-brand);box-shadow:0 0 0 2px #fff}',
+    '[data-site-n]{position:absolute;top:1px;right:0;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--deck-site-brand);color:#fff;font-size:9.5px;font-weight:700;line-height:14px;text-align:center}',
+    '[data-site-dot][hidden],[data-site-n][hidden]{display:none}',
+    /* grid cards: the state pill in the kit's badge style, and the card dimmed like the kit's own skipped card */
+    '[data-site-st]{border-radius:999px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}',
+    '[data-site-st][data-st="skipped"]{background:var(--deck-site-warning);color:#0b1020}',
+    '[data-site-st][data-st="deleted"]{background:var(--deck-site-danger);color:#fff}',
+    '[data-site-status="skipped"]>span.block:first-child{opacity:.4}',
+    '[data-site-status="deleted"]>span.block:first-child{opacity:.25;filter:grayscale(1)}',
+    '[data-site-status="skipped"]>span.truncate,[data-site-status="deleted"]>span.truncate{text-decoration:line-through;color:rgba(255,255,255,.45)}',
+    /* the kit classes may be missing from a deck stylesheet: the same values, spelled out */
+    '[data-site-ctl]{display:flex;align-items:center;gap:6px;margin-top:8px}',
+    '[data-site-ctl] button{border-radius:999px;border:1px solid rgba(255,255,255,.2);padding:2px 8px;font-family:var(--deck-site-heading);font-size:11px;font-weight:600;color:rgba(255,255,255,.85);background:transparent;cursor:pointer;transition:background-color .15s,border-color .15s}',
+    '[data-site-ctl] button:hover{background:rgba(255,255,255,.15)}',
+    '[data-site-ctl] button[data-act="delete"]:hover{border-color:var(--deck-site-danger);background:rgba(239,68,68,.25)}',
+  ].join('\n')
+
   var CSS = [
     ':host{all:initial}',
     '*{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
@@ -1288,6 +1545,39 @@
     '.badge{pointer-events:none;position:fixed;top:12px;left:calc((100% - ' + DOCK_W + 'px) / 2);transform:translateX(-50%);max-width:min(560px,calc(100vw - ' + (DOCK_W + 40) + 'px));padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;',
     'color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.25)}',
     '.badge.deleted{background:rgba(185,28,28,.92)}.badge.skipped{background:rgba(180,83,9,.92)}',
+    /* EDIT MODE: the panel wears the deck toolbar's look (translucent white, blur, the deck's ring, fonts and colours) */
+    '.panel.edit{top:12px;right:12px;bottom:12px;width:' + (DOCK_W - 24) + 'px;border-radius:22px;border:1px solid var(--d-line);background:rgba(255,255,255,.85);',
+    'backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 12px 36px rgba(15,23,42,.16);color:var(--d-ink);transition:transform .2s ease-out,opacity .2s ease-out}',
+    '.panel.edit,.panel.edit *{font-family:var(--d-font)}',
+    '.panel.edit .deck,.panel.edit .cur-h,.panel.edit .tabs button,.panel.edit .list-h,.panel.edit .who{font-family:var(--d-heading)}',
+    '.panel.edit .cur-id,.panel.edit .hint{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}',
+    '.panel.edit.hide{transform:translateX(calc(100% + 24px));opacity:0}',
+    '.panel.edit .pill{background:var(--d-brand)}',
+    '.panel.edit button{border-radius:999px;transition:background-color .15s,color .15s,border-color .15s}',
+    '.panel.edit button:not(.primary):not(.icon):not(.link){border-color:var(--d-line);background:rgba(255,255,255,.7);color:var(--d-ink)}',
+    '.panel.edit button:not(.primary):not(.icon):not(.link):hover:not(:disabled){background:var(--d-hover)}',
+    '.panel.edit .icon{color:var(--d-muted);border-radius:999px}.panel.edit .icon:hover{background:var(--d-hover);color:var(--d-ink)}',
+    '.panel.edit .primary{background:var(--d-brand);border-color:var(--d-brand);color:#fff}',
+    '.panel.edit .primary:disabled{opacity:.45}',
+    '.panel.edit .cur{border-color:var(--d-line);border-radius:16px;background:rgba(255,255,255,.6)}',
+    '.panel.edit .cur-label,.panel.edit .hint,.panel.edit .when,.panel.edit .as,.panel.edit .empty,.panel.edit .resolved-toggle,.panel.edit .cur-id{color:var(--d-muted)}',
+    '.panel.edit .tabs{border-color:var(--d-line);border-radius:999px;background:var(--d-hover)}',
+    '.panel.edit .tabs button:not(.primary):not(.icon):not(.link){border:none;background:transparent;color:var(--d-muted)}',
+    '.panel.edit .tabs button.on:not(.primary):not(.icon):not(.link){background:#fff;color:var(--d-ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}',
+    /* the slide's status keeps its meaning colours (same as before) */
+    '.panel.edit .seg button.on[data-status=visible]:not(.primary){background:#ecfdf5;border-color:#10b981;color:#065f46;font-weight:700}',
+    '.panel.edit .seg button.on[data-status=skipped]:not(.primary){background:#fffbeb;border-color:#f59e0b;color:#92400e;font-weight:700}',
+    '.panel.edit .seg button.on[data-status=deleted]:not(.primary){background:#fef2f2;border-color:#ef4444;color:#991b1b;font-weight:700}',
+    '.panel.edit .thread,.panel.edit .list{border-color:var(--d-line);border-radius:14px;background:rgba(255,255,255,.7)}',
+    '.panel.edit textarea,.panel.edit select{border-color:var(--d-line);border-radius:12px;background:rgba(255,255,255,.8);color:var(--d-ink)}',
+    '.panel.edit .composer{border-top-color:var(--d-line)}',
+    '.panel.edit .link{color:var(--d-brand)}.panel.edit .m-tools .link{color:var(--d-muted)}',
+    '.panel.edit .msg.sticky{color:var(--d-brand)}',
+    '.panel.edit .list li{border-bottom-color:var(--d-line)}.panel.edit .list li:hover{background:var(--d-hover)}',
+    '.panel.edit .list li.here{background:var(--d-hover);box-shadow:inset 3px 0 0 var(--d-brand)}',
+    '.panel.edit .dot{background:var(--d-brand)}',
+    '.panel.edit .avatar{background:var(--d-hover);color:var(--d-ink)}',
+    '.topnav.under-grid{display:none}',
     '.gate{pointer-events:auto;position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}',
     '.gate-box{background:#fff;color:#111827;border-radius:14px;padding:20px;width:min(380px,100%);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.35)}',
     '.gate-box h2{margin:0;font-size:18px}.gate-box p{margin:0;color:#4b5563;font-size:13px}',
@@ -1296,6 +1586,8 @@
     '[hidden]{display:none!important}',
     /* phone: the panel docks along the bottom and the deck takes the top half */
     '@media (max-width:760px){.panel{top:auto;left:0;width:auto;height:48dvh;border-left:none;border-top:1px solid #e5e7eb;box-shadow:0 -8px 24px rgba(15,23,42,.12)}',
-    '.panel.hide{transform:translateY(100%)}.badge{left:50%;max-width:calc(100vw - 24px)}}',
+    '.panel.hide{transform:translateY(100%)}.badge{left:50%;max-width:calc(100vw - 24px)}',
+    '.panel.edit{top:auto;left:8px;right:8px;bottom:8px;width:auto;height:calc(48dvh - 8px);border-radius:20px;border:1px solid var(--d-line)}',
+    '.panel.edit.hide{transform:translateY(calc(100% + 16px))}}',
   ].join('\n')
 })()
