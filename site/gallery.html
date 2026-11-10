@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presentation Decks</title>
+<meta name="description" content="Every course, session and slide deck, with shareable links.">
+<link rel="stylesheet" href="%BASE%site-assets/gallery.css?v=%ASSET_VERSION%">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Presentation Decks</h1>
+      <p class="sub" id="summary"></p>
+    </div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search decks, sessions, courses…" autocomplete="off" aria-label="Search decks">
+      <kbd>/</kbd>
+    </label>
+  </div>
+</header>
+<main class="wrap" id="gallery" aria-live="polite"></main>
+<p class="wrap empty" id="empty" hidden>No decks match “<span id="qe"></span>”.</p>
+<footer class="wrap foot"><span id="build"></span></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>window.__MANIFEST__=/*MANIFEST*/null</script>
+<script src="%BASE%site-assets/gallery.js?v=%ASSET_VERSION%"></script>
+</body>
+</html>

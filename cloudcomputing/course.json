@@ -1,0 +1,13 @@
+{
+  "title": "Cloud Computing",
+  "sessions": [
+    "cloud_computing_fundamentals",
+    "deployment_and_service_models",
+    "setting_up_your_aws_account",
+    "virtualization_and_hypervisors",
+    "containers_vs_virtual_machines",
+    "cloud_networking_and_vpc",
+    "load_balancing_and_cdn",
+    "block_file_and_object_storage"
+  ]
+}

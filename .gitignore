@@ -3,3 +3,6 @@ dist/
 .env*
 .local-secrets.txt
 .dev.vars
+_site/
+.wrangler/
+tests/.artifacts/
