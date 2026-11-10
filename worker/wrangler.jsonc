@@ -1,0 +1,25 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "presentation-decks-live",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "presentation-decks-live",
+      "database_id": "1b34c66f-57fe-4a30-85a1-8934bc082f9b"
+    }
+  ],
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "vars": {
+    "REPO": "vinjamuriganeshmourya/Presentation_Decks",
+    "BRANCH": "main",
+    "SITE_URL": "https://vinjamuriganeshmourya.github.io/Presentation_Decks/",
+    "ALLOWED_ORIGINS": "https://vinjamuriganeshmourya.github.io,http://localhost:8080,http://127.0.0.1:8080"
+  }
+  // Secrets (set with `wrangler secret put`, never committed):
+  //   EDITOR_PASSWORD    the editors' shared password
+  //   DEPLOY_HOOK_TOKEN  bearer token the Pages workflow uses to report a deploy
+  //   GH_TOKEN           fine-grained PAT, this repo only, Contents: read/write
+}
