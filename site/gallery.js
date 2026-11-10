@@ -54,11 +54,12 @@
             '<div class="actions">' +
             '<a class="btn primary" href="' + esc(url) + '">Open</a>' +
             '<button class="btn" data-copy="' + esc(url) + '">Copy link</button>' +
+            '<a class="btn edit" href="' + esc(url) + '?edit=1" title="Open this deck in edit mode">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>Edit</a>' +
             '</div>' +
             '<div class="actions">' +
             '<label class="slide-link">Slide <input type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Slide number for ' + esc(d.title) + '"></label>' +
             '<button class="btn small" data-slide="' + esc(url) + '">Copy slide link</button>' +
-            '<a class="edit-link" href="' + esc(url) + '?edit=1">Edit</a>' +
             '</div>' +
             '</div>'
         })
