@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
-  "slides": {},
+  "slides": {
+    "T01": {
+      "status": "skipped"
+    }
+  },
   "threads": {
     "mwajmmi143wqiv": {
       "replies": {},
