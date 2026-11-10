@@ -1,0 +1,9 @@
+{
+  "name": "presentation-decks",
+  "private": true,
+  "description": "Course decks published to GitHub Pages; local helper scripts.",
+  "scripts": {
+    "review": "node scripts/review.mjs",
+    "setup-hooks": "git config core.hooksPath .githooks && echo \"git hooks enabled: review copies refresh after every pull\""
+  }
+}

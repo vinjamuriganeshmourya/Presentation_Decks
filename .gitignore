@@ -6,3 +6,6 @@ dist/
 _site/
 .wrangler/
 tests/.artifacts/
+
+# local review copies (npm run review)
+review/

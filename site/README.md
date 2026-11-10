@@ -55,6 +55,15 @@ deck's module. student.js cuts the fence out, restores the module and injects
 `window.__DECK_STATE__ = {view:'student', hidden, edits}` before the first
 script, which is the same file the decks' own presenter Download button writes.
 
+## Review comments locally
+
+The site commits every comment to `<course>/<session>/edits/<deck>.json`. To read them inside the deck after `git pull`:
+
+- **Set up once per clone:** `npm run setup-hooks`. From then on every `git pull`, including `git pull --rebase`, refreshes the review copies. The hooks are `.githooks/post-merge` and `.githooks/post-rewrite`, and they never block a pull: on a problem they print one warning line.
+- **Run by hand:** `npm run review` shows open comments; `npm run review -- --all` includes resolved ones. It prints how many decks and open comments there are, and the folder to open.
+- **Open** `review/<course>/<session>/<deck>.html` (gitignored) straight from disk: no server or network is needed. The deck opens in its presenter view. The toolbar comment icon shows the reviewers' comments in the deck's own comment panel, labelled *Review comment · read-only*, with author and time. Skipped and deleted slides stay in the deck and carry a small tag, on the slide and on their grid card. Comments whose slide id the deck no longer has (for example after a regeneration) are listed under *Comments not matched to a slide*.
+- The copy is the published HTML plus one inline script; the original in `dist-single/` is only read. The copy keeps its own browser storage (`nxtwave.review.*`), so it never changes the original deck's local skips, edits or comments. Review comments are never stored, and comments you add in the copy stay in the copy.
+
 ## Operations
 
 - Secrets: `EDITOR_PASSWORD`, `DEPLOY_HOOK_TOKEN`, `GH_TOKEN` on the Worker (`npx wrangler secret put …` in `worker/`); `DEPLOY_HOOK_TOKEN` also as a GitHub Actions secret. Local copies of the generated ones: `.local-secrets.txt` (gitignored).

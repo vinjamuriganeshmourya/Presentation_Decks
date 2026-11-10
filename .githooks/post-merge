@@ -1,0 +1,12 @@
+#!/bin/sh
+# After `git pull` (merge): refresh the local review copies (review/, gitignored).
+# Never fails or blocks the pull: any problem is a one-line warning.
+cd "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || exit 0
+if command -v npm >/dev/null 2>&1; then
+  npm run --silent review -- --hook || echo "review: warning: review copies not updated (run \"npm run review\")"
+elif command -v node >/dev/null 2>&1; then
+  node scripts/review.mjs --hook || echo "review: warning: review copies not updated (run \"npm run review\")"
+else
+  echo "review: warning: node/npm not found, review copies not updated"
+fi
+exit 0
