@@ -97,13 +97,14 @@ kbd { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); border: 1p
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn:focus-visible, .slide-link input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:disabled { opacity: 0.6; cursor: progress; }
 .btn.small { padding: 6px 10px; font-size: 13px; min-height: 34px; }
 .slide-link { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
 .slide-link input {
   width: 64px; font: inherit; font-size: 13px; color: var(--text); background: var(--chip);
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
 }
-.btn.edit svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn.edit svg, .btn.icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 3px; }
 .empty { color: var(--muted); padding-top: 40px; padding-bottom: 40px; }
 .foot { color: var(--muted); font-size: 12px; padding-top: 28px; padding-bottom: 32px; }

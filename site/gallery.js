@@ -56,6 +56,8 @@
             '<button class="btn" data-copy="' + esc(url) + '">Copy link</button>' +
             '<a class="btn edit" href="' + esc(url) + '?edit=1" title="Open this deck in edit mode">' +
             '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>Edit</a>' +
+            '<button class="btn icon-btn" data-download="' + esc(url) + '" title="Download the student view: one offline HTML file, skipped and deleted slides left out, no comments or editing">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Download</button>' +
             '</div>' +
             '<div class="actions">' +
             '<label class="slide-link">Slide <input type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Slide number for ' + esc(d.title) + '"></label>' +
@@ -104,7 +106,24 @@
     }
   }
 
+  function download(b) {
+    if (b.disabled) return
+    if (!window.DeckStudent) return toast('Download is not available. Reload the page and try again.')
+    var label = b.lastChild
+    b.disabled = true
+    label.textContent = 'Preparing…'
+    window.DeckStudent.fromUrl(b.getAttribute('data-download'), M.workerUrl)
+      .then(function (r) { toast('Downloaded ' + r.name) })
+      .catch(function (err) { toast('Download failed: ' + ((err && err.message) || 'unknown error')) })
+      .then(function () {
+        b.disabled = false
+        label.textContent = 'Download'
+      })
+  }
+
   document.addEventListener('click', function (e) {
+    var dl = e.target.closest('[data-download]')
+    if (dl) return download(dl)
     var b = e.target.closest('[data-copy],[data-slide]')
     if (!b) return
     if (b.hasAttribute('data-copy')) return copy(b.getAttribute('data-copy'))

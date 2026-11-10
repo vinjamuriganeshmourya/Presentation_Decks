@@ -364,10 +364,15 @@
     root.innerHTML =
       '<style>' + CSS + '</style>' +
       '<div class="badge" hidden></div>' +
-      '<button class="fab" hidden title="Comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="fab-n"></span></button>' +
+      '<div class="fabs">' +
+      '<button class="fab dl" hidden title="Download the student view (one offline HTML file, no comments or editing)" aria-label="Download the student view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></button>' +
+      '<button class="fab cmt" hidden title="Comments"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="fab-n"></span></button>' +
+      '</div>' +
+      '<div class="toast" role="status" aria-live="polite"></div>' +
       '<aside class="panel ' + (EDIT ? 'edit' : 'view') + '" aria-label="' + (EDIT ? 'Edit panel' : 'Comments') + '">' +
       '  <header><div class="ttl"><span class="pill">' + (EDIT ? 'Edit mode' : 'Comments') + '</span><span class="deck"></span></div>' +
-      '    <button class="icon close" title="' + (EDIT ? 'Collapse panel' : 'Close comments') + '">✕</button></header>' +
+      '    <div class="hbtns"><button class="ghost dl-h" title="Download the student view: ' + (EDIT ? 'the deck as set in this panel, unsaved changes included,' : 'the deck as it is shown here,') + ' as one offline HTML file without comments or editing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Download</button>' +
+      '    <button class="icon close" title="' + (EDIT ? 'Collapse panel' : 'Close comments') + '">✕</button></div></header>' +
       '  <section class="cur">' +
       '    <div class="cur-h"><span class="cur-n"></span><span class="cur-id"></span></div>' +
       '    <div class="cur-label"></div>' +
@@ -407,7 +412,9 @@
     var $ = function (sel) { return root.querySelector(sel) }
     var panel = $('.panel')
     var badge = $('.badge')
-    var fab = $('.fab')
+    var fab = $('.fab.cmt')
+    var dlFab = $('.fab.dl')
+    var toastEl = $('.toast')
     var msgEl = $('.msg')
     var threadsEl = $('.threads')
     var composer = $('.composer')
@@ -738,6 +745,7 @@
 
       var oc = cid ? openCount(cid) : 0
       fab.hidden = EDIT || ui.open || !!document.fullscreenElement
+      dlFab.hidden = fab.hidden
       fab.classList.toggle('has', oc > 0)
       root.querySelector('.fab-n').textContent = oc ? String(oc) : ''
       fab.title = oc ? oc + ' comment' + (oc === 1 ? '' : 's') + ' on this slide' : 'Comments'
@@ -888,6 +896,49 @@
     })
 
     /* --- save (edit mode, slide status) --- */
+    /* --- student download: the deck without the site layer, as one offline file --- */
+    function toast(text, sticky) {
+      toastEl.textContent = text
+      toastEl.classList.add('on')
+      clearTimeout(toast.t)
+      if (!sticky) toast.t = setTimeout(function () { toastEl.classList.remove('on') }, 4500)
+    }
+    function doDownload() {
+      var btns = [dlFab, $('.dl-h')]
+      if (doDownload.busy) return
+      if (!window.DeckStudent) return toast('Download is not available on this page yet. Reload and try again.')
+      doDownload.busy = true
+      btns.forEach(function (b) { b.disabled = true })
+      toast('Preparing the student view…', true)
+      var all = (ui.deck && ui.deck.all) || []
+      var unsaved = EDIT ? changeCount() : 0
+      var job = EDIT
+        ? /* what this panel shows, unsaved changes included */
+          window.DeckStudent.fromState(
+            { hidden: all.map(function (s) { return s.id }).filter(function (id) { return eff(id).status !== 'visible' }), edits: SITE.textEdits || {} },
+            { title: SITE.title }
+          )
+        : /* what every viewer sees right now, fetched fresh */
+          window.DeckStudent.fromUrl(location.pathname, WORKER)
+      job
+        .then(function (r) {
+          var shown = all.length ? all.length - r.hidden : 0
+          toast(
+            'Downloaded ' + r.name + (shown ? ' · ' + shown + ' slide' + (shown === 1 ? '' : 's') : '') +
+              (unsaved ? ' · includes ' + unsaved + ' unsaved change' + (unsaved === 1 ? '' : 's') : '')
+          )
+        })
+        .catch(function (err) {
+          toast('Download failed: ' + ((err && err.message) || 'unknown error'))
+        })
+        .then(function () {
+          doDownload.busy = false
+          btns.forEach(function (b) { b.disabled = false })
+        })
+    }
+    dlFab.addEventListener('click', doDownload)
+    $('.dl-h').addEventListener('click', doDownload)
+
     function doSave() {
       if (ui.saving || ui.pending || !changeCount()) return
       ui.saving = true
@@ -1042,6 +1093,12 @@
     '.panel:not(.ready){opacity:.35;pointer-events:none}',
     '.panel.hide{transform:translateX(100%);box-shadow:none;pointer-events:none;visibility:hidden}',
     'header{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+    '.hbtns{display:flex;align-items:center;gap:4px;flex:none}',
+    '.dl-h{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;font-weight:600}',
+    '.dl-h svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
+    '.toast{pointer-events:none;position:fixed;left:16px;bottom:68px;max-width:calc(100vw - 32px);background:#111827;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;',
+    'box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.toast.on{opacity:1;transform:none}',
     '.ttl{display:flex;flex-direction:column;gap:4px;min-width:0}',
     '.pill{align-self:flex-start;background:#2d63fb;color:#fff;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px}',
     '.deck{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -1106,10 +1163,12 @@
     '.cm{font-size:11px;color:#4b5563}',
     '.dot{width:8px;height:8px;border-radius:50%;background:#2d63fb;flex:none}',
     '.tab-open{pointer-events:auto;position:fixed;right:12px;top:12px;background:#2d63fb;color:#fff;border:none;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25)}',
-    '.fab{pointer-events:auto;position:fixed;right:16px;bottom:16px;height:40px;min-width:40px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.25);',
+    '.fabs{pointer-events:none;position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}',
+    '.fab{pointer-events:auto;height:40px;min-width:40px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.25);',
     'background:rgba(17,24,39,.55);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;backdrop-filter:blur(6px);opacity:.75;transition:opacity .15s}',
     '.fab:hover,.fab.has{opacity:1}.fab.has{background:#2d63fb;border-color:#2d63fb}',
-    '.fab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}',
+    '.fab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}',
+    '.fab[hidden]{display:none}.fab:disabled{opacity:.5;cursor:progress}',
     '.fab-n:empty{display:none}',
     '.badge{pointer-events:none;position:fixed;top:12px;left:calc((100% - ' + DOCK_W + 'px) / 2);transform:translateX(-50%);max-width:min(560px,calc(100vw - ' + (DOCK_W + 40) + 'px));padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;',
     'color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.25)}',

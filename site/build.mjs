@@ -178,12 +178,18 @@ function bakedSlides(fileState, edits) {
   return out
 }
 
+/* keep in step with site/student.js */
+const SITE_START = '<!--deck-site-->'
+const SITE_END = '<!--/deck-site-->'
+const HELD_MODULE = '<script type="text/x-deck-module" id="deck-main">'
+
 function transformDeck(srcHtml, site) {
   let { html, fileState } = takeFileState(srcHtml)
   const modRe = /<script type="module"(?:\s+crossorigin(?:="[^"]*")?)?\s*>/
   const m = modRe.exec(html)
   if (!m) throw new Error(`${site.id}: no module script found`)
-  html = html.slice(0, m.index) + '<script type="text/x-deck-module" id="deck-main">' + html.slice(m.index + m[0].length)
+  if (html.includes(SITE_START) || html.includes(HELD_MODULE)) throw new Error(`${site.id}: deck already contains the site markers`)
+  html = html.slice(0, m.index) + HELD_MODULE + html.slice(m.index + m[0].length)
   return { html, fileState }
 }
 
@@ -203,20 +209,23 @@ function rmrf(p) {
   fs.rmSync(p, { recursive: true, force: true })
 }
 
+/** Copied to site-assets/; their hash versions every URL that loads them. */
+const SITE_ASSETS = ['overlay.js', 'student.js', 'gallery.js', 'gallery.css']
+
 function build() {
   const courses = discover()
   rmrf(OUT)
   fs.mkdirSync(OUT, { recursive: true })
   fs.mkdirSync(path.join(OUT, 'site-assets'), { recursive: true })
-  for (const f of ['overlay.js', 'gallery.js', 'gallery.css']) {
+  for (const f of SITE_ASSETS) {
     fs.copyFileSync(path.join(HERE, f), path.join(OUT, 'site-assets', f))
   }
   const assetVersion = createHash('sha1')
-    .update(['overlay.js', 'gallery.js', 'gallery.css'].map((f) => fs.readFileSync(path.join(HERE, f))).join('\n'))
+    .update(SITE_ASSETS.map((f) => fs.readFileSync(path.join(HERE, f))).join('\n'))
     .digest('hex')
     .slice(0, 10)
 
-  const manifest = { sha: SHA, builtAt: BUILT_AT, siteBase: CONFIG.siteBase, siteUrl: CONFIG.siteUrl, courses: [] }
+  const manifest = { sha: SHA, builtAt: BUILT_AT, siteBase: CONFIG.siteBase, siteUrl: CONFIG.siteUrl, workerUrl: CONFIG.workerUrl, courses: [] }
   const seen = new Set()
   for (const course of courses) {
     const mc = { id: course.folder, title: course.title, sessions: [] }
@@ -251,9 +260,11 @@ function build() {
           threads,
           textEdits: fileState?.edits || {},
         }
+        /* everything between the markers is the site layer; student.js cuts it out again for the download */
         const tags =
-          `\n<script id="deck-site">window.__DECK_SITE__=${scriptJson(boot)}</script>` +
-          `\n<script src="../../../site-assets/overlay.js?v=${assetVersion}"></script>\n`
+          `\n${SITE_START}<script id="deck-site">window.__DECK_SITE__=${scriptJson(boot)}</script>` +
+          `\n<script src="../../../site-assets/student.js?v=${assetVersion}"></script>` +
+          `\n<script src="../../../site-assets/overlay.js?v=${assetVersion}"></script>${SITE_END}\n`
         const outDir = path.join(OUT, course.folder, session.folder, d.slug)
         fs.mkdirSync(outDir, { recursive: true })
         fs.writeFileSync(path.join(outDir, 'index.html'), injectHead(html, tags))

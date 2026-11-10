@@ -29,6 +29,22 @@ Edit service (Cloudflare Worker + D1): https://presentation-decks-live.presentat
 Skipped and deleted slides are both hidden from viewers; deleted ones are struck through in the editor and can be restored at any time.
 `#slide-N` counts the slides viewers see.
 
+## Student download
+
+Every deck can be downloaded as one offline HTML file in the deck's own student
+view: the Download button on its gallery card, the ⬇ button above 💬 on the deck,
+or Download in the comments / edit panel. Skipped and deleted slides are left
+out and saved text edits are kept. The file has no comments, edit, skip or
+delete controls. From the gallery or a normal view it is the deck as every
+viewer sees it now, including saves that are still building. From edit mode it
+is the deck as set in the panel, unsaved changes included.
+
+`site/student.js` builds it in the browser. The build fences the site layer in
+each deck page with `<!--deck-site-->` … `<!--/deck-site-->` and holds back the
+deck's module. student.js cuts the fence out, restores the module and injects
+`window.__DECK_STATE__ = {view:'student', hidden, edits}` before the first
+script, which is the same file the decks' own presenter Download button writes.
+
 ## Operations
 
 - Secrets: `EDITOR_PASSWORD`, `DEPLOY_HOOK_TOKEN`, `GH_TOKEN` on the Worker (`npx wrangler secret put …` in `worker/`); `DEPLOY_HOOK_TOKEN` also as a GitHub Actions secret. Local copies of the generated ones: `.local-secrets.txt` (gitignored).
