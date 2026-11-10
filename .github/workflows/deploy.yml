@@ -1,26 +1,61 @@
-name: Deploy to GitHub Pages
+name: Build and deploy decks
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# One deploy at a time; a newer push queued behind it replaces any older queued run.
+# Not cancel-in-progress: a deploy that is cut off half way leaves Pages in a bad state.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Assemble site
+        run: node site/build.mjs --out _site --sha "$GITHUB_SHA"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Wait until the live site serves this build
+        run: |
+          for i in $(seq 1 30); do
+            live=$(curl -fsS "https://vinjamuriganeshmourya.github.io/Presentation_Decks/build.json?t=$(date +%s%N)" | sed -n 's/.*"sha":"\([0-9a-f]*\)".*/\1/p' || true)
+            [ "$live" = "$GITHUB_SHA" ] && echo "live: $live" && exit 0
+            sleep 4
+          done
+          echo "::warning::live build.json did not report $GITHUB_SHA yet"
+      - name: Tell the edit Worker this commit is live (clears its temporary rows)
+        if: ${{ vars.WORKER_URL != '' }}
+        continue-on-error: true
+        env:
+          WORKER_URL: ${{ vars.WORKER_URL }}
+          DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
+        run: |
+          curl -fsS -X POST "$WORKER_URL/api/deployed" \
+            -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
+            -H "content-type: application/json" \
+            -d "{\"sha\":\"$GITHUB_SHA\"}"
