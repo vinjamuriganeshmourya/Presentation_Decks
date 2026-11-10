@@ -2,23 +2,19 @@
   "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
   "slides": {
     "D1": {
-      "status": "deleted"
+      "status": "visible"
     },
     "S-AGENDA": {
-      "status": "skipped"
-    },
-    "S-RECAP": {
-      "comment": "X on recap"
+      "status": "visible"
     },
     "S-TITLE": {
-      "status": "skipped"
+      "status": "visible"
     },
     "T01": {
       "comment": "E2E comment: check numbers"
     },
     "T02-C": {
-      "status": "skipped",
-      "comment": "X comment on T02-C"
+      "status": "visible"
     }
   }
 }
