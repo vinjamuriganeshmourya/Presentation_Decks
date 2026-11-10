@@ -7,6 +7,9 @@
     "S-AGENDA": {
       "status": "skipped"
     },
+    "S-RECAP": {
+      "comment": "X on recap"
+    },
     "S-TITLE": {
       "status": "skipped"
     },
@@ -14,7 +17,8 @@
       "comment": "E2E comment: check numbers"
     },
     "T02-C": {
-      "status": "skipped"
+      "status": "skipped",
+      "comment": "X comment on T02-C"
     }
   }
 }
