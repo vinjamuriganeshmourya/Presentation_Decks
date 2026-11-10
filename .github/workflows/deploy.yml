@@ -26,6 +26,16 @@ jobs:
           node-version: 22
       - name: Assemble site
         run: node site/build.mjs --out _site --sha "$GITHUB_SHA"
+      # Card thumbnails and slide counts for the gallery. Optional: without them the cards show a placeholder.
+      - name: Card thumbnails
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          PW_FROM: /tmp/pw
+        run: |
+          npm install --prefix /tmp/pw --no-save --no-audit --no-fund playwright-core@1.62.1 >/dev/null
+          export CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          node site/thumbs.mjs --out _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

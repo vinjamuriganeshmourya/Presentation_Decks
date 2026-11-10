@@ -5,25 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Presentation Decks</title>
 <meta name="description" content="Every course, session and slide deck, with shareable links.">
+<link rel="icon" type="image/png" href="%BASE%site-assets/logo-nxtwave.png?v=%ASSET_VERSION%">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="%BASE%site-assets/gallery.css?v=%ASSET_VERSION%">
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <div class="brand">
-      <h1>Presentation Decks</h1>
-      <p class="sub" id="summary"></p>
-    </div>
+<a class="skip" href="#main">Skip to decks</a>
+<header class="appbar">
+  <div class="appbar-in">
+    <a class="brand" href="%BASE%" aria-label="Presentation Decks home">
+      <img class="logo" src="%BASE%site-assets/logo-nxtwave.png?v=%ASSET_VERSION%" alt="NxtWave" width="67" height="32">
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-name">Presentation Decks</span>
+    </a>
     <label class="search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="Search decks, sessions, courses…" autocomplete="off" aria-label="Search decks">
-      <kbd>/</kbd>
+      <input id="q" type="search" placeholder="Search sessions and decks" autocomplete="off" aria-label="Search decks">
+      <kbd aria-hidden="true">/</kbd>
     </label>
   </div>
 </header>
-<main class="wrap" id="gallery" aria-live="polite"></main>
-<p class="wrap empty" id="empty" hidden>No decks match “<span id="qe"></span>”.</p>
-<footer class="wrap foot"><span id="build"></span></footer>
+
+<div class="layout">
+  <aside class="side" aria-label="Courses and sessions">
+    <nav id="side-nav"></nav>
+  </aside>
+  <main id="main" class="main" tabindex="-1">
+    <div id="gallery" aria-live="polite"></div>
+    <div class="empty" id="empty" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <p>No decks match “<span id="qe"></span>”.</p>
+      <button class="btn" id="clear-q" type="button">Clear search</button>
+    </div>
+    <footer class="foot">
+      <img class="logo small" src="%BASE%site-assets/logo-nxtwave.png?v=%ASSET_VERSION%" alt="" width="42" height="20">
+      <span id="build"></span>
+    </footer>
+  </main>
+</div>
+
+<div class="pop" id="share-pop" role="dialog" aria-label="Share" hidden>
+  <div class="pop-h">Share <span id="share-title"></span></div>
+  <button class="pop-row" type="button" data-act="copy-deck">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>
+    <span>Copy deck link</span>
+  </button>
+  <div class="pop-slide">
+    <label for="share-n">Link to slide</label>
+    <input id="share-n" type="number" min="1" step="1" value="1" inputmode="numeric">
+    <button class="btn small" type="button" data-act="copy-slide">Copy</button>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>window.__MANIFEST__=/*MANIFEST*/null</script>
 <script src="%BASE%site-assets/student.js?v=%ASSET_VERSION%"></script>

@@ -29,6 +29,13 @@ Edit service (Cloudflare Worker + D1): https://presentation-decks-live.presentat
 Skipped and deleted slides are both hidden from viewers; deleted ones are struck through in the editor and can be restored at any time.
 `#slide-N` counts the slides viewers see.
 
+## Gallery and navigation
+
+- The gallery (`site/gallery.*`) has a sidebar of sessions, search (`/`), and a card per deck. Each card has a slide thumbnail, a slide count, and **Present**, **Edit**, **Download** and **Share** (deck link or a link to slide N).
+- `#<course>/<session>` on the gallery URL scrolls to that session's card and highlights it.
+- Every deck page has a bar at the top left: **All decks** (back to the gallery, at this session), previous and next session, and a menu of all the course's sessions. It fades after 3 seconds without activity while presenting and returns on any mouse, touch or key. In edit mode, previous and next stay in edit mode.
+- Thumbnails and slide counts come from `node site/thumbs.mjs` (headless Chrome, run by CI after the build). It captures each deck's session-title slide (else its agenda) as `thumb.jpg` and writes `deck-meta.json`. If it fails, the cards show a designed placeholder and the site still deploys.
+
 ## Student download
 
 Every deck can be downloaded as one offline HTML file in the deck's own student

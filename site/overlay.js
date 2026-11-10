@@ -312,6 +312,96 @@
 
   /* ------------------------------------------------------------ UI (both modes) */
 
+  /* ------------------------------------------------------------ deck navigation (home, previous / next session, session menu) */
+
+  var NAV = SITE.nav || null
+  function navIndex() {
+    if (!NAV || !NAV.decks) return -1
+    for (var i = 0; i < NAV.decks.length; i++) if (NAV.decks[i].id === DECK) return i
+    return -1
+  }
+  function navUrl(d) {
+    return d.url + (EDIT ? '?edit=1' : '')
+  }
+  function navHtml() {
+    if (!NAV) return ''
+    var i = navIndex()
+    var list = NAV.decks || []
+    var prev = i > 0 ? list[i - 1] : null
+    var next = i >= 0 && i < list.length - 1 ? list[i + 1] : null
+    var homeHref = NAV.home + (NAV.homeAnchor ? '#' + NAV.homeAnchor : '')
+    var ICON_HOME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg>'
+    var ICON_L = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>'
+    var ICON_R = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg>'
+    var ICON_D = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>'
+    var arrow = function (d, cls, icon, word) {
+      return d
+        ? '<a class="tn-btn ' + cls + '" href="' + esc(navUrl(d)) + '" title="' + word + ' session: ' + esc(d.title) + '" aria-label="' + word + ' session: ' + esc(d.title) + '">' + icon + '</a>'
+        : '<span class="tn-btn ' + cls + ' off" aria-hidden="true">' + icon + '</span>'
+    }
+    var items = list
+      .map(function (d, k) {
+        return (
+          '<a role="menuitem" class="tn-item' + (k === i ? ' here' : '') + '" href="' + esc(navUrl(d)) + '"' + (k === i ? ' aria-current="page"' : '') + '>' +
+          '<span class="tn-num">' + d.session + '</span><span class="tn-t">' + esc(d.title) + '</span></a>'
+        )
+      })
+      .join('')
+    return (
+      '<nav class="topnav" aria-label="Deck navigation">' +
+      '<a class="tn-btn tn-home" href="' + esc(homeHref) + '" title="All decks" aria-label="All decks (home)">' + ICON_HOME + '<span>All decks</span></a>' +
+      '<span class="tn-sep" aria-hidden="true"></span>' +
+      arrow(prev, 'tn-prev', ICON_L, 'Previous') +
+      '<button class="tn-btn tn-cur" aria-haspopup="menu" aria-expanded="false" title="' + esc(NAV.course) + ': all sessions">' +
+      '<span class="tn-cur-t">' + (i >= 0 ? 'Session ' + list[i].session + ' of ' + list.length : esc(NAV.course)) + '</span>' + ICON_D + '</button>' +
+      arrow(next, 'tn-next', ICON_R, 'Next') +
+      '<div class="tn-menu" role="menu" hidden><div class="tn-h">' + esc(NAV.course) + '</div>' + items + '</div>' +
+      '</nav>'
+    )
+  }
+  /* shown on any pointer / key / touch activity, faded after a few idle seconds (like the deck's own controls) */
+  function wireNav(root) {
+    var nav = root.querySelector('.topnav')
+    if (!nav) return
+    var menu = nav.querySelector('.tn-menu')
+    var cur = nav.querySelector('.tn-cur')
+    var idleT = null
+    var hovering = false
+    function wake() {
+      nav.classList.remove('idle')
+      clearTimeout(idleT)
+      idleT = setTimeout(function () {
+        if (!hovering && menu.hidden && !nav.contains(root.activeElement)) nav.classList.add('idle')
+      }, 3000)
+    }
+    function setMenu(open) {
+      menu.hidden = !open
+      cur.setAttribute('aria-expanded', open ? 'true' : 'false')
+      if (open) {
+        var here = menu.querySelector('.here')
+        if (here) here.scrollIntoView({ block: 'nearest' })
+      }
+      wake()
+    }
+    ;['pointermove', 'pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (t) {
+      window.addEventListener(t, wake, { passive: true, capture: true })
+    })
+    nav.addEventListener('pointerenter', function () { hovering = true; wake() })
+    nav.addEventListener('pointerleave', function () { hovering = false; wake() })
+    cur.addEventListener('click', function () { setMenu(menu.hidden) })
+    window.addEventListener('pointerdown', function (e) {
+      if (!menu.hidden && e.composedPath().indexOf(nav) < 0) setMenu(false)
+    }, true)
+    nav.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !menu.hidden) {
+        e.preventDefault()
+        setMenu(false)
+        cur.focus()
+      }
+    })
+    wake()
+  }
+
   function startUi(deck) {
     var ui = {
       deck: deck,
@@ -363,6 +453,7 @@
     var root = host.attachShadow({ mode: 'open' })
     root.innerHTML =
       '<style>' + CSS + '</style>' +
+      navHtml() +
       '<div class="badge" hidden></div>' +
       '<div class="fabs">' +
       '<button class="fab dl" hidden title="Download the student view (one offline HTML file, no comments or editing)" aria-label="Download the student view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></button>' +
@@ -410,6 +501,7 @@
       '<div class="gerr"></div><div class="row"><button type="button" class="ghost gcancel">' + (EDIT ? 'View only' : 'Cancel') + '</button><button class="primary" type="submit">Sign in</button></div></form></div>'
 
     var $ = function (sel) { return root.querySelector(sel) }
+    wireNav(root)
     var panel = $('.panel')
     var badge = $('.badge')
     var fab = $('.fab.cmt')
@@ -1092,6 +1184,29 @@
     'background:#fff;color:#111827;border-left:1px solid #e5e7eb;box-shadow:-8px 0 24px rgba(15,23,42,.12);padding:14px;font-size:13px;transition:transform .2s ease}',
     '.panel:not(.ready){opacity:.35;pointer-events:none}',
     '.panel.hide{transform:translateX(100%);box-shadow:none;pointer-events:none;visibility:hidden}',
+    '.topnav{pointer-events:auto;position:fixed;left:12px;top:12px;display:flex;align-items:center;gap:2px;padding:4px;border-radius:12px;',
+    'background:rgba(17,24,39,.62);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.22);',
+    'color:#fff;font-size:13px;transition:opacity .35s ease,transform .35s ease}',
+    '.topnav.idle{opacity:0;transform:translateY(-6px);pointer-events:none}',
+    '.tn-btn{display:inline-flex;align-items:center;gap:6px;height:32px;min-width:32px;justify-content:center;padding:0 8px;border-radius:8px;border:0;background:transparent;color:#fff;',
+    'text-decoration:none;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}',
+    '.tn-btn:hover{background:rgba(255,255,255,.14)}',
+    '.tn-btn.off{opacity:.3;cursor:default}.tn-btn.off:hover{background:transparent}',
+    '.tn-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}',
+    '.tn-cur svg{width:15px;height:15px;opacity:.8}',
+    '.tn-sep{width:1px;height:20px;background:rgba(255,255,255,.22);margin:0 4px}',
+    '.tn-menu{position:absolute;left:0;top:calc(100% + 8px);min-width:300px;max-width:min(380px,calc(100vw - 24px));max-height:min(70vh,520px);overflow:auto;',
+    'background:#fff;color:#111827;border-radius:12px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.3);border:1px solid #e5e7eb}',
+    '.tn-h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;padding:8px 10px 6px}',
+    '.tn-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none;font-weight:500;line-height:1.3}',
+    '.tn-item:hover{background:#f3f4f6}',
+    '.tn-item.here{background:#eaf0ff;color:#1d4ed8;font-weight:700}',
+    '.tn-num{width:26px;height:26px;border-radius:7px;flex:none;display:grid;place-items:center;background:#f1f3f8;color:#2d63fb;font-weight:800;font-size:12px}',
+    '.tn-item.here .tn-num{background:#2d63fb;color:#fff}',
+    '.tn-btn:focus-visible,.tn-item:focus-visible{outline:2px solid #8fb0ff;outline-offset:1px}',
+    '@media (max-width:560px){.tn-home span{display:none}.tn-cur-t{max-width:120px;overflow:hidden;text-overflow:ellipsis}}',
+    /* phones: the deck's control bar fills the bottom edge, so the round buttons sit top-right beside the navigation */
+    '@media (max-width:760px){.fabs{top:12px;bottom:auto;right:12px}.toast{bottom:auto;top:64px}}',
     'header{display:flex;align-items:center;justify-content:space-between;gap:8px}',
     '.hbtns{display:flex;align-items:center;gap:4px;flex:none}',
     '.dl-h{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;font-weight:600}',

@@ -210,7 +210,7 @@ function rmrf(p) {
 }
 
 /** Copied to site-assets/; their hash versions every URL that loads them. */
-const SITE_ASSETS = ['overlay.js', 'student.js', 'gallery.js', 'gallery.css']
+const SITE_ASSETS = ['overlay.js', 'student.js', 'gallery.js', 'gallery.css', 'logo-nxtwave.png']
 
 function build() {
   const courses = discover()
@@ -229,6 +229,7 @@ function build() {
   const seen = new Set()
   for (const course of courses) {
     const mc = { id: course.folder, title: course.title, sessions: [] }
+    const pages = [] /* written once the whole course is known: every page carries the course's deck list */
     course.sessions.forEach((session, si) => {
       const ms = { id: session.folder, number: si + 1, title: null, decks: [] }
       for (const d of session.decks) {
@@ -260,14 +261,9 @@ function build() {
           threads,
           textEdits: fileState?.edits || {},
         }
-        /* everything between the markers is the site layer; student.js cuts it out again for the download */
-        const tags =
-          `\n${SITE_START}<script id="deck-site">window.__DECK_SITE__=${scriptJson(boot)}</script>` +
-          `\n<script src="../../../site-assets/student.js?v=${assetVersion}"></script>` +
-          `\n<script src="../../../site-assets/overlay.js?v=${assetVersion}"></script>${SITE_END}\n`
         const outDir = path.join(OUT, course.folder, session.folder, d.slug)
         fs.mkdirSync(outDir, { recursive: true })
-        fs.writeFileSync(path.join(outDir, 'index.html'), injectHead(html, tags))
+        pages.push({ outDir, html, boot })
         fs.writeFileSync(path.join(outDir, 'state.json'), JSON.stringify(state))
         /* a deck whose HTML points at sibling files (not single-file) keeps them */
         const assets = path.join(path.dirname(d.file), 'assets')
@@ -278,6 +274,24 @@ function build() {
       }
       mc.sessions.push(ms)
     })
+    /* deck-page navigation: home (the gallery, at this session), and every deck of the course in order */
+    const navDecks = mc.sessions.flatMap((ms) =>
+      ms.decks.map((md) => ({ id: md.id, title: md.title, session: ms.number, url: CONFIG.siteBase + md.path })),
+    )
+    for (const { outDir, html, boot } of pages) {
+      boot.nav = {
+        home: CONFIG.siteBase,
+        homeAnchor: boot.id.split('/').slice(0, 2).join('/'),
+        course: course.title,
+        decks: navDecks,
+      }
+      /* everything between the markers is the site layer; student.js cuts it out again for the download */
+      const tags =
+        `\n${SITE_START}<script id="deck-site">window.__DECK_SITE__=${scriptJson(boot)}</script>` +
+        `\n<script src="../../../site-assets/student.js?v=${assetVersion}"></script>` +
+        `\n<script src="../../../site-assets/overlay.js?v=${assetVersion}"></script>${SITE_END}\n`
+      fs.writeFileSync(path.join(outDir, 'index.html'), injectHead(html, tags))
+    }
     manifest.courses.push(mc)
   }
 
