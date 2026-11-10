@@ -1,8 +1,14 @@
 {
   "deck": "cloudcomputing/cloud_computing_fundamentals/cloud-computing-fundamentals",
-  "slides": {
-    "agenda-columns": {
-      "comment": "this is sample comment"
+  "slides": {},
+  "threads": {
+    "legacy6651a4b317": {
+      "slide": "agenda-columns",
+      "author": "vinjamuriganeshmourya",
+      "text": "this is sample comment",
+      "at": 1794295344000,
+      "replies": {},
+      "resolved": false
     }
   }
 }

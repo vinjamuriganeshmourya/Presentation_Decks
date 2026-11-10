@@ -140,6 +140,12 @@ function readThreads(p) {
     if (!t || typeof t !== 'object' || typeof t.slide !== 'string' || typeof t.text !== 'string') continue
     out[id] = { ...t, resolved: !!t.resolved, replies: t.replies && typeof t.replies === 'object' ? t.replies : {} }
   }
+  /* a single per-slide note saved by the first editor version becomes a thread, so it stays visible */
+  for (const [slide, v] of Object.entries(raw.slides || {})) {
+    if (!v || typeof v.comment !== 'string' || !v.comment.trim()) continue
+    const tid = 'legacy' + createHash('sha1').update(slide).digest('hex').slice(0, 10)
+    out[tid] ??= { slide, author: 'Editor', text: v.comment, at: Date.parse(BUILT_AT), resolved: false, replies: {} }
+  }
   return out
 }
 
