@@ -1,21 +1,4 @@
 {
   "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
-  "slides": {},
-  "threads": {
-    "mwaedezs4yi2qy": {
-      "replies": {
-        "mwaedi9srrey57": {
-          "author": "Viewer B",
-          "text": "E2E mwaedeyk reply from normal mode",
-          "at": 1794297451506
-        }
-      },
-      "resolved": true,
-      "slide": "T01",
-      "author": "Editor A",
-      "text": "E2E mwaedeyk first comment (edited)",
-      "at": 1794297447236,
-      "edited": 1794297459925
-    }
-  }
+  "slides": {}
 }
