@@ -1,0 +1,23 @@
+<svg viewBox="0 0 560 420"
+ xmlns="http://www.w3.org/2000/svg" role="img"
+ aria-label="A list of six items, one job, and an arrow going back for the next item">
+  <rect x="26" y="40" width="508" height="132" rx="16" fill="#F7FBFD"
+        stroke="#CFE6F5" stroke-width="2.5"/>
+  <text x="46" y="74" style="font:700 20px var(--sans)" fill="#0B5FA5">the list</text>
+  <g><rect x="54" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(70,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><g><rect x="132" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(148,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><g><rect x="210" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(226,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><g><rect x="288" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(304,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><g><rect x="366" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(382,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><g><rect x="444" y="92" width="62" height="62" rx="12" fill="#FFFFFF" stroke="#3FB5E5" stroke-width="2.5"/><g transform="translate(460,108) scale(1.55)" fill="#3FB5E5" opacity="1.0"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g>
+  <path d="M280 172 v46" stroke="#006DAF" stroke-width="3" fill="none"/>
+  <path d="M280 228 l-9 -14 h18 z" fill="#006DAF"/>
+  <text x="296" y="204" style="font:16px var(--sans)" fill="#5A6A75">take the next one</text>
+  <rect x="140" y="236" width="280" height="86" rx="14" fill="#EAF6FC"
+        stroke="#006DAF" stroke-width="3"/>
+  <text x="280" y="288" text-anchor="middle" style="font:700 24px var(--sans)"
+        fill="#0B5FA5">do one job</text>
+  <!-- the loop back: out of the job, left, up, and into the list again -->
+  <path d="M140 279 H54 a14 14 0 0 1 -14 -14 V190" stroke="#3FB5E5" stroke-width="3"
+        fill="none" stroke-dasharray="7 6"/>
+  <path d="M40 176 l-9 15 h18 z" fill="#3FB5E5"/>
+  <text x="150" y="352" style="font:16px var(--sans)" fill="#5A6A75">
+    when it ends, go back for the next one</text>
+  <text x="280" y="396" text-anchor="middle" style="font:700 19px var(--sans)"
+        fill="#C7454E" class="hk-never">Nowhere does it say six.</text>
+</svg>

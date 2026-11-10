@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- custom server icon (Session 6 S41, 2026-11-06): built like an AWS Architecture service icon (80x80 flat square, white 2px glyph, square corners) so it sits beside the official ELB mark; deck brand blue -->
+<svg width="80px" height="80px" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="80" height="80" fill="#0146C7"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="19" y="18" width="42" height="18" rx="2"/>
+    <rect x="19" y="42" width="42" height="18" rx="2"/>
+    <line x1="42" y1="27" x2="54" y2="27"/>
+    <line x1="42" y1="51" x2="54" y2="51"/>
+    <line x1="30" y1="60" x2="30" y2="65"/>
+    <line x1="50" y1="60" x2="50" y2="65"/>
+    <line x1="24" y1="65" x2="56" y2="65"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="26" cy="27" r="2.2"/><circle cx="33" cy="27" r="2.2"/>
+    <circle cx="26" cy="51" r="2.2"/><circle cx="33" cy="51" r="2.2"/>
+  </g>
+</svg>

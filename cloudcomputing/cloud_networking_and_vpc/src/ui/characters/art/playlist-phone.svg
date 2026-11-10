@@ -1,0 +1,73 @@
+<svg viewBox="0 0 380 700" xmlns="http://www.w3.org/2000/svg"
+ role="img" aria-label="A Spotify playlist on a phone, with a green Play button">
+<defs>
+  <clipPath id="hkclip"><rect x="0" y="0" width="380" height="700" rx="30"/></clipPath>
+  <linearGradient id="hkcover" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1ED760"/><stop offset="1" stop-color="#0B6E33"/>
+  </linearGradient>
+  <linearGradient id="hktop" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2B4A3A"/><stop offset="1" stop-color="#121212"/>
+  </linearGradient>
+</defs>
+<g clip-path="url(#hkclip)">
+  <rect x="0" y="0" width="380" height="700" fill="#121212"/>
+  <rect x="0" y="0" width="380" height="240" fill="url(#hktop)"/>
+
+  <!-- status bar -->
+  <text x="22" y="26" style="font:600 14px var(--sans)" fill="#FFFFFF">9:41</text>
+  <g fill="#FFFFFF" transform="translate(300,12)">
+    <rect x="0" y="4" width="3" height="6" rx="1"/>
+    <rect x="5" y="2" width="3" height="8" rx="1"/>
+    <rect x="10" y="0" width="3" height="10" rx="1"/>
+    <path d="M24 10 q4 -6 9 0 l-4.5 4.5 z"/>
+    <rect x="44" y="1" width="20" height="10" rx="2.5" fill="none" stroke="#FFFFFF" stroke-width="1.4"/>
+    <rect x="46" y="3" width="13" height="6" rx="1.4"/>
+  </g>
+
+  <!-- the brand, said once -->
+  <g transform="translate(32,54)"><circle cx="0" cy="0" r="11" fill="#1DB954"/><g fill="none" stroke="#121212" stroke-linecap="round"><path d="M-6.6,-2.9 C-2.7,-5.0 3.4,-4.4 6.6,-2.2" stroke-width="2.1"/><path d="M-5.3,0.7 C-2.0,-1.1 2.9,-0.7 5.5,1.0" stroke-width="1.9"/><path d="M-4.1,3.9 C-1.6,2.6 2.0,2.9 4.2,4.2" stroke-width="1.6"/></g></g>
+  <text x="50" y="59" style="font:700 16px var(--sans)" fill="#FFFFFF">Spotify</text>
+
+  <!-- the playlist header -->
+  <g>
+    <rect x="22" y="78" width="80" height="80" rx="6" fill="url(#hkcover)"/>
+    <g transform="translate(46,100) scale(1.9)" fill="#0B3B1E" opacity="0.85"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g>
+    <text x="116" y="96" style="font:600 11px var(--sans);letter-spacing:.14em"
+          fill="#A7A7A7">PLAYLIST</text>
+    <text x="116" y="124" style="font:700 24px var(--sans)" fill="#FFFFFF">Today's Mix</text>
+    <text x="116" y="148" style="font:13px var(--sans)" fill="#A7A7A7">Nxt Studio</text>
+  </g>
+
+  <!-- Play all -->
+  <g>
+    <circle class="hk-rip" cx="330" cy="172" r="40" fill="#1DB954"/>
+    <circle cx="330" cy="172" r="24" fill="#1DB954"/>
+    <path d="M323 161 l17 11 -17 11 z" fill="#121212"/>
+    <text x="296" y="178" text-anchor="end" style="font:600 14px var(--sans)"
+          fill="#A7A7A7">Play all</text>
+  </g>
+
+  <g><g><rect x="20" y="201" width="48" height="48" rx="4" fill="#8E5A9E"/><path d="M20 249 L68 201 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,211.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="222" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t0">Morning Raag</text><text x="82" y="244" style="font:14px var(--sans)" fill="#A7A7A7">Ananya Rao</text><text x="300" y="235" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">3:58</text></g><g><g><rect x="20" y="271" width="48" height="48" rx="4" fill="#2E6FA8"/><path d="M20 319 L68 271 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,281.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="292" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t1">City Lights</text><text x="82" y="314" style="font:14px var(--sans)" fill="#A7A7A7">The Verandah</text><text x="300" y="305" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">4:12</text></g><g><g><rect x="20" y="341" width="48" height="48" rx="4" fill="#B4703C"/><path d="M20 389 L68 341 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,351.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="362" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t2">Old Road</text><text x="82" y="384" style="font:14px var(--sans)" fill="#A7A7A7">Kabir Sen</text><text x="300" y="375" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">3:21</text></g><g><g><rect x="20" y="411" width="48" height="48" rx="4" fill="#3C8A72"/><path d="M20 459 L68 411 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,421.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="432" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t3">Paper Boats</text><text x="82" y="454" style="font:14px var(--sans)" fill="#A7A7A7">Meera</text><text x="300" y="445" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">5:04</text></g><g><g><rect x="20" y="481" width="48" height="48" rx="4" fill="#A34A55"/><path d="M20 529 L68 481 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,491.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="502" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t4">Last Bus Home</text><text x="82" y="524" style="font:14px var(--sans)" fill="#A7A7A7">Nikhil D</text><text x="300" y="515" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">3:47</text></g><g class="hk-new"><g><rect x="20" y="551" width="48" height="48" rx="4" fill="#5B62B0"/><path d="M20 599 L68 551 v48 z" fill="#000000" opacity=".18"/><g transform="translate(33.44,561.56) scale(1.3333333333333333)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g><text x="82" y="572" style="font:600 18px var(--sans)" fill="#FFFFFF" class="hk-t5">One More Song</text><text x="82" y="594" style="font:14px var(--sans)" fill="#A7A7A7">Ananya Rao</text><text x="300" y="585" text-anchor="end" style="font:13px var(--mono)" fill="#6F6F6F">4:30</text></g>
+  <g class="hk-hl"><rect x="10" y="190" width="360" height="70" rx="8" fill="#1DB954" opacity=".13"/><rect x="10" y="190" width="4" height="70" rx="2" fill="#1DB954"/><g class="hk-eq" transform="translate(316,218)"><rect x="0" y="0" width="5" height="18" rx="2.5" fill="#1DB954"/><rect x="9" y="0" width="5" height="18" rx="2.5" fill="#1DB954"/><rect x="18" y="0" width="5" height="18" rx="2.5" fill="#1DB954"/></g></g>
+
+  <!-- now playing -->
+  <g class="hk-np">
+    <rect x="0" y="626" width="380" height="74" fill="#181818"/>
+    <rect x="0" y="626" width="380" height="3" fill="#2A2A2A"/>
+    <rect x="0" y="626" width="248" height="3" fill="#1DB954"/>
+    <g><rect x="16" y="640" width="44" height="44" rx="4" fill="#5B62B0"/><path d="M16 684 L60 640 v44 z" fill="#000000" opacity=".18"/><g transform="translate(28.32,649.68) scale(1.2222222222222223)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g>
+    <text x="70" y="660" style="font:600 14px var(--sans)" fill="#FFFFFF">Playing</text>
+    <text x="70" y="680" style="font:12px var(--sans)" fill="#A7A7A7">Today's Mix</text>
+    <path d="M338 652 l14 9 -14 9 z" fill="#FFFFFF"/>
+  </g>
+  <g class="hk-stop">
+    <rect x="0" y="626" width="380" height="74" fill="#181818"/>
+    <rect x="0" y="626" width="380" height="3" fill="#2A2A2A"/>
+    <g><rect x="16" y="640" width="44" height="44" rx="4" fill="#4A4A4A"/><path d="M16 684 L60 640 v44 z" fill="#000000" opacity=".18"/><g transform="translate(28.32,649.68) scale(1.2222222222222223)" fill="#FFFFFF" opacity="0.92"><path d="M7.2 15 V3.4 h1.7 V15 z"/><path d="M18.2 13 V1.2 h1.7 V13 z"/><path d="M7.2 2.2 L19.9 0 V3.9 L7.2 6.1 z"/><ellipse cx="4.4" cy="15.2" rx="3.9" ry="2.9" transform="rotate(-20 4.4 15.2)"/><ellipse cx="15.4" cy="13.2" rx="3.9" ry="2.9" transform="rotate(-20 15.4 13.2)"/></g></g>
+    <text x="70" y="660" style="font:600 14px var(--sans)" fill="#FFFFFF">Stopped</text>
+    <text x="70" y="680" style="font:12px var(--sans)" fill="#A7A7A7">The list ended</text>
+    <rect x="338" y="652" width="5" height="18" rx="2" fill="#FFFFFF"/>
+    <rect x="347" y="652" width="5" height="18" rx="2" fill="#FFFFFF"/>
+  </g>
+</g>
+</svg>

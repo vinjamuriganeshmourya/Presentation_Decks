@@ -1,0 +1,3827 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "Load Balancing & CDN",
+    "course": "Cloud Computing",
+    "htmlName": "load-balancing-and-cdn",
+    "previous": {
+      "title": "Cloud Networking & VPC",
+      "items": [
+        "Cloud Networking Overview",
+        "Virtual Private Cloud (VPC)",
+        "Subnets & IP Addressing",
+        "Routing & Gateways",
+        "Network Security Controls"
+      ]
+    },
+    "agenda": [
+      "Load Balancing Basics",
+      "Load Balancer Types",
+      "Distribution Algorithms",
+      "Health Checks & Sessions",
+      "DNS & Content Delivery"
+    ],
+    "next": "Block, File & Object Storage"
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "S-TITLE",
+      "layout": "title"
+    },
+    {
+      "id": "S-RECAP",
+      "layout": "recap"
+    },
+    {
+      "id": "S-AGENDA",
+      "layout": "agenda"
+    },
+    {
+      "id": "D1",
+      "layout": "breaker",
+      "index": 1
+    },
+    {
+      "id": "T01",
+      "layout": "points",
+      "kicker": "Single Point of Failure",
+      "title": "The Core Problem",
+      "lead": "A single server gives a web application only one path for requests, so its failure stops everything\nCloud architectures fix this by placing multiple servers behind a traffic distributor",
+      "points": [
+        {
+          "text": "Single point of failure: one component whose failure stops the entire application",
+          "icon": "CircleAlert",
+          "at": 1
+        },
+        {
+          "text": "Hardware failure, an operating-system patch, or a crash removes the only server",
+          "icon": "ServerCrash",
+          "at": 2
+        },
+        {
+          "text": "Traffic above the server's capacity slows or drops requests, since no second server exists",
+          "icon": "TrendingUp",
+          "at": 3
+        },
+        {
+          "text": "A bigger server raises capacity but never removes the single point of failure",
+          "icon": "Maximize2",
+          "at": 4
+        }
+      ],
+      "pointsW": 520,
+      "figH": 304,
+      "figure": {
+        "type": "custom",
+        "name": "A_Spof",
+        "props": {
+          "steps": 4
+        }
+      },
+      "notes": "Start by stating that one server means one failure point, linking it to the earlier horizontal-scaling idea. Use the ticket-counter analogy to make the outage concrete before introducing load balancing. Interviewers often ask what a single point of failure means — this slide answers that."
+    },
+    {
+      "id": "T01-AN",
+      "section": "Load Balancing Basics",
+      "label": "Analogy: one ticket counter",
+      "layout": "analogy",
+      "kicker": "Single Point of Failure",
+      "title": "The Core Problem",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T01Everyday",
+        "props": {
+          "steps": 2
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T01Concept",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "TR analogy: A railway station with only one ticket counter forces every passenger to wait once that counter closes for a break — exactly as a single server failing removes the only route available for every user's request.\n\n\"Start by stating that one server means one failure point, linking it to the earlier horizontal-scaling idea. Use the ticket-counter analogy to make the outage concrete before introducing load balancing. Interviewers often ask what a single point of failure means — this slide answers that.\""
+    },
+    {
+      "id": "T02",
+      "layout": "lead",
+      "kicker": "Traffic Distribution",
+      "title": "Load Balancer Role",
+      "lead": "A load balancer is a component that receives all incoming requests and distributes them across multiple backend servers, so no single server is overloaded or becomes a single point of failure",
+      "figW": 1000,
+      "figH": 330,
+      "figure": {
+        "type": "diagram",
+        "w": 1000,
+        "h": 330,
+        "boxes": [
+          {
+            "id": "users",
+            "label": "Users",
+            "kind": "zone",
+            "labelAt": "bottom",
+            "x": 30,
+            "y": 50,
+            "w": 150,
+            "h": 240
+          }
+        ],
+        "nodes": [
+          {
+            "id": "pc",
+            "x": 105,
+            "y": 100,
+            "icon": "lib:desktop",
+            "shape": "bare",
+            "size": 76
+          },
+          {
+            "id": "phone",
+            "x": 105,
+            "y": 186,
+            "icon": "lib:laptop",
+            "shape": "bare",
+            "size": 62
+          },
+          {
+            "id": "web",
+            "x": 330,
+            "y": 165,
+            "icon": "lib:globe-www",
+            "shape": "bare",
+            "size": 70,
+            "label": "Website",
+            "loop": "lift"
+          },
+          {
+            "id": "lb",
+            "x": 590,
+            "y": 165,
+            "icon": "img:images/aws-elb.svg",
+            "shape": "bare",
+            "size": 58,
+            "label": "Load Balancer",
+            "loop": "ripple"
+          },
+          {
+            "id": "s1",
+            "x": 880,
+            "y": 55,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 52,
+            "label": "Server 1",
+            "labelPos": "right"
+          },
+          {
+            "id": "s2",
+            "x": 880,
+            "y": 165,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 52,
+            "label": "Server 2",
+            "labelPos": "right"
+          },
+          {
+            "id": "s3",
+            "x": 880,
+            "y": 275,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 52,
+            "label": "Server 3",
+            "labelPos": "right"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "users",
+            "to": "web"
+          },
+          {
+            "from": "web",
+            "to": "lb",
+            "label": "Incoming Requests"
+          },
+          {
+            "from": "lb",
+            "to": "s1"
+          },
+          {
+            "from": "lb",
+            "to": "s2"
+          },
+          {
+            "from": "lb",
+            "to": "s3"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "users",
+              "web",
+              "lb",
+              "s1"
+            ],
+            "dur": 3.2
+          },
+          {
+            "path": [
+              "users",
+              "web",
+              "lb",
+              "s2"
+            ],
+            "dur": 3.2
+          },
+          {
+            "path": [
+              "users",
+              "web",
+              "lb",
+              "s3"
+            ],
+            "dur": 3.2
+          }
+        ],
+        "steps": [
+          [
+            "users",
+            "pc",
+            "phone",
+            "web",
+            "users>web"
+          ],
+          {
+            "show": [
+              "lb",
+              "web>lb"
+            ],
+            "lit": [
+              "lb"
+            ]
+          },
+          [
+            "s1",
+            "s2",
+            "s3",
+            "lb>s1",
+            "lb>s2",
+            "lb>s3",
+            "packet:0",
+            "packet:1",
+            "packet:2"
+          ]
+        ]
+      },
+      "notes": "Explain the load balancer as the layer between users and servers, deciding where each request goes. Note that this is the exact service used later in the practical, reachable from the EC2 console. A common interview question asks why users cannot get a fixed server address directly — this mechanism is the answer."
+    },
+    {
+      "id": "T02-B",
+      "layout": "points",
+      "kicker": "Traffic Distribution",
+      "title": "Load Balancer Role",
+      "points": [
+        {
+          "text": "Identical servers behind the load balancer let one fail without downtime",
+          "icon": "Copy",
+          "at": 1
+        },
+        {
+          "text": "Adding or removing backend servers changes capacity without changing application code",
+          "icon": "ListPlus",
+          "at": 2
+        },
+        {
+          "text": "AWS offers this as Elastic Load Balancing, set up from the EC2 console",
+          "icon": "Cloud",
+          "at": 3
+        }
+      ],
+      "pointsW": 520,
+      "figure": {
+        "type": "custom",
+        "name": "A_Console",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "Explain the load balancer as the layer between users and servers, deciding where each request goes. Note that this is the exact service used later in the practical, reachable from the EC2 console. A common interview question asks why users cannot get a fixed server address directly — this mechanism is the answer."
+    },
+    {
+      "id": "T02-C",
+      "layout": "points",
+      "kicker": "Traffic Distribution",
+      "title": "Load Balancer Role",
+      "points": [
+        {
+          "text": "An Application Load Balancer is billed hourly plus traffic processed",
+          "icon": "Receipt",
+          "at": 1
+        },
+        {
+          "text": "Choosing a load balancer type is also a cost decision",
+          "icon": "Scale",
+          "at": 2
+        }
+      ],
+      "pointsW": 520,
+      "figure": {
+        "type": "custom",
+        "name": "A_Billing",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "Explain the load balancer as the layer between users and servers, deciding where each request goes. Note that this is the exact service used later in the practical, reachable from the EC2 console. A common interview question asks why users cannot get a fixed server address directly — this mechanism is the answer."
+    },
+    {
+      "id": "T03",
+      "layout": "points",
+      "kicker": "Availability and Scalability Goals",
+      "title": "Why It Exists",
+      "lead": "Removing the single point of failure is not the only benefit; the same routing that avoids failed servers also lets capacity grow by adding more servers",
+      "points": [
+        {
+          "text": "Availability: traffic keeps reaching healthy servers during instance failure or patching",
+          "icon": "HeartPulse",
+          "at": 1
+        },
+        {
+          "text": "Scalability: new servers join the load balancer as demand grows, with no downtime",
+          "icon": "TrendingUp",
+          "at": 2
+        },
+        {
+          "text": "Horizontal scaling works safely only when users reach the load balancer, not a fixed server address",
+          "icon": "MoveHorizontal",
+          "at": 3
+        },
+        {
+          "text": "Extra backend servers for availability add compute cost, a trade-off covered later",
+          "icon": "Tag",
+          "at": 4
+        }
+      ],
+      "pointsW": 540,
+      "figure": {
+        "type": "custom",
+        "name": "A_Growth",
+        "props": {
+          "steps": 4
+        }
+      },
+      "notes": "Stress that availability and scalability both come from rerouting traffic, applied to failure versus growth. Mention that more servers mean more cost, without a pricing discussion. Note that distributing traffic needs a defined method, which the next section covers."
+    },
+    {
+      "id": "D2",
+      "layout": "breaker",
+      "index": 2
+    },
+    {
+      "id": "T04",
+      "layout": "points",
+      "kicker": "Load Balancer Types",
+      "title": "Two Classification Axes",
+      "lead": "Load balancers are classified in two ways: by the OSI layer they work at, and by who can reach them\nBoth choices change routing intelligence, speed, and exposure",
+      "points": [
+        {
+          "text": "Layer axis: Layer 4 balancers route by IP and port; Layer 7 balancers read HTTP content",
+          "icon": "Layers",
+          "at": 1
+        },
+        {
+          "text": "Internet-facing: has a public IP and accepts requests from users on the internet",
+          "icon": "Globe",
+          "at": 2
+        },
+        {
+          "text": "Internal: has only a private IP and routes traffic between services inside the private network",
+          "icon": "Lock",
+          "at": 3
+        }
+      ],
+      "pointsW": 520,
+      "figure": {
+        "type": "custom",
+        "name": "A_TypeGrid",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "Set up both axes before going deep into either one. Say plainly: layer decides how smart the routing is, exposure decides who can send traffic. Mention this map will be filled in across the next three slides."
+    },
+    {
+      "id": "T04-B",
+      "layout": "lead",
+      "kicker": "Load Balancer Types",
+      "title": "Two Classification Axes",
+      "lead": "A real deployment picks one from each axis, like an internet-facing Layer 7 balancer",
+      "figW": 1060,
+      "figH": 380,
+      "figure": {
+        "type": "custom",
+        "name": "A_Deploy",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "Set up both axes before going deep into either one. Say plainly: layer decides how smart the routing is, exposure decides who can send traffic. Mention this map will be filled in across the next three slides."
+    },
+    {
+      "id": "T05",
+      "layout": "lead",
+      "kicker": "Transport Vs Application",
+      "title": "Balancer Comparison",
+      "lead": "Layer 4 balancers forward packets using only transport headers, while Layer 7 balancers terminate the connection and read the full HTTP request\nAWS calls these Network Load Balancer (NLB) and Application Load Balancer (ALB)",
+      "figW": 1060,
+      "figH": 300,
+      "figure": {
+        "type": "custom",
+        "name": "A_Packets",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "Layer 4 is faster since it never opens the packet; Layer 7 is smarter since it inspects HTTP data. Note the AWS names, as they appear on the console. Interview hook: ask when NLB beats ALB for raw TCP/UDP speed and preserving client IP."
+    },
+    {
+      "id": "T05-B",
+      "layout": "table",
+      "kicker": "Transport Vs Application",
+      "title": "Balancer Comparison",
+      "table": {
+        "type": "table",
+        "columns": [
+          {
+            "label": "Aspect",
+            "weight": 0.8
+          },
+          {
+            "label": "Layer 4 (Transport)",
+            "icon": "Package",
+            "weight": 1
+          },
+          {
+            "label": "Layer 7 (Application)",
+            "icon": "PackageOpen",
+            "weight": 1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Signpost",
+            "cells": [
+              "Decision basis",
+              "Source/destination IP and port number",
+              "URL path, HTTP headers, cookies"
+            ]
+          },
+          {
+            "icon": "Eye",
+            "cells": [
+              "Visibility into request",
+              "Cannot read request content",
+              "Reads full HTTP request and response"
+            ]
+          },
+          {
+            "icon": "Gauge",
+            "cells": [
+              "Speed and overhead",
+              "Lower overhead, no content parsing",
+              "Higher overhead, content inspection"
+            ]
+          },
+          {
+            "icon": "Split",
+            "cells": [
+              "Routing capability",
+              "Single destination pool per listener",
+              "Rule-based routing to different pools by path or host"
+            ]
+          },
+          {
+            "icon": "Cloud",
+            "cells": [
+              "Typical AWS service",
+              "Network Load Balancer (NLB)",
+              "Application Load Balancer (ALB)"
+            ]
+          }
+        ]
+      },
+      "notes": "Layer 4 is faster since it never opens the packet; Layer 7 is smarter since it inspects HTTP data. Note the AWS names, as they appear on the console. Interview hook: ask when NLB beats ALB for raw TCP/UDP speed and preserving client IP."
+    },
+    {
+      "id": "T06",
+      "layout": "points",
+      "kicker": "Internal Vs Internet-Facing",
+      "title": "Who Can Reach It",
+      "lead": "Load balancers are also classified by exposure: internet-facing balancers get a public IP and accept internet traffic, while internal balancers get only a private IP, reachable within their VPC",
+      "points": [
+        {
+          "text": "Internal balancers connect internal tiers, like an application calling a backend service",
+          "icon": "Cable",
+          "at": 2
+        },
+        {
+          "text": "Internal balancers shrink the attack surface since no public route exists",
+          "icon": "ShieldCheck",
+          "at": 3
+        },
+        {
+          "text": "Exposure type and layer type are independent; both can be Layer 4 or Layer 7",
+          "icon": "Layers",
+          "at": 4
+        }
+      ],
+      "pointsW": 520,
+      "figH": 400,
+      "figure": {
+        "type": "diagram",
+        "w": 566,
+        "h": 400,
+        "boxes": [
+          {
+            "id": "vpc",
+            "label": "VPC",
+            "kind": "vpc",
+            "icon": "Cloud",
+            "x": 146,
+            "y": 8,
+            "w": 412,
+            "h": 384
+          }
+        ],
+        "nodes": [
+          {
+            "id": "net",
+            "x": 62,
+            "y": 96,
+            "icon": "lib:cloud",
+            "shape": "bare",
+            "size": 64,
+            "label": "Public Internet",
+            "loop": "lift"
+          },
+          {
+            "id": "ext",
+            "x": 228,
+            "y": 96,
+            "icon": "img:images/aws-elb.svg",
+            "shape": "bare",
+            "size": 52,
+            "label": "Internet-Facing",
+            "sub": "Public IP"
+          },
+          {
+            "id": "app",
+            "x": 392,
+            "y": 96,
+            "icon": "lib:desktop",
+            "shape": "bare",
+            "size": 62,
+            "label": "Application"
+          },
+          {
+            "id": "int",
+            "x": 392,
+            "y": 246,
+            "icon": "img:images/aws-elb.svg",
+            "shape": "bare",
+            "size": 52,
+            "label": "Internal",
+            "sub": "Private IP"
+          },
+          {
+            "id": "svc",
+            "x": 500,
+            "y": 246,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 50,
+            "label": "Backend Service"
+          }
+        ],
+        "chips": [
+          {
+            "id": "l1",
+            "x": 228,
+            "y": 200,
+            "text": "Layer 4 Or Layer 7",
+            "icon": "Layers",
+            "tone": "brand"
+          },
+          {
+            "id": "l2",
+            "x": 392,
+            "y": 360,
+            "text": "Layer 4 Or Layer 7",
+            "icon": "Layers",
+            "tone": "brand"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "net",
+            "to": "ext",
+            "tone": "good"
+          },
+          {
+            "from": "ext",
+            "to": "app"
+          },
+          {
+            "from": "app",
+            "to": "int"
+          },
+          {
+            "from": "int",
+            "to": "svc"
+          },
+          {
+            "id": "safe",
+            "from": "net",
+            "to": "int",
+            "blocked": true,
+            "via": [
+              [
+                62,
+                246
+              ]
+            ],
+            "label": "No Public Route",
+            "labelPos": "below"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "net",
+              "ext",
+              "app"
+            ],
+            "tone": "good"
+          },
+          {
+            "path": [
+              "app",
+              "int",
+              "svc"
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "show": [
+              "net",
+              "ext",
+              "app",
+              "net>ext",
+              "ext>app",
+              "packet:0"
+            ],
+            "lit": [
+              "ext"
+            ]
+          },
+          {
+            "show": [
+              "int",
+              "svc",
+              "app>int",
+              "int>svc",
+              "packet:1"
+            ],
+            "lit": [
+              "int"
+            ]
+          },
+          {
+            "show": [
+              "safe"
+            ],
+            "lit": [
+              "safe"
+            ]
+          },
+          {
+            "show": [
+              "l1",
+              "l2"
+            ],
+            "lit": [
+              "l1",
+              "l2"
+            ]
+          }
+        ]
+      },
+      "notes": "Stress that exposure is separate from layer, not a variant of it. Use public reception versus staff-only corridor as the everyday phrasing. Exam hook: ask why making a database-facing balancer internal-only is good security practice."
+    },
+    {
+      "id": "T06-AN",
+      "section": "Load Balancer Types",
+      "label": "Analogy: reception desk and staff corridors",
+      "layout": "analogy",
+      "kicker": "Internal Vs Internet-Facing",
+      "title": "Who Can Reach It",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T06Everyday",
+        "props": {
+          "steps": 2
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T06Concept",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "TR analogy: An office building has a public reception desk anyone off the street can walk into, and separate staff-only corridors reachable only by employees already inside — just as an internet-facing balancer accepts any public visitor while an internal balancer accepts only traffic that already originates inside the VPC.\n\n\"Stress that exposure is separate from layer, not a variant of it. Use public reception versus staff-only corridor as the everyday phrasing. Exam hook: ask why making a database-facing balancer internal-only is good security practice.\""
+    },
+    {
+      "id": "T07",
+      "layout": "lead",
+      "kicker": "Choosing Balancer Type",
+      "title": "Combining Both Axes",
+      "lead": "A typical architecture places an internet-facing Layer 7 balancer in front of user traffic and an internal Layer 4 or 7 balancer between services, matching intelligence to each hop",
+      "figW": 1060,
+      "figH": 340,
+      "figure": {
+        "type": "diagram",
+        "w": 1060,
+        "h": 340,
+        "boxes": [
+          {
+            "id": "vpc",
+            "label": "VPC",
+            "kind": "vpc",
+            "icon": "Cloud",
+            "x": 190,
+            "y": 8,
+            "w": 862,
+            "h": 324
+          },
+          {
+            "id": "svc",
+            "label": "Service Tier",
+            "kind": "zone",
+            "icon": "Server",
+            "x": 410,
+            "y": 56,
+            "w": 180,
+            "h": 264
+          },
+          {
+            "id": "db",
+            "label": "Database Tier",
+            "kind": "zone",
+            "icon": "Database",
+            "x": 850,
+            "y": 56,
+            "w": 186,
+            "h": 264
+          }
+        ],
+        "nodes": [
+          {
+            "id": "net",
+            "x": 92,
+            "y": 180,
+            "icon": "lib:cloud",
+            "shape": "bare",
+            "size": 76,
+            "label": "Public Internet",
+            "loop": "lift"
+          },
+          {
+            "id": "alb",
+            "x": 290,
+            "y": 180,
+            "icon": "img:images/aws-alb.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Internet-Facing ALB"
+          },
+          {
+            "id": "a1",
+            "x": 500,
+            "y": 118,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 44
+          },
+          {
+            "id": "a2",
+            "x": 500,
+            "y": 190,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 44
+          },
+          {
+            "id": "a3",
+            "x": 500,
+            "y": 262,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 44
+          },
+          {
+            "id": "nlb",
+            "x": 720,
+            "y": 180,
+            "icon": "img:images/aws-nlb.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Internal NLB"
+          },
+          {
+            "id": "d1",
+            "x": 943,
+            "y": 136,
+            "icon": "lib:database",
+            "shape": "bare",
+            "size": 50,
+            "label": "Database 1"
+          },
+          {
+            "id": "d2",
+            "x": 943,
+            "y": 246,
+            "icon": "lib:database",
+            "shape": "bare",
+            "size": 50,
+            "label": "Database 2"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "net",
+            "to": "alb"
+          },
+          {
+            "from": "alb",
+            "to": "a1"
+          },
+          {
+            "from": "alb",
+            "to": "a2"
+          },
+          {
+            "from": "alb",
+            "to": "a3"
+          },
+          {
+            "from": "a1",
+            "to": "nlb"
+          },
+          {
+            "from": "a2",
+            "to": "nlb"
+          },
+          {
+            "from": "a3",
+            "to": "nlb"
+          },
+          {
+            "from": "nlb",
+            "to": "d1",
+            "tone": "brand"
+          },
+          {
+            "from": "nlb",
+            "to": "d2",
+            "tone": "brand"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "net",
+              "alb",
+              "a1",
+              "nlb",
+              "d1"
+            ],
+            "dur": 4.2
+          },
+          {
+            "path": [
+              "net",
+              "alb",
+              "a3",
+              "nlb",
+              "d2"
+            ],
+            "dur": 4.2
+          }
+        ],
+        "steps": [
+          {
+            "show": [
+              "net",
+              "alb",
+              "net>alb"
+            ],
+            "lit": [
+              "alb"
+            ]
+          },
+          [
+            "svc",
+            "a1",
+            "a2",
+            "a3",
+            "alb>a1",
+            "alb>a2",
+            "alb>a3"
+          ],
+          {
+            "show": [
+              "nlb",
+              "a1>nlb",
+              "a2>nlb",
+              "a3>nlb"
+            ],
+            "lit": [
+              "nlb"
+            ]
+          },
+          [
+            "db",
+            "d1",
+            "d2",
+            "nlb>d1",
+            "nlb>d2",
+            "packet:0",
+            "packet:1"
+          ]
+        ]
+      },
+      "notes": "Tie both axes together with one concrete architecture to make the choice practical. Point to the EC2 console's load balancer creation screen as where this setting lives. Note that an algorithm still decides which server gets each request once traffic reaches the right balancer."
+    },
+    {
+      "id": "T07-B",
+      "layout": "points",
+      "kicker": "Choosing Balancer Type",
+      "title": "Combining Both Axes",
+      "points": [
+        {
+          "text": "AWS provides an ALB for Layer 7 traffic and an NLB for Layer 4",
+          "icon": "Cloud",
+          "at": 1
+        },
+        {
+          "text": "The internet-facing or internal scheme is set once, in the EC2 console",
+          "icon": "Settings",
+          "at": 2
+        },
+        {
+          "text": "Public websites typically use an internet-facing ALB; internal calls use an NLB or ALB",
+          "icon": "Globe",
+          "at": 3
+        },
+        {
+          "text": "An ALB receives traffic through a listener (a protocol and port)",
+          "icon": "Ear",
+          "at": 4
+        },
+        {
+          "text": "And forwards it to a target group, a named set of backend servers that share a health check",
+          "icon": "Target",
+          "at": 5
+        }
+      ],
+      "pointsW": 520,
+      "figure": {
+        "type": "diagram",
+        "w": 566,
+        "h": 380,
+        "boxes": [
+          {
+            "id": "tg",
+            "label": "Target Group",
+            "kind": "zone",
+            "icon": "Target",
+            "x": 322,
+            "y": 28,
+            "w": 236,
+            "h": 330
+          }
+        ],
+        "nodes": [
+          {
+            "id": "web",
+            "x": 70,
+            "y": 196,
+            "icon": "lib:globe-www",
+            "shape": "bare",
+            "size": 56,
+            "label": "Public Websites"
+          },
+          {
+            "id": "alb",
+            "x": 180,
+            "y": 196,
+            "icon": "img:images/aws-alb.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "ALB"
+          },
+          {
+            "id": "lis",
+            "x": 270,
+            "y": 196,
+            "icon": "DoorOpen",
+            "shape": "tile",
+            "size": 46,
+            "label": "Listener",
+            "sub": "HTTP:80"
+          },
+          {
+            "id": "s1",
+            "x": 396,
+            "y": 112,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 48
+          },
+          {
+            "id": "s2",
+            "x": 396,
+            "y": 200,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 48
+          },
+          {
+            "id": "s3",
+            "x": 396,
+            "y": 288,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 48
+          },
+          {
+            "id": "hc",
+            "x": 494,
+            "y": 200,
+            "icon": "HeartPulse",
+            "shape": "disc",
+            "size": 50,
+            "tone": "good",
+            "label": "Health Check",
+            "loop": "pulse"
+          }
+        ],
+        "chips": [
+          {
+            "id": "l7",
+            "x": 180,
+            "y": 290,
+            "text": "Layer 7",
+            "icon": "Layers",
+            "tone": "brand"
+          },
+          {
+            "id": "scheme",
+            "x": 168,
+            "y": 106,
+            "text": "Scheme: Internet-Facing",
+            "icon": "Settings",
+            "tone": "plain"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "web",
+            "to": "alb"
+          },
+          {
+            "from": "alb",
+            "to": "lis"
+          },
+          {
+            "from": "lis",
+            "to": "s1"
+          },
+          {
+            "from": "lis",
+            "to": "s2"
+          },
+          {
+            "from": "lis",
+            "to": "s3"
+          },
+          {
+            "from": "hc",
+            "to": "s1",
+            "tone": "good"
+          },
+          {
+            "from": "hc",
+            "to": "s2",
+            "tone": "good"
+          },
+          {
+            "from": "hc",
+            "to": "s3",
+            "tone": "good"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "web",
+              "alb",
+              "lis",
+              "s2"
+            ],
+            "dur": 3
+          }
+        ],
+        "steps": [
+          {
+            "show": [
+              "alb",
+              "l7"
+            ],
+            "lit": [
+              "alb"
+            ]
+          },
+          {
+            "show": [
+              "scheme"
+            ],
+            "lit": [
+              "scheme"
+            ]
+          },
+          {
+            "show": [
+              "web",
+              "web>alb"
+            ],
+            "lit": [
+              "web"
+            ]
+          },
+          {
+            "show": [
+              "lis",
+              "alb>lis"
+            ],
+            "lit": [
+              "lis"
+            ]
+          },
+          {
+            "show": [
+              "tg",
+              "s1",
+              "s2",
+              "s3",
+              "hc",
+              "lis>s1",
+              "lis>s2",
+              "lis>s3",
+              "hc>s1",
+              "hc>s2",
+              "hc>s3",
+              "packet:0"
+            ],
+            "lit": [
+              "hc"
+            ]
+          }
+        ]
+      },
+      "notes": "Tie both axes together with one concrete architecture to make the choice practical. Point to the EC2 console's load balancer creation screen as where this setting lives. Note that an algorithm still decides which server gets each request once traffic reaches the right balancer."
+    },
+    {
+      "id": "S-QUIZ1",
+      "layout": "quiz"
+    },
+    {
+      "id": "D3",
+      "layout": "breaker",
+      "index": 3
+    },
+    {
+      "id": "T08",
+      "layout": "custom",
+      "component": "B_LeadSlide",
+      "label": "Four Approaches Compared",
+      "notes": "\"Frame this as the rulebook a load balancer consults for every request. Stress that none of the four is universally best; each suits a different traffic shape. Interviewers may ask which algorithm fits a scenario, so link each name to its trigger.\"",
+      "props": {
+        "id": "T08",
+        "kicker": "Distribution Algorithms",
+        "title": "Four Approaches Compared",
+        "lines": [
+          "A load balancer needs a rule, called an algorithm, to pick a healthy target for each request",
+          "Algorithms fall into two types: static algorithms follow fixed rules and ignore server load, while dynamic algorithms check live server state before deciding"
+        ],
+        "figure": "B_StaticDynamic",
+        "w": 1000,
+        "h": 300,
+        "steps": 2
+      }
+    },
+    {
+      "id": "T08-B",
+      "layout": "points",
+      "kicker": "Distribution Algorithms",
+      "title": "Four Approaches Compared",
+      "notes": "\"Frame this as the rulebook a load balancer consults for every request. Stress that none of the four is universally best; each suits a different traffic shape. Interviewers may ask which algorithm fits a scenario, so link each name to its trigger.\"",
+      "lead": "Many variations exist, but four are used most widely",
+      "pointsW": 560,
+      "points": [
+        {
+          "text": "Round robin (static): cycles through targets in fixed order, assuming equal capacity",
+          "icon": "RefreshCw"
+        },
+        {
+          "text": "Least connections (dynamic): picks the target with the fewest active connections",
+          "icon": "Gauge"
+        },
+        {
+          "text": "IP hash (static): maps a client’s IP address to the same target, as long as the server pool stays the same",
+          "icon": "Hash"
+        },
+        {
+          "text": "Weighted distribution (static or dynamic): adds capacity weights to round robin or least connections",
+          "icon": "Scale"
+        },
+        {
+          "text": "So stronger targets get more traffic",
+          "icon": "TrendingUp"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_Quad",
+        "props": {
+          "steps": 5,
+          "w": 526,
+          "h": 380
+        }
+      }
+    },
+    {
+      "id": "T09",
+      "layout": "lead",
+      "kicker": "Round Robin Weighting",
+      "title": "Static Capacity Bias",
+      "notes": "\"Explain smoothing via the running-total idea so the order isn't clumped — a common exam trip-up. Note that weights are manual and planned, unlike least connections which reacts automatically. Mention AWS target group weight field as the real-world example.\"",
+      "lead": "Plain round robin treats all targets equally, which fails when server capacity differs",
+      "figW": 1100,
+      "figH": 330,
+      "figure": {
+        "type": "custom",
+        "name": "B_Flow",
+        "props": {
+          "mode": "rr",
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "T09-B",
+      "layout": "lead",
+      "kicker": "Round Robin Weighting",
+      "title": "Static Capacity Bias",
+      "notes": "\"Explain smoothing via the running-total idea so the order isn't clumped — a common exam trip-up. Note that weights are manual and planned, unlike least connections which reacts automatically. Mention AWS target group weight field as the real-world example.\"",
+      "lead": "Weighted distribution gives stronger targets a proportionally larger share of the rotation",
+      "figW": 1100,
+      "figH": 330,
+      "figure": {
+        "type": "custom",
+        "name": "B_Flow",
+        "props": {
+          "mode": "wrr",
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "T09-C",
+      "layout": "points",
+      "kicker": "Round Robin Weighting",
+      "title": "Static Capacity Bias",
+      "notes": "\"Explain smoothing via the running-total idea so the order isn't clumped — a common exam trip-up. Note that weights are manual and planned, unlike least connections which reacts automatically. Mention AWS target group weight field as the real-world example.\"",
+      "pointsW": 560,
+      "points": [
+        {
+          "text": "Smooth weighted round robin increases each target's running total by its weight, avoiding bursts",
+          "icon": "Sigma"
+        },
+        {
+          "text": "A 3:1 weight ratio averages three requests to one target per other request",
+          "icon": "Scale"
+        },
+        {
+          "text": "Weights are set once from known capacity, not changed automatically with load",
+          "icon": "Lock"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_Smooth",
+        "props": {
+          "steps": 3,
+          "w": 526,
+          "h": 380
+        }
+      }
+    },
+    {
+      "id": "T09-D",
+      "layout": "points",
+      "kicker": "Round Robin Weighting",
+      "title": "Static Capacity Bias",
+      "notes": "\"Explain smoothing via the running-total idea so the order isn't clumped — a common exam trip-up. Note that weights are manual and planned, unlike least connections which reacts automatically. Mention AWS target group weight field as the real-world example.\"",
+      "pointsW": 560,
+      "points": [
+        {
+          "text": "On AWS ALB, the default routing algorithm within a target group is round robin",
+          "icon": "RefreshCw"
+        },
+        {
+          "text": "Weighted target groups can be configured in listener rules",
+          "icon": "ListFilter"
+        },
+        {
+          "text": "To distribute traffic between target groups (for example, 90:10)",
+          "icon": "Split"
+        },
+        {
+          "text": "These are two different mechanisms",
+          "icon": "Layers"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_Listener",
+        "props": {
+          "steps": 4,
+          "w": 526,
+          "h": 380
+        }
+      }
+    },
+    {
+      "id": "T10",
+      "layout": "lead",
+      "kicker": "Least Connections Depth",
+      "title": "Dynamic Load Tracking",
+      "notes": "\"Emphasise that the counter is live, updating on every request start and finish, unlike a fixed weight. Use an upload example to show why duration matters more than request count. Remember the AWS term, least outstanding requests, for interviews.\"",
+      "lead": "Round robin and weighting follow a fixed plan, but least connections reacts continuously, sending each new request to whichever target is least busy",
+      "figW": 1100,
+      "figH": 330,
+      "figure": {
+        "type": "custom",
+        "name": "B_Flow",
+        "props": {
+          "mode": "lc",
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "T10-B",
+      "layout": "points",
+      "kicker": "Least Connections Depth",
+      "title": "Dynamic Load Tracking",
+      "notes": "\"Emphasise that the counter is live, updating on every request start and finish, unlike a fixed weight. Use an upload example to show why duration matters more than request count. Remember the AWS term, least outstanding requests, for interviews.\"",
+      "pointsW": 560,
+      "points": [
+        {
+          "text": "A per-target counter rises when a request starts and falls on completion",
+          "icon": "Activity"
+        },
+        {
+          "text": "Long-lived connections let least connections outperform round robin under uneven request durations",
+          "icon": "Timer"
+        },
+        {
+          "text": "AWS ALB’s least outstanding requests option, selected in the target group settings",
+          "icon": "Settings"
+        },
+        {
+          "text": "Counts in-flight requests, not raw connections",
+          "icon": "Hash"
+        },
+        {
+          "text": "No manual tuning is needed; counts adjust as servers speed up or slow down",
+          "icon": "SlidersHorizontal"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_Counters",
+        "props": {
+          "steps": 5,
+          "w": 526,
+          "h": 380
+        }
+      }
+    },
+    {
+      "id": "T11",
+      "layout": "custom",
+      "component": "B_LeadSlide",
+      "label": "Client To Server Mapping",
+      "notes": "\"Introduce the session-affinity problem before naming IP hash. Flag the reshuffle risk when targets change, since interviewers often ask about it. Mention Network Load Balancer's flow hashing as the transport-layer equivalent.\"",
+      "props": {
+        "id": "T11",
+        "kicker": "IP Hash Explained",
+        "title": "Client To Server Mapping",
+        "lines": [
+          "Some applications keep client state only on the server that first handled a request, so later requests must return there",
+          "IP hash hashes the client's source IP to pick a fixed target"
+        ],
+        "figure": "B_Hash",
+        "w": 1000,
+        "h": 300,
+        "steps": 2
+      }
+    },
+    {
+      "id": "T11-B",
+      "layout": "points",
+      "kicker": "IP Hash Explained",
+      "title": "Client To Server Mapping",
+      "notes": "\"Introduce the session-affinity problem before naming IP hash. Flag the reshuffle risk when targets change, since interviewers often ask about it. Mention Network Load Balancer's flow hashing as the transport-layer equivalent.\"",
+      "points": [
+        {
+          "text": "Adding or removing a target reshuffles mapping, redirecting many clients at once",
+          "icon": "Shuffle"
+        },
+        {
+          "text": "Clients sharing one corporate or mobile-network gateway IP can overload a single target disproportionately",
+          "icon": "Router"
+        },
+        {
+          "text": "AWS has no setting named IP hash: ALB uses cookie-based stickiness; NLB offers source-IP stickiness",
+          "icon": "Cookie"
+        },
+        {
+          "text": "IP hash avoids shared session stores, unlike server-side replication methods",
+          "icon": "DatabaseZap"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_Sticky",
+        "props": {
+          "steps": 4,
+          "w": 496,
+          "h": 380
+        }
+      },
+      "pointsW": 590
+    },
+    {
+      "id": "T11-AN",
+      "section": "Distribution Algorithms",
+      "label": "Analogy: exam halls by roll number",
+      "layout": "analogy",
+      "kicker": "IP Hash Explained",
+      "title": "Client To Server Mapping",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T11Everyday",
+        "props": {
+          "steps": 3
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T11Concept",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "TR analogy: In an exam, each student’s hall is decided by their roll number (for example, the last digit decides the hall), so the same student always goes to the same hall. In the same way, IP hash uses the client’s IP address to always route that client to the same backend server.\n\n\"Introduce the session-affinity problem before naming IP hash. Flag the reshuffle risk when targets change, since interviewers often ask about it. Mention Network Load Balancer's flow hashing as the transport-layer equivalent.\""
+    },
+    {
+      "id": "D4",
+      "layout": "breaker",
+      "index": 4
+    },
+    {
+      "id": "T13",
+      "layout": "custom",
+      "component": "C_Lead",
+      "label": "Section Topic Map",
+      "props": {
+        "id": "T13",
+        "kicker": "Health And Sessions",
+        "title": "Section Topic Map",
+        "lines": [
+          "A load balancer must know which backends are actually working, and decide how a user's follow-up requests are handled across multiple servers",
+          "Three linked questions cover this"
+        ],
+        "figW": 1110,
+        "figH": 300,
+        "figure": {
+          "type": "custom",
+          "name": "C_TopicCards",
+          "props": {
+            "steps": 2
+          }
+        },
+        "gap": 36
+      },
+      "notes": "\"Present these three as one connected story: detect failure, remove backend safely, then handle returning users. Note this builds on the distribution algorithms already covered. Exam angle: expect a question distinguishing health checks from session stickiness.\""
+    },
+    {
+      "id": "T14",
+      "layout": "custom",
+      "component": "C_HealthCards",
+      "label": "How Checks Work",
+      "props": {
+        "id": "T14",
+        "kicker": "Health Check Design",
+        "title": "How Checks Work",
+        "lead": "A health check works like a repeated vitals check: the load balancer sends a test request and reads the reply, confirming the application is actually responding, not just running",
+        "points": [
+          {
+            "text": "Interval: sets how often the check repeats; the ALB default is every 30 seconds",
+            "icon": "Repeat"
+          },
+          {
+            "text": "Timeout: longest time the backend is given to reply before a miss",
+            "icon": "Timer"
+          },
+          {
+            "text": "Healthy threshold: consecutive passes needed before traffic resumes to a backend",
+            "icon": "CircleCheck"
+          },
+          {
+            "text": "Unhealthy threshold: consecutive failures needed before traffic stops to a backend",
+            "icon": "CircleX"
+          }
+        ]
+      },
+      "notes": "Stress that a server can be powered on yet still fail a health check if the application crashes while the OS keeps running. Use 'repeated vitals check' before naming the thresholds. Interview hook: ask what happens if the interval is too long or too short, since that trades detection speed against false alarms."
+    },
+    {
+      "id": "T14-AN",
+      "section": "Health Checks & Sessions",
+      "label": "Analogy: a repeated vitals check",
+      "layout": "analogy",
+      "kicker": "Health Check Design",
+      "title": "How Checks Work",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T14Everyday",
+        "props": {
+          "steps": 3
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T14Concept",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "TR analogy: A doctor does not assume a patient is fine just because they are breathing; a short, repeated vitals check confirms the body is actually functioning — just as a health check confirms the server is actually serving requests correctly, not merely running.\n\nStress that a server can be powered on yet still fail a health check if the application crashes while the OS keeps running. Use 'repeated vitals check' before naming the thresholds. Interview hook: ask what happens if the interval is too long or too short, since that trades detection speed against false alarms."
+    },
+    {
+      "id": "T15",
+      "layout": "custom",
+      "component": "C_Lead",
+      "label": "Removing A Backend Safely",
+      "props": {
+        "id": "T15",
+        "kicker": "Connection Draining",
+        "title": "Removing A Backend Safely",
+        "lines": [
+          "Instant removal would cut off in-flight requests",
+          "Draining gives the backend a grace period, the deregistration delay, to finish current work before leaving rotation"
+        ],
+        "figW": 1090,
+        "figH": 300,
+        "figure": {
+          "type": "diagram",
+          "w": 1090,
+          "h": 300,
+          "boxes": [
+            {
+              "id": "sv",
+              "label": "Serving",
+              "icon": "CircleCheck",
+              "kind": "plain",
+              "x": 16,
+              "y": 12,
+              "w": 318,
+              "h": 276
+            },
+            {
+              "id": "dr",
+              "label": "Draining",
+              "icon": "Hourglass",
+              "kind": "plain",
+              "x": 386,
+              "y": 12,
+              "w": 318,
+              "h": 276
+            },
+            {
+              "id": "rm",
+              "label": "Removed",
+              "icon": "CircleMinus",
+              "kind": "plain",
+              "x": 756,
+              "y": 12,
+              "w": 318,
+              "h": 276
+            }
+          ],
+          "nodes": [
+            {
+              "id": "b1",
+              "x": 175,
+              "y": 220,
+              "icon": "Server",
+              "label": "Backend",
+              "tone": "good",
+              "loop": "pulse"
+            },
+            {
+              "id": "b2",
+              "x": 545,
+              "y": 220,
+              "icon": "Server",
+              "label": "Backend",
+              "tone": "warn",
+              "loop": "blink"
+            },
+            {
+              "id": "b3",
+              "x": 915,
+              "y": 220,
+              "icon": "ServerOff",
+              "label": "Backend",
+              "tone": "muted"
+            }
+          ],
+          "chips": [
+            {
+              "id": "n1",
+              "x": 175,
+              "y": 94,
+              "text": "New Requests",
+              "tone": "good"
+            },
+            {
+              "id": "n2",
+              "x": 465,
+              "y": 94,
+              "text": "New Requests",
+              "tone": "bad"
+            },
+            {
+              "id": "f2",
+              "x": 619,
+              "y": 94,
+              "text": "In-Flight Requests",
+              "tone": "warn"
+            },
+            {
+              "id": "o3",
+              "x": 915,
+              "y": 94,
+              "text": "Connections Closed",
+              "tone": "bad"
+            }
+          ],
+          "arrows": [
+            {
+              "from": "n1",
+              "to": "b1",
+              "tone": "good"
+            },
+            {
+              "from": "n2",
+              "to": "b2",
+              "blocked": true
+            },
+            {
+              "id": "fa",
+              "from": "f2",
+              "to": "b2",
+              "tone": "warn",
+              "offset": -11
+            },
+            {
+              "id": "fb",
+              "from": "f2",
+              "to": "b2",
+              "tone": "warn",
+              "offset": 11
+            },
+            {
+              "from": "o3",
+              "to": "b3",
+              "blocked": true
+            },
+            {
+              "from": "sv",
+              "to": "dr",
+              "tone": "muted"
+            },
+            {
+              "from": "dr",
+              "to": "rm",
+              "tone": "muted"
+            }
+          ],
+          "packets": [
+            {
+              "path": [
+                "n1",
+                "b1"
+              ],
+              "tone": "good"
+            },
+            {
+              "path": [
+                "f2",
+                "b2"
+              ],
+              "tone": "accent"
+            }
+          ],
+          "steps": [
+            [
+              "dr",
+              "b2",
+              "n2",
+              "f2",
+              "n2>b2",
+              "fa",
+              "fb",
+              "sv>dr",
+              "packet:1"
+            ],
+            [
+              "rm",
+              "b3",
+              "o3",
+              "o3>b3",
+              "dr>rm"
+            ]
+          ]
+        }
+      },
+      "notes": "\"Draining is the polite way to retire a server, unlike yanking it out mid-request. It also runs during planned scale-down, not just after a failed health check. Exam angle: draining exists to avoid breaking in-flight requests.\""
+    },
+    {
+      "id": "T15-B",
+      "layout": "points",
+      "kicker": "Connection Draining",
+      "title": "Removing A Backend Safely",
+      "points": [
+        {
+          "text": "An unhealthy backend stops getting new traffic at once",
+          "icon": "ServerCrash",
+          "at": 1
+        },
+        {
+          "text": "When it is deregistered (for example, replaced by Auto Scaling), draining lets its in-flight requests finish",
+          "icon": "LogOut",
+          "at": 2
+        },
+        {
+          "text": "New requests stop reaching the backend as soon as deregistration starts (manual removal, scale-in or a deployment)",
+          "icon": "Ban",
+          "at": 3
+        }
+      ],
+      "pointsW": 660,
+      "figure": {
+        "type": "diagram",
+        "w": 428,
+        "h": 380,
+        "boxes": [
+          {
+            "id": "dg",
+            "label": "Deregistration",
+            "icon": "LogOut",
+            "kind": "zone",
+            "x": 18,
+            "y": 30,
+            "w": 176,
+            "h": 320
+          }
+        ],
+        "nodes": [
+          {
+            "id": "be",
+            "x": 299,
+            "y": 190,
+            "icon": "Server",
+            "label": "Backend",
+            "labelPos": "right",
+            "tone": "warn",
+            "loop": "blink"
+          }
+        ],
+        "chips": [
+          {
+            "id": "as",
+            "x": 106,
+            "y": 120,
+            "text": "Auto Scaling",
+            "icon": "Repeat",
+            "tone": "plain"
+          },
+          {
+            "id": "mr",
+            "x": 106,
+            "y": 182,
+            "text": "Manual Removal",
+            "icon": "Hand",
+            "tone": "plain"
+          },
+          {
+            "id": "si",
+            "x": 106,
+            "y": 244,
+            "text": "Scale-In",
+            "icon": "Minimize2",
+            "tone": "plain"
+          },
+          {
+            "id": "dp",
+            "x": 106,
+            "y": 306,
+            "text": "Deployment",
+            "icon": "Rocket",
+            "tone": "plain"
+          },
+          {
+            "id": "nr",
+            "x": 297,
+            "y": 50,
+            "text": "New Requests",
+            "tone": "bad"
+          },
+          {
+            "id": "fr",
+            "x": 296,
+            "y": 330,
+            "text": "In-Flight Requests",
+            "tone": "warn"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "dg",
+            "to": "be"
+          },
+          {
+            "from": "nr",
+            "to": "be",
+            "blocked": true
+          },
+          {
+            "id": "f1",
+            "from": "fr",
+            "to": "be",
+            "tone": "warn",
+            "offset": -10
+          },
+          {
+            "id": "f2",
+            "from": "fr",
+            "to": "be",
+            "tone": "warn",
+            "offset": 10
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "fr",
+              "be"
+            ],
+            "tone": "accent"
+          }
+        ],
+        "steps": [
+          [
+            "nr",
+            "nr>be"
+          ],
+          [
+            "dg",
+            "as",
+            "dg>be",
+            "fr",
+            "f1",
+            "f2",
+            "packet:0"
+          ],
+          [
+            "mr",
+            "si",
+            "dp"
+          ]
+        ]
+      },
+      "notes": "\"Draining is the polite way to retire a server, unlike yanking it out mid-request. It also runs during planned scale-down, not just after a failed health check. Exam angle: draining exists to avoid breaking in-flight requests.\""
+    },
+    {
+      "id": "T15-C",
+      "layout": "points",
+      "kicker": "Connection Draining",
+      "title": "Removing A Backend Safely",
+      "points": [
+        {
+          "text": "In-progress requests on that backend complete normally during the grace period",
+          "icon": "Hourglass"
+        },
+        {
+          "text": "The deregistration delay is a target group setting; the AWS default is 300 seconds",
+          "icon": "Timer"
+        },
+        {
+          "text": "Once the delay expires, any remaining connections are closed",
+          "icon": "Unplug"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_DelayTimer",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "\"Draining is the polite way to retire a server, unlike yanking it out mid-request. It also runs during planned scale-down, not just after a failed health check. Exam angle: draining exists to avoid breaking in-flight requests.\""
+    },
+    {
+      "id": "T16",
+      "layout": "lead",
+      "kicker": "Sticky Vs Stateless",
+      "title": "Two Session Approaches",
+      "lead": "HTTP is stateless by default, so a load balancer must decide whether a returning user must land on the same backend, or whether any backend can serve them equally well",
+      "figW": 1090,
+      "figH": 350,
+      "figure": {
+        "type": "diagram",
+        "w": 1090,
+        "h": 350,
+        "boxes": [
+          {
+            "id": "lbox",
+            "label": "Sticky Sessions",
+            "icon": "Cookie",
+            "kind": "zone",
+            "x": 12,
+            "y": 8,
+            "w": 522,
+            "h": 334
+          },
+          {
+            "id": "rbox",
+            "label": "Stateless Design",
+            "icon": "Database",
+            "kind": "zone",
+            "x": 556,
+            "y": 8,
+            "w": 522,
+            "h": 334
+          }
+        ],
+        "nodes": [
+          {
+            "id": "lu",
+            "x": 96,
+            "y": 118,
+            "icon": "lib:build-boy-laptop",
+            "shape": "person",
+            "size": 104,
+            "label": "User"
+          },
+          {
+            "id": "llb",
+            "x": 312,
+            "y": 118,
+            "icon": "img:images/aws-elb.svg",
+            "label": "Load Balancer",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "ls1",
+            "x": 202,
+            "y": 222,
+            "icon": "img:images/custom-server.svg",
+            "label": "Server 1",
+            "tone": "accent",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "ls2",
+            "x": 422,
+            "y": 222,
+            "icon": "img:images/custom-server.svg",
+            "label": "Server 2",
+            "tone": "muted",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "ru",
+            "x": 640,
+            "y": 118,
+            "icon": "lib:build-boy-laptop",
+            "shape": "person",
+            "size": 104,
+            "label": "User"
+          },
+          {
+            "id": "rlb",
+            "x": 856,
+            "y": 118,
+            "icon": "img:images/aws-elb.svg",
+            "label": "Load Balancer",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "rs1",
+            "x": 746,
+            "y": 222,
+            "icon": "img:images/custom-server.svg",
+            "label": "Server 1",
+            "tone": "brand",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "rs2",
+            "x": 966,
+            "y": 222,
+            "icon": "img:images/custom-server.svg",
+            "label": "Server 2",
+            "tone": "brand",
+            "shape": "bare",
+            "size": 50
+          },
+          {
+            "id": "rdb",
+            "x": 856,
+            "y": 300,
+            "icon": "img:images/custom-database.svg",
+            "shape": "bare",
+            "label": "Shared Data Store",
+            "labelPos": "right",
+            "size": 50
+          }
+        ],
+        "arrows": [
+          {
+            "from": "lu",
+            "to": "llb",
+            "tone": "accent",
+            "label": "Cookie"
+          },
+          {
+            "from": "llb",
+            "to": "ls1",
+            "tone": "accent"
+          },
+          {
+            "from": "ru",
+            "to": "rlb"
+          },
+          {
+            "from": "rlb",
+            "to": "rs1"
+          },
+          {
+            "from": "rlb",
+            "to": "rs2"
+          },
+          {
+            "from": "rs1",
+            "to": "rdb",
+            "two": true,
+            "tone": "muted"
+          },
+          {
+            "from": "rs2",
+            "to": "rdb",
+            "two": true,
+            "tone": "muted"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "lu",
+              "llb",
+              "ls1"
+            ],
+            "tone": "accent"
+          },
+          {
+            "path": [
+              "ru",
+              "rlb",
+              "rs1"
+            ],
+            "tone": "brand"
+          },
+          {
+            "path": [
+              "ru",
+              "rlb",
+              "rs2"
+            ],
+            "tone": "brand"
+          }
+        ],
+        "steps": [
+          [
+            "rbox",
+            "ru",
+            "rlb",
+            "rs1",
+            "rs2",
+            "ru>rlb",
+            "rlb>rs1",
+            "rlb>rs2",
+            "packet:1",
+            "packet:2"
+          ],
+          [
+            "rdb",
+            "rs1>rdb",
+            "rs2>rdb"
+          ]
+        ]
+      },
+      "notes": "\"Link this to draining: a sticky user on a draining backend forces a remap. Stateless design is preferred since it lets instances be added or removed freely. Interview hook: stateless design scales better because it removes server-affinity bottlenecks.\""
+    },
+    {
+      "id": "T16-B",
+      "layout": "table",
+      "kicker": "Sticky Vs Stateless",
+      "title": "Two Session Approaches",
+      "table": {
+        "size": 19,
+        "columns": [
+          {
+            "label": "Approach",
+            "icon": "Route",
+            "weight": 0.8
+          },
+          {
+            "label": "How It Works",
+            "icon": "Cog",
+            "weight": 1.3
+          },
+          {
+            "label": "Trade-off",
+            "icon": "Scale",
+            "weight": 1.2
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Cookie",
+            "cells": [
+              "Sticky sessions",
+              "A cookie set by the load balancer binds a user to one backend for the session duration",
+              "Breaks if that backend drains or fails, and skews load unevenly"
+            ]
+          },
+          {
+            "icon": "Database",
+            "cells": [
+              "Stateless design",
+              "Session data lives outside the server, so any healthy backend can answer any request",
+              "Needs an external store, but removal and scaling stay simple"
+            ]
+          }
+        ]
+      },
+      "notes": "\"Link this to draining: a sticky user on a draining backend forces a remap. Stateless design is preferred since it lets instances be added or removed freely. Interview hook: stateless design scales better because it removes server-affinity bottlenecks.\""
+    },
+    {
+      "id": "D5",
+      "layout": "breaker",
+      "index": 5
+    },
+    {
+      "id": "T17",
+      "layout": "points",
+      "kicker": "DNS And CDN",
+      "title": "Routing And Delivery",
+      "notes": "Frame this as traffic steering at a wider scale than load balancing. DNS decides which region a user reaches; the CDN decides where content is stored. Interviewers often ask how DNS and CDN differ from a load balancer.",
+      "pointsW": 560,
+      "lead": "Load balancing spreads traffic within one location.\nDNS-based routing and content delivery solve the same problem at internet scale, across regions and distant users",
+      "points": [
+        {
+          "text": "DNS-based routing returns different endpoint addresses based on a policy like location, latency or health",
+          "icon": "Signpost"
+        },
+        {
+          "text": "DNS failover swaps a failed address for a healthy one, but only after cached DNS answers expire (TTL)",
+          "icon": "RefreshCw"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_DnsPick",
+        "props": {
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "T17-B",
+      "layout": "points",
+      "kicker": "DNS And CDN",
+      "title": "Routing And Delivery",
+      "notes": "Frame this as traffic steering at a wider scale than load balancing. DNS decides which region a user reaches; the CDN decides where content is stored. Interviewers often ask how DNS and CDN differ from a load balancer.",
+      "pointsW": 540,
+      "points": [
+        {
+          "text": "A Content Delivery Network (CDN) caches copies of content at edge locations close to users",
+          "icon": "Server"
+        },
+        {
+          "text": "Edges fetch content from the origin on a cache miss",
+          "icon": "Download"
+        },
+        {
+          "text": "Cache expiry (TTL) and invalidation keep copies up to date",
+          "icon": "RefreshCw"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_EdgeOrigin",
+        "props": {
+          "steps": 3
+        }
+      }
+    },
+    {
+      "id": "T18",
+      "layout": "lead",
+      "kicker": "DNS Based Routing",
+      "title": "Steering By Resolution",
+      "notes": "Explain that the same name can resolve to different addresses depending on who asks and from where. Use the enquiry-counter analogy before naming the four policy types. Interviewers may ask how this differs from a load balancer: routing happens before any connection opens.",
+      "figW": 1000,
+      "figH": 330,
+      "lead": "Domain Name System (DNS) normally returns one fixed address for a name, but DNS-based routing returns different addresses based on policy.\nThis steers users to a region without the user noticing any choice",
+      "figure": {
+        "type": "custom",
+        "name": "D_GeoMap",
+        "props": {
+          "steps": 3
+        }
+      }
+    },
+    {
+      "id": "T18-B",
+      "layout": "lead",
+      "kicker": "DNS Based Routing",
+      "title": "Steering By Resolution",
+      "notes": "Explain that the same name can resolve to different addresses depending on who asks and from where. Use the enquiry-counter analogy before naming the four policy types. Interviewers may ask how this differs from a load balancer: routing happens before any connection opens.",
+      "figW": 1110,
+      "figH": 416,
+      "figure": {
+        "type": "custom",
+        "name": "D_PolicyCells",
+        "props": {
+          "steps": 5,
+          "points": [
+            "Geolocation routing: returns the record assigned to the user’s country or continent",
+            "Geoproximity picks the nearest location",
+            "Latency-based routing: picks the region that historically responded fastest to the user",
+            "Weighted routing splits DNS answers across regions by a configured traffic percentage",
+            "Multi-value answer routing: returns several healthy addresses for the client to choose"
+          ]
+        }
+      }
+    },
+    {
+      "id": "T18-AN",
+      "section": "DNS & Content Delivery",
+      "label": "Analogy: a food delivery app",
+      "layout": "analogy",
+      "kicker": "DNS Based Routing",
+      "title": "Steering By Resolution",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T18Everyday",
+        "props": {
+          "steps": 3
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T18Concept",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "TR analogy: When you order from a restaurant chain on a food delivery app, the app automatically sends your order to the branch nearest to you or the one that is open and least busy, even though you only searched the restaurant’s name. In the same way, DNS-based routing takes one domain name and returns the address of the regional server best suited for each user.\n\n\"Explain that the same name can resolve to different addresses depending on who asks and from where. Use the enquiry-counter analogy before naming the four policy types. Interviewers may ask how this differs from a load balancer: routing happens before any connection opens.\""
+    },
+    {
+      "id": "T19",
+      "layout": "lead",
+      "kicker": "DNS Failover Mechanism",
+      "title": "Health Checked Record Swap",
+      "notes": "Connect this to load balancer health checks, but note the checked unit here is an entire region, not one server. The TTL trade-off between fast failover and resolver load is a common interview probe; TTL also governs how fast cached answers expire.",
+      "figW": 1000,
+      "figH": 320,
+      "lead": "Proximity routing alone cannot sense a region is down, so DNS failover adds continuous health checks that stop including a failed address in new DNS answers",
+      "figure": {
+        "type": "custom",
+        "name": "D_FailTimeline",
+        "props": {
+          "steps": 3
+        }
+      }
+    },
+    {
+      "id": "T19-B",
+      "layout": "points",
+      "kicker": "DNS Failover Mechanism",
+      "title": "Health Checked Record Swap",
+      "notes": "Connect this to load balancer health checks, but note the checked unit here is an entire region, not one server. The TTL trade-off between fast failover and resolver load is a common interview probe; TTL also governs how fast cached answers expire.",
+      "pointsW": 540,
+      "points": [
+        {
+          "text": "Route 53 failover routing sends traffic to a primary record, switching to a secondary if it fails",
+          "icon": "Signpost"
+        },
+        {
+          "text": "A record failing consecutive checks is marked down and removed from DNS answers",
+          "icon": "CircleX"
+        },
+        {
+          "text": "Failover completes after detection plus TTL expiry of cached answers",
+          "icon": "Timer"
+        },
+        {
+          "text": "Lower TTL values speed up failover but raise resolver query load",
+          "icon": "Gauge"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_Failover",
+        "props": {
+          "steps": 4
+        }
+      }
+    },
+    {
+      "id": "T20",
+      "layout": "lead",
+      "kicker": "CDN Edge Caching",
+      "title": "Content Near Users",
+      "notes": "Define cache hit and miss here, since the next slide builds on both. Name CloudFront as the AWS CDN. A common interview question is why a CDN helps even when the app runs in one region: distance and origin offload.",
+      "figW": 1000,
+      "figH": 350,
+      "lead": "A CDN keeps copies of content on servers called edge locations, placed close to users, so most requests are answered nearby instead of at a distant origin server",
+      "figure": {
+        "type": "custom",
+        "name": "D_CdnMap",
+        "props": {
+          "steps": 3
+        }
+      }
+    },
+    {
+      "id": "T20-B",
+      "layout": "points",
+      "kicker": "CDN Edge Caching",
+      "title": "Content Near Users",
+      "notes": "Define cache hit and miss here, since the next slide builds on both. Name CloudFront as the AWS CDN. A common interview question is why a CDN helps even when the app runs in one region: distance and origin offload.",
+      "pointsW": 540,
+      "figH": 400,
+      "points": [
+        {
+          "text": "Edge location: a cache server near users",
+          "icon": "MapPin"
+        },
+        {
+          "text": "A cache hit means it already holds the content and replies at once",
+          "icon": "CircleCheck"
+        },
+        {
+          "text": "Cache miss: the edge lacks the content, fetches it from the origin and keeps a copy for the next user",
+          "icon": "Download"
+        },
+        {
+          "text": "Serving from the edge cuts delay for distant users and shields the origin from repeated requests",
+          "icon": "Shield"
+        },
+        {
+          "text": "Static files such as images, style sheets and scripts cache well; personalised pages cache poorly",
+          "icon": "FileCode2"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_HitMiss",
+        "props": {
+          "steps": 5
+        }
+      }
+    },
+    {
+      "id": "T20-AN",
+      "section": "DNS & Content Delivery",
+      "label": "Analogy: a neighbourhood shop",
+      "layout": "analogy",
+      "kicker": "CDN Edge Caching",
+      "title": "Content Near Users",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "F_T20Everyday",
+        "props": {
+          "steps": 3
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "F_T20Concept",
+        "props": {
+          "steps": 3
+        }
+      },
+      "notes": "TR analogy: “A neighbourhood shop stocks popular items so customers need not travel to a distant factory every time — just as an edge location holds popular content and only the first request travels to the origin.”\n\n“Define cache hit and miss here, since the next slide builds on both. Name CloudFront as the AWS CDN. A common interview question is why a CDN helps even when the app runs in one region: distance and origin offload.”"
+    },
+    {
+      "id": "T21",
+      "layout": "points",
+      "kicker": "Origin Pull Mechanism",
+      "title": "Refreshing Edge Content",
+      "notes": "Build on the known cache hit/miss idea, noting the miss path is called an origin pull. Explain TTL as the timer deciding when a cached copy turns stale. Exams often ask why static files get long TTLs and dynamic pages do not.",
+      "pointsW": 520,
+      "lead": "An edge server must decide if its cached copy is still fresh, or stale enough to fetch again from the origin, the authoritative content server",
+      "points": [
+        {
+          "text": "A cache miss triggers an origin pull, fetching the object fresh",
+          "icon": "Download"
+        },
+        {
+          "text": "Time to Live (TTL), set via a cache-control header, decides how long an edge copy stays valid",
+          "icon": "Clock"
+        },
+        {
+          "text": "A conditional request confirms a cached copy is still fresh without re-downloading it",
+          "icon": "CircleCheck"
+        },
+        {
+          "text": "Static assets get long TTLs; frequently changing pages get short or no caching",
+          "icon": "FileClock"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_OriginPull",
+        "props": {
+          "steps": 4
+        }
+      }
+    },
+    {
+      "id": "T22",
+      "layout": "lead",
+      "kicker": "Cache Invalidation",
+      "title": "Forcing Fresh Content",
+      "notes": "Present purge and versioning as two answers to the same problem: stale content after an update. The versioned-URL trick is a favourite interview question since it needs no purge call. Note that aggressive purging pushes traffic back onto the origin.",
+      "figW": 1000,
+      "figH": 320,
+      "lead": "Waiting for a TTL to expire can leave stale content live for minutes or hours.\nCache invalidation lets an operator remove or bypass it immediately",
+      "figure": {
+        "type": "custom",
+        "name": "D_PurgeVersion",
+        "props": {
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "T22-B",
+      "layout": "points",
+      "kicker": "Cache Invalidation",
+      "title": "Forcing Fresh Content",
+      "notes": "Present purge and versioning as two answers to the same problem: stale content after an update. The versioned-URL trick is a favourite interview question since it needs no purge call. Note that aggressive purging pushes traffic back onto the origin.",
+      "pointsW": 540,
+      "points": [
+        {
+          "text": "Purge invalidation removes an object from every edge before TTL expiry",
+          "icon": "Trash2"
+        },
+        {
+          "text": "CloudFront calls this an invalidation request",
+          "icon": "Cloud"
+        },
+        {
+          "text": "Versioned URLs attach a new filename or query string, skipping old cached files",
+          "icon": "FileCode2"
+        },
+        {
+          "text": "A single invalidation request can target one path or an entire cache",
+          "icon": "Crosshair"
+        },
+        {
+          "text": "Over-invalidating increases origin load since every edge must re-fetch content",
+          "icon": "TrendingUp"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_Invalidate",
+        "props": {
+          "steps": 5
+        }
+      }
+    },
+    {
+      "id": "T23",
+      "layout": "table",
+      "kicker": "DNS Vs Load Balancer",
+      "title": "Two Routing Layers",
+      "notes": "Use the table to fix the layer and speed difference; this is a common interview question. DNS failover is slower due to TTL caching, while a load balancer reacts within its health-check interval. Both layers are usually combined, not chosen between.",
+      "lead": "DNS routing and a load balancer both redirect traffic from a failed target, but they work at different layers and speeds.\nProduction systems usually combine both",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Layer",
+            "icon": "Layers"
+          },
+          {
+            "label": "Scope",
+            "icon": "Map"
+          },
+          {
+            "label": "Failover Speed",
+            "icon": "Timer"
+          },
+          {
+            "label": "Example",
+            "icon": "Lightbulb",
+            "weight": 1.3
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Globe",
+            "cells": [
+              "DNS routing",
+              "Across regions or data centres",
+              "Minutes, bound by record TTL",
+              "Geo or latency routing to the nearest region"
+            ]
+          },
+          {
+            "icon": "Network",
+            "cells": [
+              "Load balancer",
+              "Within one region, across servers",
+              "Seconds, by health-check interval",
+              "Application Load Balancer and its target group"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "T23-B",
+      "layout": "lead",
+      "kicker": "DNS Vs Load Balancer",
+      "title": "Two Routing Layers",
+      "notes": "Use the table to fix the layer and speed difference; this is a common interview question. DNS failover is slower due to TTL caching, while a load balancer reacts within its health-check interval. Both layers are usually combined, not chosen between.",
+      "figW": 1000,
+      "figH": 316,
+      "lead": "DNS first sends a user to a healthy region, and a load balancer inside that region spreads requests across healthy servers.\nThe two layers complement rather than replace each other",
+      "figure": {
+        "type": "custom",
+        "name": "D_TwoLayers",
+        "props": {
+          "steps": 2
+        }
+      }
+    },
+    {
+      "id": "D-LAB",
+      "layout": "breaker",
+      "index": 6,
+      "lab": true,
+      "kicker": "Practical Hands-On",
+      "title": "Building a Load-Balanced Web Tier"
+    },
+    {
+      "id": "P01",
+      "layout": "custom",
+      "component": "E_LeadNote",
+      "label": "Task And Steps",
+      "props": {
+        "id": "P01",
+        "kicker": "Load Balancer Build",
+        "title": "Task And Steps",
+        "lead": "This exercise builds a small load-balanced web tier: two web servers behind one Application Load Balancer, using the VPC and subnets created earlier",
+        "note": {
+          "text": "It creates billable AWS resources, so the Billing dashboard should be checked first, and all resources are deleted right after screenshots are captured",
+          "tone": "warn"
+        },
+        "figure": {
+          "type": "diagram",
+          "w": 1110,
+          "h": 292,
+          "boxes": [
+            {
+              "id": "region",
+              "label": "Region `ap-south-1`",
+              "icon": "MapPin",
+              "kind": "region",
+              "x": 124,
+              "y": 0,
+              "w": 982,
+              "h": 292
+            },
+            {
+              "id": "vpc",
+              "label": "`s5-cloud-network-vpc`",
+              "icon": "Network",
+              "sub": "10.0.0.0/16",
+              "kind": "vpc",
+              "x": 176,
+              "y": 38,
+              "w": 920,
+              "h": 246
+            },
+            {
+              "id": "za",
+              "label": "Availability Zone `ap-south-1a`",
+              "kind": "zone",
+              "labelAt": "bottom",
+              "x": 236,
+              "y": 158,
+              "w": 414,
+              "h": 118
+            },
+            {
+              "id": "zb",
+              "label": "Availability Zone `ap-south-1b`",
+              "kind": "zone",
+              "labelAt": "bottom",
+              "x": 662,
+              "y": 158,
+              "w": 414,
+              "h": 118
+            },
+            {
+              "id": "sa",
+              "label": "`s5-public-subnet`",
+              "sub": "10.0.1.0/24",
+              "kind": "public",
+              "labelAt": "bottom",
+              "x": 250,
+              "y": 166,
+              "w": 386,
+              "h": 68
+            },
+            {
+              "id": "sb",
+              "label": "`s6-public-subnet-2`",
+              "sub": "10.0.3.0/24",
+              "kind": "public",
+              "labelAt": "bottom",
+              "x": 676,
+              "y": 166,
+              "w": 386,
+              "h": 68
+            }
+          ],
+          "nodes": [
+            {
+              "id": "users",
+              "x": 60,
+              "y": 120,
+              "icon": "lib:student-laptop",
+              "shape": "bare",
+              "size": 76,
+              "label": "Users",
+              "loop": "lift"
+            },
+            {
+              "id": "igw",
+              "x": 176,
+              "y": 120,
+              "icon": "Globe",
+              "shape": "disc",
+              "label": "`s5-igw`"
+            },
+            {
+              "id": "alb",
+              "x": 700,
+              "y": 120,
+              "icon": "img:images/aws-alb.svg",
+              "size": 56,
+              "label": "`s6-demo-alb`",
+              "labelPos": "right",
+              "loop": "pulse"
+            },
+            {
+              "id": "web1",
+              "x": 500,
+              "y": 200,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 52,
+              "label": "`s6-web-1`",
+              "labelPos": "right"
+            },
+            {
+              "id": "web2",
+              "x": 926,
+              "y": 200,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 52,
+              "label": "`s6-web-2`",
+              "labelPos": "right"
+            }
+          ],
+          "arrows": [
+            {
+              "from": "users",
+              "to": "igw"
+            },
+            {
+              "from": "igw",
+              "to": "alb"
+            },
+            {
+              "from": "alb",
+              "to": "web1"
+            },
+            {
+              "from": "alb",
+              "to": "web2"
+            }
+          ],
+          "packets": [
+            {
+              "path": [
+                "users",
+                "igw",
+                "alb",
+                "web1"
+              ]
+            },
+            {
+              "path": [
+                "users",
+                "igw",
+                "alb",
+                "web2"
+              ]
+            }
+          ],
+          "steps": [
+            [
+              "igw",
+              "users>igw"
+            ],
+            [
+              "alb",
+              "igw>alb"
+            ],
+            [
+              "web1",
+              "web2",
+              "alb>web1",
+              "alb>web2",
+              "packet:0",
+              "packet:1"
+            ]
+          ]
+        },
+        "flip": [
+          "users"
+        ]
+      }
+    },
+    {
+      "id": "P01-B",
+      "layout": "points",
+      "kicker": "Load Balancer Build",
+      "title": "Task And Steps",
+      "points": [
+        {
+          "text": "An Application Load Balancer spans more than one Availability Zone",
+          "icon": "Split",
+          "at": 1
+        },
+        {
+          "text": "So the servers it balances across must sit in separate zones for true redundancy",
+          "icon": "Server",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "diagram",
+        "w": 620,
+        "h": 370,
+        "boxes": [
+          {
+            "id": "za",
+            "label": "Availability Zone `ap-south-1a`",
+            "kind": "zone",
+            "labelAt": "bottom",
+            "x": 16,
+            "y": 150,
+            "w": 286,
+            "h": 206
+          },
+          {
+            "id": "zb",
+            "label": "Availability Zone `ap-south-1b`",
+            "kind": "zone",
+            "labelAt": "bottom",
+            "x": 318,
+            "y": 150,
+            "w": 286,
+            "h": 206
+          }
+        ],
+        "nodes": [
+          {
+            "id": "users",
+            "x": 92,
+            "y": 52,
+            "icon": "lib:student-laptop",
+            "shape": "bare",
+            "size": 64,
+            "label": "Users",
+            "loop": "lift"
+          },
+          {
+            "id": "alb",
+            "x": 310,
+            "y": 56,
+            "icon": "img:images/aws-alb.svg",
+            "size": 60,
+            "label": "Application Load Balancer",
+            "labelPos": "right",
+            "loop": "pulse"
+          },
+          {
+            "id": "web1",
+            "x": 159,
+            "y": 232,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 64,
+            "label": "`s6-web-1`"
+          },
+          {
+            "id": "web2",
+            "x": 461,
+            "y": 232,
+            "icon": "lib:server-stack",
+            "shape": "bare",
+            "size": 64,
+            "label": "`s6-web-2`"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "users",
+            "to": "alb"
+          },
+          {
+            "from": "alb",
+            "to": "web1"
+          },
+          {
+            "from": "alb",
+            "to": "web2"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "users",
+              "alb",
+              "web1"
+            ]
+          },
+          {
+            "path": [
+              "users",
+              "alb",
+              "web2"
+            ]
+          }
+        ],
+        "steps": [
+          [
+            "za",
+            "zb"
+          ],
+          [
+            "web1",
+            "web2",
+            "alb>web1",
+            "alb>web2",
+            "packet:0",
+            "packet:1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "P01-C",
+      "layout": "table",
+      "kicker": "Load Balancer Build",
+      "title": "Task And Steps",
+      "table": {
+        "columns": [
+          {
+            "label": "Resource",
+            "icon": "Boxes",
+            "weight": 1
+          },
+          {
+            "label": "Expected Name",
+            "icon": "Tag",
+            "weight": 1.05
+          },
+          {
+            "label": "Expected Configuration",
+            "icon": "Settings",
+            "weight": 1.7
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Network",
+            "cells": [
+              "VPC",
+              "`s5-cloud-network-vpc`",
+              "CIDR `10.0.0.0/16`"
+            ]
+          },
+          {
+            "icon": "LayoutGrid",
+            "cells": [
+              "First public subnet",
+              "`s5-public-subnet`",
+              "`10.0.1.0/24`, Availability Zone `ap-south-1a`"
+            ]
+          },
+          {
+            "icon": "SquarePlus",
+            "cells": [
+              "Second public subnet",
+              "`s6-public-subnet-2`",
+              "`10.0.3.0/24`, Availability Zone `ap-south-1b`, associated with `s5-public-rt`"
+            ]
+          },
+          {
+            "icon": "Globe",
+            "cells": [
+              "Internet Gateway",
+              "`s5-igw`",
+              "Attached to `s5-cloud-network-vpc`"
+            ]
+          },
+          {
+            "icon": "Route",
+            "cells": [
+              "Public route table",
+              "`s5-public-rt`",
+              "Default route `0.0.0.0/0` points to `s5-igw`"
+            ]
+          },
+          {
+            "icon": "Lock",
+            "cells": [
+              "Private subnet",
+              "`s5-private-subnet`",
+              "`10.0.2.0/24`"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "P01-D",
+      "layout": "custom",
+      "component": "E_Steps",
+      "label": "Task And Steps",
+      "props": {
+        "id": "P01-D",
+        "kicker": "Load Balancer Build",
+        "title": "Task And Steps",
+        "steps": [
+          {
+            "text": "Verify the VPC, subnets, and route table against the table above before creating anything new",
+            "icon": "ListChecks"
+          },
+          {
+            "text": "Add one new subnet in a second zone, plus a load balancer security group and a web server security group",
+            "icon": "SquarePlus"
+          },
+          {
+            "text": "Launch two EC2 web servers, one per public subnet, each running a startup script",
+            "icon": "Server"
+          },
+          {
+            "text": "Create a target group and register both web servers as its targets",
+            "icon": "Target"
+          },
+          {
+            "text": "Create an internet-facing Application Load Balancer spanning both subnets, forwarding to the target group",
+            "icon": "Split"
+          },
+          {
+            "text": "Test the load balancer, then stop and restart a server to observe health checks",
+            "icon": "Activity"
+          },
+          {
+            "text": "Verify every component, capture screenshots, and delete resources in order: load balancer, target group, EC2 instances, `s6-web-sg`, `s6-alb-sg`, then `s6-public-subnet-2`",
+            "icon": "Trash2"
+          }
+        ]
+      },
+      "notes": "1. Verify the Session 5 VPC, subnets, and route table against the table above before creating anything new."
+    },
+    {
+      "id": "P02",
+      "layout": "screenshot",
+      "kicker": "Setup Confirmation",
+      "title": "Security Groups, Listener, Servers",
+      "lead": "Before testing, confirm three things: the web-server security group only trusts the load balancer, the listener forwards to the right target group, and both servers are running",
+      "step": {
+        "text": "Web Server Security Group",
+        "icon": "Shield"
+      },
+      "image": "images/web-sg-inbound-crop.png",
+      "rings": [
+        [
+          1226,
+          104,
+          582,
+          176
+        ]
+      ],
+      "note": {
+        "text": "`s6-web-sg` inbound rule: source is the ALB's own security group, not the public internet",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P02-B",
+      "layout": "screenshot",
+      "kicker": "Setup Confirmation",
+      "title": "Security Groups, Listener, Servers",
+      "step": {
+        "text": "Load Balancer Security Group",
+        "icon": "ShieldCheck"
+      },
+      "image": "images/alb-sg-inbound-crop.png",
+      "rings": [
+        [
+          1228,
+          108,
+          582,
+          178
+        ]
+      ],
+      "note": {
+        "text": "`s6-alb-sg` inbound rule: source is `0.0.0.0/0`, open to all public traffic",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P02-C",
+      "layout": "screenshot",
+      "kicker": "Setup Confirmation",
+      "title": "Security Groups, Listener, Servers",
+      "step": {
+        "text": "Listener Routing",
+        "icon": "Route"
+      },
+      "image": "images/listener-crop.png",
+      "rings": [
+        [
+          32,
+          207,
+          892,
+          92
+        ],
+        [
+          81,
+          531,
+          1094,
+          117
+        ]
+      ],
+      "note": {
+        "text": "HTTP:80 listener forwards to target group `s6-web-tg`",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P02-D",
+      "layout": "screenshot",
+      "kicker": "Setup Confirmation",
+      "title": "Security Groups, Listener, Servers",
+      "step": {
+        "text": "Both Servers Running",
+        "icon": "Server"
+      },
+      "image": "images/instances-running-crop.png",
+      "rings": [
+        [
+          660,
+          106,
+          210,
+          160
+        ]
+      ],
+      "note": {
+        "text": "Both EC2 instances (`s6-web-1`, `s6-web-2`) in Running state, ready to be registered",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P03",
+      "layout": "screenshot",
+      "kicker": "Load Balancer Action",
+      "title": "Test And Recovery",
+      "lead": "Testing confirms three behaviours: healthy targets share traffic, a stopped target is taken out of rotation, and a restarted target returns once it passes its health checks",
+      "step": {
+        "text": "Both Targets Healthy",
+        "icon": "HeartPulse"
+      },
+      "image": "images/tg-healthy-crop.png",
+      "rings": [
+        [
+          586,
+          192,
+          170,
+          128
+        ],
+        [
+          1092,
+          192,
+          200,
+          128
+        ]
+      ],
+      "note": {
+        "text": "Target group summary: 2 Healthy, 0 Unhealthy, before any traffic test",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P03-B",
+      "layout": "custom",
+      "component": "E_BrowserTest",
+      "label": "Test And Recovery",
+      "props": {
+        "id": "P03-B",
+        "kicker": "Load Balancer Action",
+        "title": "Test And Recovery",
+        "step": "Browser Test: Load Balancer Serves Both Servers",
+        "icon": "Globe",
+        "shots": [
+          {
+            "image": "images/browser-web-1-crop.png",
+            "rings": [
+              [
+                372,
+                10,
+                1020,
+                56
+              ],
+              [
+                6,
+                122,
+                1086,
+                84
+              ]
+            ],
+            "caption": "Request via the ALB's DNS name: answered by `s6-web-1`",
+            "icon": "Globe"
+          },
+          {
+            "image": "images/browser-web-2-crop.png",
+            "rings": [
+              [
+                6,
+                28,
+                1086,
+                80
+              ]
+            ],
+            "caption": "A later request: answered by `s6-web-2`; which server answers is not guaranteed to alternate strictly",
+            "icon": "RefreshCw"
+          }
+        ]
+      }
+    },
+    {
+      "id": "P03-C",
+      "layout": "screenshot",
+      "kicker": "Load Balancer Action",
+      "title": "Test And Recovery",
+      "step": {
+        "text": "After Stopping `s6-web-2`",
+        "icon": "CircleStop"
+      },
+      "image": "images/tg-unused-crop.png",
+      "rings": [
+        [
+          1110,
+          106,
+          790,
+          72
+        ]
+      ],
+      "note": {
+        "text": "Status shows Unused: “Target is in the stopped state,” not Unhealthy; Unhealthy is reserved for a running instance that fails its health check path",
+        "tone": "info"
+      }
+    },
+    {
+      "id": "P04",
+      "layout": "custom",
+      "component": "E_TableNote",
+      "label": "Wrap-Up Checklist",
+      "props": {
+        "id": "P04",
+        "kicker": "Result And Cleanup",
+        "title": "Wrap-Up Checklist",
+        "lead": "The finished setup is a single load balancer domain name that reaches two interchangeable web servers, each able to fail and recover without any manual rerouting of traffic",
+        "table": {
+          "size": 16,
+          "columns": [
+            {
+              "label": "Component",
+              "icon": "Boxes",
+              "weight": 1
+            },
+            {
+              "label": "Expected Result",
+              "icon": "CircleCheck",
+              "weight": 2.6
+            }
+          ],
+          "rows": [
+            {
+              "icon": "Network",
+              "cells": [
+                "VPC",
+                "`s5-cloud-network-vpc`"
+              ]
+            },
+            {
+              "icon": "LayoutGrid",
+              "cells": [
+                "Public subnets",
+                "`s5-public-subnet` and `s6-public-subnet-2` in different zones"
+              ]
+            },
+            {
+              "icon": "Shield",
+              "cells": [
+                "Security groups",
+                "`s6-alb-sg` open to `0.0.0.0/0`; `s6-web-sg` open only to `s6-alb-sg`"
+              ]
+            },
+            {
+              "icon": "Server",
+              "cells": [
+                "EC2 instances",
+                "`s6-web-1` and `s6-web-2`, both running"
+              ]
+            },
+            {
+              "icon": "Target",
+              "cells": [
+                "Target group",
+                "`s6-web-tg`, both instances Healthy"
+              ]
+            },
+            {
+              "icon": "Split",
+              "cells": [
+                "Load balancer",
+                "`s6-demo-alb`, listener forwards to `s6-web-tg`"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "P04-B",
+      "layout": "custom",
+      "component": "E_LeadNote",
+      "label": "Wrap-Up Checklist",
+      "props": {
+        "id": "P04-B",
+        "kicker": "Result And Cleanup",
+        "title": "Wrap-Up Checklist",
+        "lead": "This classroom setup enables public addresses on both backend servers to keep access simple; in a production deployment, servers sitting behind an internet-facing load balancer are usually placed in private subnets instead, since the load balancer is the only component that needs to be publicly reachable",
+        "figure": {
+          "type": "diagram",
+          "w": 1100,
+          "h": 280,
+          "boxes": [
+            {
+              "id": "cl",
+              "label": "Classroom Setup",
+              "icon": "GraduationCap",
+              "kind": "plain",
+              "x": 8,
+              "y": 4,
+              "w": 530,
+              "h": 272
+            },
+            {
+              "id": "clpub",
+              "label": "Public Subnet",
+              "kind": "public",
+              "labelAt": "bottom",
+              "x": 130,
+              "y": 50,
+              "w": 394,
+              "h": 214
+            },
+            {
+              "id": "pr",
+              "label": "Production Deployment",
+              "icon": "Building2",
+              "kind": "plain",
+              "x": 562,
+              "y": 4,
+              "w": 530,
+              "h": 272
+            },
+            {
+              "id": "prpub",
+              "label": "Public Subnet",
+              "kind": "public",
+              "labelAt": "bottom",
+              "x": 684,
+              "y": 50,
+              "w": 176,
+              "h": 214
+            },
+            {
+              "id": "prpri",
+              "label": "Private Subnet",
+              "kind": "private",
+              "labelAt": "bottom",
+              "x": 876,
+              "y": 50,
+              "w": 202,
+              "h": 214
+            }
+          ],
+          "nodes": [
+            {
+              "id": "clu",
+              "x": 66,
+              "y": 170,
+              "icon": "lib:student-laptop",
+              "shape": "bare",
+              "size": 66,
+              "label": "Users",
+              "loop": "lift"
+            },
+            {
+              "id": "cllb",
+              "x": 218,
+              "y": 128,
+              "icon": "img:images/aws-elb.svg",
+              "size": 54,
+              "label": "Load Balancer",
+              "loop": "pulse"
+            },
+            {
+              "id": "cls1",
+              "x": 348,
+              "y": 92,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 48
+            },
+            {
+              "id": "cls2",
+              "x": 348,
+              "y": 176,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 48
+            },
+            {
+              "id": "pru",
+              "x": 620,
+              "y": 170,
+              "icon": "lib:student-laptop",
+              "shape": "bare",
+              "size": 66,
+              "label": "Users",
+              "loop": "lift"
+            },
+            {
+              "id": "prlb",
+              "x": 772,
+              "y": 128,
+              "icon": "img:images/aws-elb.svg",
+              "size": 54,
+              "label": "Load Balancer",
+              "loop": "pulse"
+            },
+            {
+              "id": "prs1",
+              "x": 977,
+              "y": 92,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 48
+            },
+            {
+              "id": "prs2",
+              "x": 977,
+              "y": 176,
+              "icon": "lib:server-stack",
+              "shape": "bare",
+              "size": 48
+            }
+          ],
+          "chips": [
+            {
+              "id": "clc1",
+              "x": 448,
+              "y": 92,
+              "text": "Public Address",
+              "icon": "Globe",
+              "tone": "good"
+            },
+            {
+              "id": "clc2",
+              "x": 448,
+              "y": 176,
+              "text": "Public Address",
+              "icon": "Globe",
+              "tone": "good"
+            }
+          ],
+          "arrows": [
+            {
+              "from": "clu",
+              "to": "cllb"
+            },
+            {
+              "from": "cllb",
+              "to": "cls1"
+            },
+            {
+              "from": "cllb",
+              "to": "cls2"
+            },
+            {
+              "from": "pru",
+              "to": "prlb"
+            },
+            {
+              "from": "prlb",
+              "to": "prs1"
+            },
+            {
+              "from": "prlb",
+              "to": "prs2"
+            }
+          ],
+          "packets": [
+            {
+              "path": [
+                "clu",
+                "cllb",
+                "cls1"
+              ]
+            },
+            {
+              "path": [
+                "clu",
+                "cllb",
+                "cls2"
+              ]
+            },
+            {
+              "path": [
+                "pru",
+                "prlb",
+                "prs1"
+              ]
+            },
+            {
+              "path": [
+                "pru",
+                "prlb",
+                "prs2"
+              ]
+            }
+          ],
+          "steps": [
+            [
+              "cl",
+              "clu",
+              "clpub",
+              "cllb",
+              "cls1",
+              "cls2",
+              "clc1",
+              "clc2",
+              "clu>cllb",
+              "cllb>cls1",
+              "cllb>cls2",
+              "packet:0",
+              "packet:1"
+            ],
+            [
+              "pr",
+              "pru",
+              "prpub",
+              "prpri",
+              "prlb",
+              "prs1",
+              "prs2",
+              "pru>prlb",
+              "prlb>prs1",
+              "prlb>prs2",
+              "packet:2",
+              "packet:3"
+            ]
+          ]
+        },
+        "flip": [
+          "clu",
+          "pru"
+        ]
+      }
+    },
+    {
+      "id": "P04-C",
+      "layout": "custom",
+      "component": "E_LeadNote",
+      "label": "Wrap-Up Checklist",
+      "props": {
+        "id": "P04-C",
+        "kicker": "Result And Cleanup",
+        "title": "Wrap-Up Checklist",
+        "lead": "Cleanup runs in dependency order: the load balancer is deleted first, then the target group, then the two instances are terminated, then `s6-web-sg`, `s6-alb-sg` and `s6-public-subnet-2`, since each resource is still used by the one deleted before it",
+        "figure": {
+          "type": "diagram",
+          "w": 1100,
+          "h": 250,
+          "nodes": [
+            {
+              "id": "lb",
+              "x": 96,
+              "y": 130,
+              "icon": "img:images/aws-elb.svg",
+              "size": 66,
+              "label": "Load Balancer",
+              "sub": "s6-demo-alb"
+            },
+            {
+              "id": "tg",
+              "x": 278,
+              "y": 130,
+              "icon": "img:images/3d-target.png",
+              "size": 66,
+              "label": "Target Group",
+              "sub": "s6-web-tg"
+            },
+            {
+              "id": "ec2",
+              "x": 460,
+              "y": 130,
+              "icon": "img:images/aws-ec2.svg",
+              "size": 66,
+              "label": "EC2 Instances",
+              "sub": "s6-web-1, s6-web-2"
+            },
+            {
+              "id": "wsg",
+              "x": 642,
+              "y": 130,
+              "icon": "img:images/3d-shield.png",
+              "size": 66,
+              "label": "Security Group",
+              "sub": "s6-web-sg"
+            },
+            {
+              "id": "asg",
+              "x": 824,
+              "y": 130,
+              "icon": "img:images/3d-shield.png",
+              "size": 66,
+              "label": "Security Group",
+              "sub": "s6-alb-sg"
+            },
+            {
+              "id": "sub",
+              "x": 1006,
+              "y": 130,
+              "icon": "img:images/3d-network.png",
+              "size": 66,
+              "label": "Subnet",
+              "sub": "s6-public-subnet-2"
+            }
+          ],
+          "chips": [
+            {
+              "id": "n1",
+              "x": 96,
+              "y": 46,
+              "text": "1",
+              "icon": "Trash2",
+              "tone": "warn"
+            },
+            {
+              "id": "n2",
+              "x": 278,
+              "y": 46,
+              "text": "2",
+              "icon": "Trash2",
+              "tone": "warn"
+            },
+            {
+              "id": "n3",
+              "x": 460,
+              "y": 46,
+              "text": "3",
+              "icon": "Trash2",
+              "tone": "warn"
+            },
+            {
+              "id": "n4",
+              "x": 642,
+              "y": 46,
+              "text": "4",
+              "icon": "Trash2",
+              "tone": "warn"
+            },
+            {
+              "id": "n5",
+              "x": 824,
+              "y": 46,
+              "text": "5",
+              "icon": "Trash2",
+              "tone": "warn"
+            },
+            {
+              "id": "n6",
+              "x": 1006,
+              "y": 46,
+              "text": "6",
+              "icon": "Trash2",
+              "tone": "warn"
+            }
+          ],
+          "arrows": [
+            {
+              "from": "lb",
+              "to": "tg"
+            },
+            {
+              "from": "tg",
+              "to": "ec2"
+            },
+            {
+              "from": "ec2",
+              "to": "wsg"
+            },
+            {
+              "from": "wsg",
+              "to": "asg"
+            },
+            {
+              "from": "asg",
+              "to": "sub"
+            }
+          ],
+          "packets": [
+            {
+              "path": [
+                "lb",
+                "tg",
+                "ec2",
+                "wsg",
+                "asg",
+                "sub"
+              ],
+              "dur": 6
+            }
+          ],
+          "steps": [
+            [
+              "lb",
+              "n1"
+            ],
+            [
+              "tg",
+              "n2",
+              "lb>tg"
+            ],
+            [
+              "ec2",
+              "n3",
+              "tg>ec2"
+            ],
+            [
+              "wsg",
+              "n4",
+              "ec2>wsg"
+            ],
+            [
+              "asg",
+              "n5",
+              "wsg>asg"
+            ],
+            [
+              "sub",
+              "n6",
+              "asg>sub"
+            ],
+            [
+              "packet:0"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "id": "S-QUIZ",
+      "layout": "quiz"
+    },
+    {
+      "id": "S-TAKEAWAYS",
+      "layout": "takeaways"
+    },
+    {
+      "id": "S-NEXT",
+      "layout": "next",
+      "title": "Block, File & Object Storage"
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}
