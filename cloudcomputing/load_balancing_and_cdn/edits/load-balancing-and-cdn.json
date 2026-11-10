@@ -7,8 +7,14 @@
     "S-AGENDA": {
       "status": "skipped"
     },
+    "S-TITLE": {
+      "status": "skipped"
+    },
     "T01": {
       "comment": "E2E comment: check numbers"
+    },
+    "T02-C": {
+      "status": "skipped"
     }
   }
 }
