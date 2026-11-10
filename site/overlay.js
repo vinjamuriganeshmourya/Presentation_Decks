@@ -504,7 +504,7 @@
         if (ed.filter === 'hidden' && x.status === 'visible') return
         if (ed.filter === 'comment' && !x.comment) return
         html +=
-          '<li data-id="' + esc(s.id) + '" class="' + (s.id === cid ? 'cur ' : '') + x.status + (dirty ? ' dirty' : '') + '">' +
+          '<li data-id="' + esc(s.id) + '" class="' + (s.id === cid ? 'here ' : '') + x.status + (dirty ? ' dirty' : '') + '">' +
           '<span class="n">' + s.n + '</span><span class="nm">' + esc(s.label || s.id) + '</span>' +
           (x.status !== 'visible' ? '<span class="st">' + (x.status === 'deleted' ? 'DEL' : 'SKIP') + '</span>' : '') +
           (x.comment ? '<span class="cm" title="' + esc(x.comment) + '">💬</span>' : '') +
@@ -512,7 +512,7 @@
           '</li>'
       })
       list.innerHTML = html || '<li class="empty">Nothing here</li>'
-      var curLi = list.querySelector('li.cur')
+      var curLi = list.querySelector('li.here')
       if (curLi && curLi.scrollIntoView && !render.userScrolled) curLi.scrollIntoView({ block: 'nearest' })
     }
     function esc(s) {
@@ -773,7 +773,7 @@
     '.list{list-style:none;margin:0;padding:0;overflow:auto;flex:1;border:1px solid #eef0f3;border-radius:10px}',
     '.list li{display:flex;align-items:center;gap:8px;padding:6px 9px;border-bottom:1px solid #f3f4f6;cursor:pointer}',
     '.list li:hover{background:#f3f4f6}',
-    '.list li.cur{background:#eef2ff;box-shadow:inset 3px 0 0 #2d63fb}',
+    '.list li.here{background:#eef2ff;box-shadow:inset 3px 0 0 #2d63fb}',
     '.list li.deleted .nm{text-decoration:line-through;color:#9ca3af}',
     '.list li.skipped .nm{color:#92400e}',
     '.list li.empty{color:#9ca3af;cursor:default}',
