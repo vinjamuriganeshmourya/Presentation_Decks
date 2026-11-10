@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/cloud_computing_fundamentals/cloud-computing-fundamentals",
-  "slides": {},
+  "slides": {
+    "welcome": {
+      "status": "skipped"
+    }
+  },
   "threads": {
     "legacy6651a4b317": {
       "slide": "agenda-columns",
