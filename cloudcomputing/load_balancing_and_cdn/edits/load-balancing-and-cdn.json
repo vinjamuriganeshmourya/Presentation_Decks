@@ -3,7 +3,13 @@
   "slides": {},
   "threads": {
     "mwaedezs4yi2qy": {
-      "replies": {},
+      "replies": {
+        "mwaedi9srrey57": {
+          "author": "Viewer B",
+          "text": "E2E mwaedeyk reply from normal mode",
+          "at": 1794297451506
+        }
+      },
       "resolved": false,
       "slide": "T01",
       "author": "Editor A",
