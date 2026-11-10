@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
+  "slides": {
+    "D1": {
+      "status": "deleted"
+    },
+    "S-AGENDA": {
+      "status": "skipped"
+    },
+    "T01": {
+      "comment": "E2E comment: check numbers"
+    }
+  }
+}
