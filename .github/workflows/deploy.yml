@@ -38,8 +38,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      # GitHub Pages occasionally stalls at "syncing_files"; give it longer, then try once more.
+      - id: attempt1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          timeout: 900000
+      - id: attempt2
+        if: steps.attempt1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 900000
+      - id: deployment
+        run: echo "page_url=${{ steps.attempt1.outputs.page_url || steps.attempt2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
       - name: Wait until the live site serves this build
         run: |
           for i in $(seq 1 30); do
