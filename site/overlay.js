@@ -470,6 +470,7 @@
       else sset(LS.panel, open ? '1' : null, 'local')
       applyDock()
       render()
+      if (open && pollNow) pollNow()
     }
     $('.close').addEventListener('click', function () { setOpen(false) })
     $('.tab-open').addEventListener('click', function () { setOpen(true) })
@@ -823,6 +824,7 @@
           lastListSig = ''
           lastCommentsSig = ''
           render()
+          if (ui.tab === 'comments') pollNow()
         })
       })
       $('.filter').addEventListener('change', function (e) {
@@ -977,12 +979,20 @@
         render()
       })
     }
-    ;(function loop() {
+    /* one poll loop; opening the comments (or switching tabs) re-arms it at the faster rate right away */
+    var pollTimer = null
+    function loop() {
+      clearTimeout(pollTimer)
       var wait = ui.open && (!EDIT || ui.tab === 'comments') ? POLL_COMMENTS : EDIT ? POLL_EDIT : POLL_VIEW
-      setTimeout(function () {
+      pollTimer = setTimeout(function () {
         ;(document.hidden ? Promise.resolve() : refresh().catch(function () {})).then(loop)
       }, wait)
-    })()
+    }
+    function pollNow() {
+      clearTimeout(pollTimer)
+      refresh().catch(function () {}).then(loop)
+    }
+    loop()
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) refresh()
     })
