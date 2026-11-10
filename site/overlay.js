@@ -465,7 +465,11 @@
         var dirty = cid && ed.local[cid] && ed.local[cid].status !== undefined
         b.classList.toggle('dirty', !!dirty && b.getAttribute('data-status') === e.status)
       })
-      if (forceComment || root.activeElement !== ta || ed.current !== cid) ta.value = e.comment
+      if (forceComment || root.activeElement !== ta || ed.current !== cid) {
+        ta.value = e.comment
+        if (ed.current !== cid) ed.commentSnap = false
+      }
+      ta.setAttribute('data-slide', cid || '')
       ta.classList.toggle('dirty', !!(cid && ed.local[cid] && ed.local[cid].comment !== undefined))
       var vn = cid ? viewerNumber(cid) : null
       $('.copy-slide').disabled = !vn
@@ -528,7 +532,8 @@
     })
     ta.addEventListener('focus', function () { ed.commentSnap = false })
     ta.addEventListener('input', function () {
-      var id = currentId()
+      /* the slide whose comment the box is showing, never whatever slide is on screen right now */
+      var id = ta.getAttribute('data-slide')
       if (!id) return
       /* one undo step per stretch of typing */
       mutate(
@@ -697,7 +702,8 @@
     }
 
     /* --- go --- */
-    setInterval(render, 300)
+    setInterval(render, 120)
+    window.addEventListener('hashchange', function () { setTimeout(render, 0) })
     setInterval(function () { if (!document.hidden) refresh() }, POLL_EDIT)
     list.addEventListener('scroll', function () {
       render.userScrolled = true
