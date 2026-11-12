@@ -495,10 +495,11 @@
         : '') +
       '</aside>' +
       '<button class="tab-open" hidden title="Open edit panel">✎ Edit</button>' +
-      '<div class="gate" hidden><form class="gate-box"><h2>Editor sign-in</h2><p class="gwhy"></p>' +
-      '<input type="password" class="gpw" autocomplete="current-password" placeholder="Editor password" required>' +
-      '<input type="text" class="gname" autocomplete="nickname" placeholder="Your name (shown on comments and commits)" maxlength="60">' +
-      '<div class="gerr"></div><div class="row"><button type="button" class="ghost gcancel">' + (EDIT ? 'View only' : 'Cancel') + '</button><button class="primary" type="submit">Sign in</button></div></form></div>'
+      /* the editor sign-in itself is window.DeckGate (deck-tools.js), shared with the gallery */
+      '<div class="gitpop" role="dialog" aria-label="Git commands" hidden><div class="gp-h">Git · <span class="gp-t"></span></div>' +
+      '<button type="button" class="gp-row" data-git-act="clone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Copy Git Command</button>' +
+      '<button type="button" class="gp-row" data-git-act="push"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9"/><path d="m7 14 5-5 5 5"/><path d="M5 4h14"/></svg>Copy Push Command</button>' +
+      '<p class="gp-note"></p></div>'
 
     var $ = function (sel) { return root.querySelector(sel) }
     wireNav(root)
@@ -537,7 +538,14 @@
           else doUndo()
           return
         }
-        if (inPanel(e)) e.stopImmediatePropagation()
+        if (inPanel(e)) {
+          /* listeners inside the overlay never see keys (stopped here), so the git menu's Esc is handled here */
+          if (e.key === 'Escape' && gitPop && !gitPop.hidden) {
+            closeGit()
+            if (gitUi.btn) gitUi.btn.focus()
+          }
+          e.stopImmediatePropagation()
+        }
       },
       true,
     )
@@ -875,6 +883,7 @@
         renderList(d, cid)
         syncDeckUi(d, cid, oc, nc)
       }
+      mountGit()
       if (ui.open && (!EDIT || ui.tab === 'comments')) renderComments(false)
     }
     function renderList(d, cid) {
@@ -1178,43 +1187,87 @@
     }
     if (EDIT) applyTheme()
 
-    /* --- auth gate (shared) --- */
+    /* --- auth gate: window.DeckGate (deck-tools.js), the one sign-in shared with the gallery and the git buttons.
+       Same check (POST /api/auth) and same session unlock (LS.pw in sessionStorage, LS.name in localStorage). --- */
     function showGate(why) {
-      $('.gate').hidden = false
-      $('.gwhy').textContent = why || 'Enter the editor password for ' + SITE.title + '.'
-      $('.gerr').textContent = ''
-      $('.gname').value = myName()
-      setTimeout(function () { $('.gpw').focus() }, 30)
-    }
-    $('.gate-box').addEventListener('submit', function (e) {
-      e.preventDefault()
-      var pw = $('.gpw').value
-      var name = $('.gname').value.trim()
-      $('.gerr').textContent = 'Checking…'
-      fetchJson(WORKER + '/api/auth', { method: 'POST', headers: { 'x-editor-password': pw } }, 10000)
-        .then(function () {
-          sset(LS.pw, pw, 'session')
-          sset(LS.name, name || null, 'local')
-          $('.gate').hidden = true
-          $('.gpw').value = ''
+      if (!window.DeckGate) return toast('Sign-in is not available on this page. Reload and try again.')
+      window.DeckGate.open({ worker: WORKER, why: why || 'Enter the editor password for ' + SITE.title + '.', cancelLabel: EDIT ? 'View only' : 'Cancel' }).then(
+        function () {
           panel.classList.add('ready')
           lastCommentsSig = ''
           render()
+        },
+        function () {
+          if (!EDIT) return
+          var p = new URLSearchParams(location.search)
+          p.delete('edit')
+          var q = p.toString()
+          location.href = location.pathname + (q ? '?' + q : '') + location.hash
+        },
+      )
+    }
+
+    /* --- git commands: a button in the deck's own toolbar (both modes), a small menu, copy behind the sign-in --- */
+    var gitUi = { group: null, btn: null }
+    var gitPop = $('.gitpop')
+    $('.gp-t').textContent = SITE.title
+    $('.gp-note').textContent = window.DeckGit ? window.DeckGit.NOTE : ''
+    function gitDeck() {
+      var parts = String(DECK).split('/')
+      return { course: parts[0], session: parts[1], title: SITE.title }
+    }
+    function mountGit() {
+      var fs = findFullscreen()
+      if (!fs) return
+      if (!gitUi.group) {
+        var g = document.createElement('span')
+        g.setAttribute('data-site-git', '')
+        g.style.display = 'contents'
+        g.innerHTML =
+          '<button type="button" class="' + fs.className + '" aria-label="Git commands" title="Git commands: copy the clone or push command for this deck" aria-haspopup="dialog" aria-expanded="false">' +
+          svgIcon('<circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.7v8.6"/><path d="M18 10.2c0 4.3-5 4.6-10.4 7"/>') +
+          '</button>'
+        gitUi.btn = g.firstChild
+        gitUi.btn.addEventListener('click', function (e) {
+          e.stopPropagation()
+          toggleGit()
         })
-        .catch(function (err) {
-          $('.gerr').textContent = err.status === 401 ? 'Wrong password.' : 'Could not reach the edit service (' + err.message + ').'
-        })
-    })
-    $('.gcancel').addEventListener('click', function () {
-      if (!EDIT) {
-        $('.gate').hidden = true
-        return
+        gitUi.group = g
       }
-      var p = new URLSearchParams(location.search)
-      p.delete('edit')
-      var q = p.toString()
-      location.href = location.pathname + (q ? '?' + q : '') + location.hash
+      /* sits just before the edit group when it is there, else just before fullscreen */
+      var before = EDIT && deckUi.group && deckUi.group.isConnected ? deckUi.group : fs
+      if (gitUi.group.nextElementSibling !== before || !gitUi.group.isConnected) before.parentNode.insertBefore(gitUi.group, before)
+    }
+    function toggleGit() {
+      if (!gitPop.hidden) return closeGit()
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {})
+      gitPop.hidden = false
+      var r = gitUi.btn.getBoundingClientRect()
+      var w = gitPop.offsetWidth
+      var h = gitPop.offsetHeight
+      var left = Math.min(Math.max(12, r.right - w), window.innerWidth - w - 12)
+      var top = r.top > window.innerHeight / 2 ? r.top - h - 8 : r.bottom + 8
+      gitPop.style.left = left + 'px'
+      gitPop.style.top = Math.max(12, Math.min(top, window.innerHeight - h - 12)) + 'px'
+      gitUi.btn.setAttribute('aria-expanded', 'true')
+      gitPop.querySelector('[data-git-act]').focus()
+    }
+    function closeGit() {
+      if (gitPop.hidden) return
+      gitPop.hidden = true
+      if (gitUi.btn) gitUi.btn.setAttribute('aria-expanded', 'false')
+    }
+    gitPop.addEventListener('click', function (e) {
+      var b = e.composedPath()[0].closest && e.composedPath()[0].closest('[data-git-act]')
+      if (!b) return
+      closeGit()
+      if (!window.DeckGit) return toast('Git commands are not available on this page. Reload and try again.')
+      window.DeckGit.copy(b.getAttribute('data-git-act'), { config: SITE.git, deck: gitDeck(), worker: WORKER, toast: function (t) { toast(t) } }).then(function () {
+        lastCommentsSig = '' /* signing in here also unlocks commenting */
+      })
     })
+    document.addEventListener('click', closeGit) /* clicks inside the overlay never reach the document */
+    window.addEventListener('resize', closeGit)
 
     /* --- save (edit mode, slide status) --- */
     /* --- student download: the deck without the site layer, as one offline file --- */
@@ -1578,11 +1631,14 @@
     '.panel.edit .dot{background:var(--d-brand)}',
     '.panel.edit .avatar{background:var(--d-hover);color:var(--d-ink)}',
     '.topnav.under-grid{display:none}',
-    '.gate{pointer-events:auto;position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}',
-    '.gate-box{background:#fff;color:#111827;border-radius:14px;padding:20px;width:min(380px,100%);display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.35)}',
-    '.gate-box h2{margin:0;font-size:18px}.gate-box p{margin:0;color:#4b5563;font-size:13px}',
-    '.gate-box input{font:inherit;font-size:14px;padding:9px 10px;border:1px solid #d1d5db;border-radius:8px}',
-    '.gerr{min-height:16px;color:#b91c1c;font-size:12px}',
+    /* git commands menu: the look of the course menu (.tn-menu) */
+    '.gitpop{pointer-events:auto;position:fixed;width:260px;background:#fff;color:#111827;border-radius:12px;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.3);border:1px solid #e5e7eb;font-size:13px}',
+    '.gp-h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;padding:8px 10px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.gp-t{color:#111827}',
+    '.gp-row{width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;font-weight:500;text-align:left}',
+    '.gp-row:hover{background:#f3f4f6}',
+    '.gp-row svg{width:16px;height:16px;flex:none;fill:none;stroke:#6b7280;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
+    '.gp-note{margin:4px 0 0;padding:8px 10px 4px;border-top:1px solid #f3f4f6;color:#6b7280;font-size:12px}',
     '[hidden]{display:none!important}',
     /* phone: the panel docks along the bottom and the deck takes the top half */
     '@media (max-width:760px){.panel{top:auto;left:0;width:auto;height:48dvh;border-left:none;border-top:1px solid #e5e7eb;box-shadow:0 -8px 24px rgba(15,23,42,.12)}',

@@ -210,22 +210,30 @@ function rmrf(p) {
 }
 
 /** Copied to site-assets/; their hash versions every URL that loads them. */
-const SITE_ASSETS = ['overlay.js', 'student.js', 'gallery.js', 'gallery.css', 'logo-nxtwave.png']
+const SITE_ASSETS = ['overlay.js', 'student.js', 'gallery.js', 'gallery.css', 'logo-nxtwave.png', 'deck-tools.js']
+/** Built from TypeScript (site/src -> site/gen by `npm run build:ts`); everything else is copied from site/. */
+const GENERATED = new Set(['deck-tools.js'])
+const assetSrc = (f) => path.join(HERE, GENERATED.has(f) ? 'gen' : '', f)
+/** Written by `npm run activity` (CI, before the build); published at the site root when present. */
+const ACTIVITY = path.join(ROOT, 'public', 'activity.json')
 
 function build() {
   const courses = discover()
+  for (const f of GENERATED) {
+    if (!fs.existsSync(assetSrc(f))) throw new Error(`${path.relative(ROOT, assetSrc(f))} is missing: run \`npm run build\` (it compiles site/src first)`)
+  }
   rmrf(OUT)
   fs.mkdirSync(OUT, { recursive: true })
   fs.mkdirSync(path.join(OUT, 'site-assets'), { recursive: true })
   for (const f of SITE_ASSETS) {
-    fs.copyFileSync(path.join(HERE, f), path.join(OUT, 'site-assets', f))
+    fs.copyFileSync(assetSrc(f), path.join(OUT, 'site-assets', f))
   }
   const assetVersion = createHash('sha1')
-    .update(SITE_ASSETS.map((f) => fs.readFileSync(path.join(HERE, f))).join('\n'))
+    .update(SITE_ASSETS.map((f) => fs.readFileSync(assetSrc(f))).join('\n'))
     .digest('hex')
     .slice(0, 10)
 
-  const manifest = { sha: SHA, builtAt: BUILT_AT, siteBase: CONFIG.siteBase, siteUrl: CONFIG.siteUrl, workerUrl: CONFIG.workerUrl, courses: [] }
+  const manifest = { sha: SHA, builtAt: BUILT_AT, siteBase: CONFIG.siteBase, siteUrl: CONFIG.siteUrl, workerUrl: CONFIG.workerUrl, git: CONFIG.git || null, courses: [] }
   const seen = new Set()
   for (const course of courses) {
     const mc = { id: course.folder, title: course.title, sessions: [] }
@@ -254,6 +262,7 @@ function build() {
           sessionNumber: si + 1,
           editsPath: editsRel,
           worker: CONFIG.workerUrl,
+          git: CONFIG.git || null,
           siteBase: CONFIG.siteBase,
           sha: SHA,
           builtAt: BUILT_AT,
@@ -289,6 +298,7 @@ function build() {
       const tags =
         `\n${SITE_START}<script id="deck-site">window.__DECK_SITE__=${scriptJson(boot)}</script>` +
         `\n<script src="../../../site-assets/student.js?v=${assetVersion}"></script>` +
+        `\n<script src="../../../site-assets/deck-tools.js?v=${assetVersion}"></script>` +
         `\n<script src="../../../site-assets/overlay.js?v=${assetVersion}"></script>${SITE_END}\n`
       fs.writeFileSync(path.join(outDir, 'index.html'), injectHead(html, tags))
     }
@@ -297,6 +307,10 @@ function build() {
 
   fs.writeFileSync(path.join(OUT, 'decks.json'), JSON.stringify(manifest, null, 1))
   fs.writeFileSync(path.join(OUT, 'build.json'), JSON.stringify({ sha: SHA, builtAt: BUILT_AT }))
+  if (fs.existsSync(ACTIVITY)) {
+    fs.copyFileSync(ACTIVITY, path.join(OUT, 'activity.json'))
+    console.log(`activity  ${path.relative(ROOT, ACTIVITY)} -> activity.json`)
+  }
   const gallery = fs
     .readFileSync(path.join(HERE, 'gallery.html'), 'utf8')
     .replace('/*MANIFEST*/null', scriptJson(manifest))

@@ -70,3 +70,10 @@ The site commits every comment to `<course>/<session>/edits/<deck>.json`. To rea
 - Rotate the editor password: generate one (`openssl rand -base64 24`), replace the `EDITOR_PASSWORD=` line in `.local-secrets.txt`, and pipe it to `npx wrangler secret put EDITOR_PASSWORD` from `worker/`.
 - Redeploy the Worker: `cd worker && npx wrangler deploy`.
 - Local preview: `node site/build.mjs` then serve the parent of `_site` so it is reachable at `/Presentation_Decks/`.
+
+## Git commands and last push
+
+- `npm run build` compiles `site/src/*.ts` (to `site/gen/`, not committed) and then runs `site/build.mjs`. CI runs `npm ci`, then `npm run activity`, then `npm run build`.
+- `site/src/deck-tools.ts` holds the editor sign-in (`DeckGate`). Edit mode, comments and the git buttons all use it, so it is one modal, one `/api/auth` check and one session unlock.
+- **Git** (gallery card footer, and the deck toolbar just before fullscreen) opens a menu with **Copy Git Command** (sparse clone of just this deck) and **Copy Push Command**. Both ask for the editor password first. The commands are built from `config.json` → `git` (`repoUrl`, `branch`, `decksRoot`, `sharedPaths`) plus the deck's `<course>/<session>` folder. Pushing requires GitHub write access.
+- `npm run activity` writes `public/activity.json` (gitignored): the latest commit (author, ISO date, message, short sha) for each deck folder. The build publishes it at the site root, and the gallery shows "Last push by …" under each card; a deck with no entry shows nothing. CI checks out with `fetch-depth: 0` so this history is complete.

@@ -21,11 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: the last push per deck folder (activity.json)
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - name: Install build tools (TypeScript)
+        run: npm ci --no-audit --no-fund
+      # public/activity.json: the latest commit (author, ISO date, message, short sha) per deck folder; decks with none are left out.
+      - name: Write deck activity
+        run: npm run activity
       - name: Assemble site
-        run: node site/build.mjs --out _site --sha "$GITHUB_SHA"
+        run: npm run build -- --out _site --sha "$GITHUB_SHA"
       # Card thumbnails and slide counts for the gallery. Optional: without them the cards show a placeholder.
       - name: Card thumbnails
         continue-on-error: true

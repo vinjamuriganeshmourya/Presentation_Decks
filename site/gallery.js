@@ -7,12 +7,14 @@
   var $ = function (id) { return document.getElementById(id) }
   var q = $('q')
   var meta = {} /* deck id -> { slides, thumb } from deck-meta.json (thumbs.mjs); optional */
+  var activity = {} /* "<course>/<session>" -> last commit, from activity.json (CI); optional */
 
   var ICON = {
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>',
     edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
     download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>',
     share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></svg>',
+    git: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.7v8.6"/><path d="M18 10.2c0 4.3-5 4.6-10.4 7"/></svg>',
     chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg>',
   }
 
@@ -94,7 +96,11 @@
       '<a class="btn" href="' + esc(url) + '?edit=1" title="Open in edit mode (skip, delete, comment)">' + ICON.edit + 'Edit</a>' +
       '<button class="btn icon" type="button" data-download="' + esc(url) + '" title="Download the student view: one offline HTML file, skipped and deleted slides left out, no comments or editing" aria-label="Download student view of ' + esc(d.title) + '">' + ICON.download + '</button>' +
       '<button class="btn icon" type="button" data-share="' + esc(url) + '" data-title="' + esc(d.title) + '" aria-haspopup="dialog" aria-expanded="false" title="Share a link to this deck or a slide" aria-label="Share ' + esc(d.title) + '">' + ICON.share + '</button>' +
-      '</div></div></article>'
+      '</div></div>' +
+      '<div class="card-foot">' +
+      '<span class="activity" data-activity="' + esc(c.id + '/' + s.id) + '"></span>' +
+      '<button class="git-btn" type="button" data-git="' + esc(d.id) + '" data-course="' + esc(c.id) + '" data-session="' + esc(s.id) + '" data-title="' + esc(d.title) + '" aria-haspopup="dialog" aria-expanded="false" title="Git commands: sparse-clone this deck, or push your changes (editor password)" aria-label="Git commands for ' + esc(d.title) + '">' + ICON.git + 'Git</button>' +
+      '</div></article>'
     )
   }
 
@@ -140,6 +146,7 @@
       a.classList.toggle('dim', !match[a.getAttribute('data-anchor')])
     })
     fillCounts()
+    fillActivity()
     spy()
   }
 
@@ -158,6 +165,21 @@
       el.innerHTML = '<b>' + n + '</b> slides'
     })
   }
+  /* "Last push by …" under each card; nothing when activity.json is missing or has no entry */
+  function fillActivity() {
+    document.querySelectorAll('[data-activity]').forEach(function (el) {
+      var line = window.DeckActivity ? window.DeckActivity.line(activity[el.getAttribute('data-activity')]) : ''
+      el.textContent = line
+      el.title = line
+    })
+  }
+  if (window.DeckActivity) {
+    window.DeckActivity.load(base, ver).then(function (a) {
+      activity = a || {}
+      fillActivity()
+    })
+  }
+
   fetch(base + 'deck-meta.json' + (ver ? '?v=' + ver : ''))
     .then(function (r) { return r.ok ? r.json() : {} })
     .then(function (m) {
@@ -270,6 +292,44 @@
     if (e.key === 'Enter') pop.querySelector('[data-act=copy-slide]').click()
   })
 
+  /* ------------------------------------------------------------------ git popover: clone / push commands behind the editor sign-in */
+  var gitPop = $('git-pop')
+  var gitFor = null
+  $('git-note').textContent = window.DeckGit ? window.DeckGit.NOTE : ''
+  function placePop(p, btn) {
+    var r = btn.getBoundingClientRect()
+    var w = p.offsetWidth
+    var left = Math.min(Math.max(12, r.right - w), document.documentElement.clientWidth - w - 12)
+    var top = r.bottom + 8
+    if (top + p.offsetHeight > window.innerHeight - 12) top = r.top - p.offsetHeight - 8
+    p.style.left = left + window.scrollX + 'px'
+    p.style.top = top + window.scrollY + 'px'
+  }
+  function openGit(btn) {
+    if (gitFor === btn && !gitPop.hidden) return closeGit()
+    closeShare()
+    if (gitFor) gitFor.setAttribute('aria-expanded', 'false')
+    gitFor = btn
+    $('git-title').textContent = btn.getAttribute('data-title')
+    gitPop.hidden = false
+    placePop(gitPop, btn)
+    btn.setAttribute('aria-expanded', 'true')
+    gitPop.querySelector('[data-git-act]').focus()
+  }
+  function closeGit() {
+    if (gitFor) gitFor.setAttribute('aria-expanded', 'false')
+    gitPop.hidden = true
+    gitFor = null
+  }
+  gitPop.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-git-act]')
+    if (!b || !gitFor) return
+    var deck = { course: gitFor.getAttribute('data-course'), session: gitFor.getAttribute('data-session'), title: gitFor.getAttribute('data-title') }
+    closeGit()
+    if (!window.DeckGit) return toast('Git commands are not available. Reload the page and try again.')
+    window.DeckGit.copy(b.getAttribute('data-git-act'), { config: M.git, deck: deck, worker: M.workerUrl, toast: toast })
+  })
+
   /* ------------------------------------------------------------------ download */
   function download(b) {
     if (b.disabled) return
@@ -287,12 +347,22 @@
     var dl = e.target.closest('[data-download]')
     if (dl) return download(dl)
     var sh = e.target.closest('[data-share]')
-    if (sh) return openShare(sh)
+    if (sh) {
+      closeGit()
+      return openShare(sh)
+    }
+    var gb = e.target.closest('[data-git]')
+    if (gb) return openGit(gb)
     if (!pop.hidden && !e.target.closest('#share-pop')) closeShare()
+    if (!gitPop.hidden && !e.target.closest('#git-pop')) closeGit()
   })
-  window.addEventListener('resize', closeShare)
+  window.addEventListener('resize', function () {
+    closeShare()
+    closeGit()
+  })
   q.addEventListener('input', function () {
     closeShare()
+    closeGit()
     render()
     try { history.replaceState(null, '', q.value ? '?q=' + encodeURIComponent(q.value) : location.pathname) } catch (e) {}
   })
@@ -306,6 +376,10 @@
       var b = popFor
       closeShare()
       if (b) b.focus()
+    } else if (e.key === 'Escape' && !gitPop.hidden) {
+      var g = gitFor
+      closeGit()
+      if (g) g.focus()
     } else if (e.key === '/' && document.activeElement !== q && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
       e.preventDefault()
       q.focus()

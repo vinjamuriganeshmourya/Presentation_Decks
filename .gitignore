@@ -9,3 +9,7 @@ tests/.artifacts/
 
 # local review copies (npm run review)
 review/
+
+# compiled TypeScript (npm run build:ts) and CI-generated data
+site/gen/
+public/activity.json

@@ -190,6 +190,21 @@ kbd { font: 12px ui-monospace, Menlo, monospace; color: var(--faint); border: 1p
 .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
 .actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 
+/* card footer: last push (activity.json) and the git commands */
+.card-foot {
+  display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-top: 1px solid var(--line); background: var(--surface-2);
+  font-size: 12px; color: var(--faint); min-width: 0;
+}
+.activity { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.git-btn {
+  appearance: none; flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+  font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.git-btn:hover, .git-btn[aria-expanded='true'] { border-color: var(--accent); color: var(--accent); }
+.git-btn svg { width: 14px; height: 14px; }
+.git-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ---------- buttons ---------- */
 .btn {
   appearance: none; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap;
@@ -219,6 +234,7 @@ kbd { font: 12px ui-monospace, Menlo, monospace; color: var(--faint); border: 1p
 }
 .pop-row:hover { background: var(--chip); }
 .pop-row svg { width: 17px; height: 17px; color: var(--muted); }
+.pop-note { margin: 4px 0 0; padding: 8px 8px 4px; border-top: 1px solid var(--line); font-size: 12px; color: var(--faint); }
 .pop-slide { display: flex; align-items: center; gap: 8px; padding: 8px; border-top: 1px solid var(--line); margin-top: 4px; font-size: 14px; }
 .pop-slide label { flex: 1; color: var(--muted); }
 .pop-slide input {

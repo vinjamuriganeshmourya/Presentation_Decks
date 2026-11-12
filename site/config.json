@@ -1,5 +1,15 @@
 {
   "siteBase": "/Presentation_Decks/",
   "siteUrl": "https://vinjamuriganeshmourya.github.io/Presentation_Decks/",
-  "workerUrl": "https://presentation-decks-live.presentation-decks.workers.dev"
+  "workerUrl": "https://presentation-decks-live.presentation-decks.workers.dev",
+  "git": {
+    "repoUrl": "https://github.com/vinjamuriganeshmourya/Presentation_Decks.git",
+    "branch": "main",
+    "decksRoot": "",
+    "sharedPaths": [
+      "site",
+      "scripts",
+      ".githooks"
+    ]
+  }
 }

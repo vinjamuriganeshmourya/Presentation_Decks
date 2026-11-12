@@ -58,9 +58,22 @@
     <button class="btn small" type="button" data-act="copy-slide">Copy</button>
   </div>
 </div>
+<div class="pop" id="git-pop" role="dialog" aria-label="Git commands" hidden>
+  <div class="pop-h">Git · <span id="git-title"></span></div>
+  <button class="pop-row" type="button" data-git-act="clone">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+    <span>Copy Git Command</span>
+  </button>
+  <button class="pop-row" type="button" data-git-act="push">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9"/><path d="m7 14 5-5 5 5"/><path d="M5 4h14"/></svg>
+    <span>Copy Push Command</span>
+  </button>
+  <p class="pop-note" id="git-note"></p>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>window.__MANIFEST__=/*MANIFEST*/null</script>
 <script src="%BASE%site-assets/student.js?v=%ASSET_VERSION%"></script>
+<script src="%BASE%site-assets/deck-tools.js?v=%ASSET_VERSION%"></script>
 <script src="%BASE%site-assets/gallery.js?v=%ASSET_VERSION%"></script>
 </body>
 </html>
