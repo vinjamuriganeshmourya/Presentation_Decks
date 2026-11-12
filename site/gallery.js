@@ -168,9 +168,17 @@
   /* "Last push by …" under each card; nothing when activity.json is missing or has no entry */
   function fillActivity() {
     document.querySelectorAll('[data-activity]').forEach(function (el) {
-      var line = window.DeckActivity ? window.DeckActivity.line(activity[el.getAttribute('data-activity')]) : ''
-      el.textContent = line
-      el.title = line
+      var p = window.DeckActivity ? window.DeckActivity.parts(activity[el.getAttribute('data-activity')]) : null
+      if (!p) {
+        el.innerHTML = ''
+        el.removeAttribute('title')
+        return
+      }
+      el.innerHTML =
+        '<span class="act-who">' + esc(p.who) + '</span>' +
+        '<time class="act-when" datetime="' + esc(p.iso) + '">' + esc(p.when) + '</time>' +
+        (p.message ? '<span class="act-msg">' + esc(p.message) + '</span>' : '')
+      el.title = p.who + '\n' + p.when + (p.message ? '\n' + p.message : '')
     })
   }
   if (window.DeckActivity) {

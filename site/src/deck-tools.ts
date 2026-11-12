@@ -46,6 +46,14 @@ interface ActivityEntry {
   sha: string
 }
 
+/** The gallery's last-push block: who, when (its own line), what. */
+interface ActivityParts {
+  who: string
+  when: string
+  iso: string
+  message: string
+}
+
 interface CopyOptions {
   config: GitConfig | null | undefined
   deck: DeckRef
@@ -71,6 +79,7 @@ interface DeckGitApi {
 interface DeckActivityApi {
   load(base: string, version?: string): Promise<Record<string, ActivityEntry>>
   line(entry: ActivityEntry | null | undefined, now?: number): string
+  parts(entry: ActivityEntry | null | undefined, now?: number): ActivityParts | null
   relative(iso: string, now?: number): string
 }
 
@@ -406,6 +415,22 @@ interface Window {
           return out
         })
         .catch(() => ({}))
+    },
+    parts(entry, now) {
+      if (!isEntry(entry) || !entry.author.trim()) return null
+      const d = new Date(entry.date)
+      let stamp: string
+      try {
+        stamp = d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+      } catch {
+        stamp = d.toISOString()
+      }
+      return {
+        who: 'Last push by ' + entry.author.trim(),
+        when: stamp + ' · ' + relative(entry.date, now),
+        iso: entry.date,
+        message: entry.message.trim(),
+      }
     },
     line(entry, now) {
       if (!isEntry(entry) || !entry.author.trim()) return ''

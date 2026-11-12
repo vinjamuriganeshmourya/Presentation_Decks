@@ -195,7 +195,12 @@ kbd { font: 12px ui-monospace, Menlo, monospace; color: var(--faint); border: 1p
   display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-top: 1px solid var(--line); background: var(--surface-2);
   font-size: 12px; color: var(--faint); min-width: 0;
 }
-.activity { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; line-height: 1.35; }
+.activity:empty { display: none; }
+.activity > * { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-who { color: var(--muted); font-weight: 600; }
+.act-when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.act-msg { color: var(--faint); }
 .git-btn {
   appearance: none; flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
   font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--line);
