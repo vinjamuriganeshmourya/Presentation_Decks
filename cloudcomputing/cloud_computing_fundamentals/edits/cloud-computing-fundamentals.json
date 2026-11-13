@@ -1,6 +1,9 @@
 {
   "deck": "cloudcomputing/cloud_computing_fundamentals/cloud-computing-fundamentals",
   "slides": {
+    "agenda-columns": {
+      "status": "skipped"
+    },
     "welcome": {
       "status": "skipped"
     }
