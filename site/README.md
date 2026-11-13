@@ -77,3 +77,9 @@ The site commits every comment to `<course>/<session>/edits/<deck>.json`. To rea
 - `site/src/deck-tools.ts` holds the editor sign-in (`DeckGate`). Edit mode, comments and the git buttons all use it, so it is one modal, one `/api/auth` check and one session unlock.
 - **Git** (gallery card footer, and the deck toolbar just before fullscreen) opens a menu with **Copy Git Command** (sparse clone of just this deck) and **Copy Push Command**. Both ask for the editor password first. The commands are built from `config.json` → `git` (`repoUrl`, `branch`, `decksRoot`, `sharedPaths`) plus the deck's `<course>/<session>` folder. Pushing requires GitHub write access.
 - `npm run activity` writes `public/activity.json` (gitignored): the latest commit (author, ISO date, message, short sha) for each deck folder. The build publishes it at the site root, and the gallery shows "Last push by …" under each card; a deck with no entry shows nothing. CI checks out with `fetch-depth: 0` so this history is complete.
+
+## Delete a deck's version history (admin)
+
+- In a deck: toolbar **Git** icon → **Delete version history…**. It opens the same sign-in modal, but asks for the **admin** password (Worker secret `ADMIN_PASSWORD`, separate from the editor password; never stored) and for the session folder name typed as confirmation.
+- The Worker (`POST /api/purge-history`) checks both and starts `.github/workflows/purge-deck-history.yml`. That Action removes the deck folder from every commit on `main` with `git filter-repo`, adds its current files back as one commit, checks the file tree is byte-for-byte unchanged, force-pushes (refusing if someone pushed meanwhile), and starts a site rebuild.
+- No backup is kept. Every commit after the deck was first added gets a new id, so everyone has to re-clone (or `git fetch && git reset --hard origin/main`).

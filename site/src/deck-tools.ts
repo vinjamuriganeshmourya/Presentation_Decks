@@ -32,11 +32,25 @@ interface GateOptions {
   worker: string
   why?: string
   cancelLabel?: string
+  /** Defaults below are the editor sign-in. A protected action (e.g. delete history) overrides them: */
+  title?: string
+  submitLabel?: string
+  placeholder?: string
+  /** red submit button */
+  danger?: boolean
+  /** the user must type exactly this to enable the submit button */
+  confirmText?: string
+  /** replaces the editor check (POST /api/auth): run the protected request itself with the typed password */
+  check?: (password: string, name: string) => Promise<unknown>
+  /** store the password as the session unlock (default true; false for one-off admin actions) */
+  remember?: boolean
 }
 
 interface GateResult {
   password: string
   name: string
+  /** what `check` resolved with */
+  data?: unknown
 }
 
 interface ActivityEntry {
@@ -137,12 +151,19 @@ interface Window {
     'button:disabled{opacity:.45;cursor:not-allowed}',
     'button:focus-visible,input:focus-visible{outline:2px solid #2d63fb;outline-offset:1px}',
     '.primary{background:#2d63fb;border-color:#2d63fb;color:#fff;font-weight:700}',
+    '.primary.danger{background:#dc2626;border-color:#dc2626}',
+    '.gconfirm-l{color:#4b5563;font-size:12px;margin:2px 0 -4px}.gconfirm-l b{font-family:ui-monospace,Menlo,monospace;color:#111827}',
     '[hidden]{display:none!important}',
   ].join('\n')
 
   let host: HTMLDivElement | null = null
   let root: ShadowRoot | null = null
-  let pending: { promise: Promise<GateResult>; resolve: (r: GateResult) => void; reject: (e: Error) => void; worker: string } | null = null
+  let pending: {
+    promise: Promise<GateResult>
+    resolve: (r: GateResult) => void
+    reject: (e: Error) => void
+    opts: GateOptions
+  } | null = null
 
   const q = <T extends Element>(sel: string): T => (root as ShadowRoot).querySelector(sel) as T
   const inGate = (e: Event): boolean => !!host && (e.composedPath ? e.composedPath() : []).indexOf(host) >= 0
@@ -176,8 +197,10 @@ interface Window {
       '<div class="gate" hidden><form class="gate-box" role="dialog" aria-modal="true" aria-labelledby="gate-h"><h2 id="gate-h">Editor sign-in</h2><p class="gwhy"></p>' +
       '<input type="password" class="gpw" autocomplete="current-password" placeholder="Editor password" aria-label="Editor password" required>' +
       '<input type="text" class="gname" autocomplete="nickname" placeholder="Your name (shown on comments and commits)" aria-label="Your name" maxlength="60">' +
-      '<div class="gerr" role="alert"></div><div class="row"><button type="button" class="ghost gcancel">Cancel</button><button class="primary" type="submit">Sign in</button></div></form></div>'
+      '<p class="gconfirm-l" hidden></p><input type="text" class="gconfirm" autocomplete="off" spellcheck="false" aria-label="Confirmation" hidden>' +
+      '<div class="gerr" role="alert"></div><div class="row"><button type="button" class="ghost gcancel">Cancel</button><button class="primary gsubmit" type="submit">Sign in</button></div></form></div>'
     q<HTMLFormElement>('.gate-box').addEventListener('submit', submit)
+    q<HTMLInputElement>('.gconfirm').addEventListener('input', syncConfirm)
     q<HTMLButtonElement>('.gcancel').addEventListener('click', cancel)
   }
 
@@ -185,6 +208,38 @@ interface Window {
     if (!root) return
     q<HTMLElement>('.gate').hidden = true
     q<HTMLInputElement>('.gpw').value = ''
+    q<HTMLInputElement>('.gconfirm').value = ''
+  }
+
+  /** the submit button stays disabled until the confirmation text matches exactly */
+  function syncConfirm(): void {
+    const want = pending && pending.opts.confirmText
+    q<HTMLButtonElement>('.gsubmit').disabled = !!want && q<HTMLInputElement>('.gconfirm').value.trim() !== want
+  }
+
+  /** fill the modal for this request: the editor sign-in, or a protected action */
+  function configure(o: GateOptions): void {
+    q<HTMLElement>('#gate-h').textContent = o.title || 'Editor sign-in'
+    q<HTMLElement>('.gwhy').textContent = o.why || 'Enter the editor password.'
+    q<HTMLButtonElement>('.gcancel').textContent = o.cancelLabel || 'Cancel'
+    const pw = q<HTMLInputElement>('.gpw')
+    pw.placeholder = o.placeholder || 'Editor password'
+    pw.setAttribute('aria-label', pw.placeholder)
+    const submitBtn = q<HTMLButtonElement>('.gsubmit')
+    submitBtn.textContent = o.submitLabel || 'Sign in'
+    submitBtn.classList.toggle('danger', !!o.danger)
+    const label = q<HTMLElement>('.gconfirm-l')
+    const box = q<HTMLInputElement>('.gconfirm')
+    label.hidden = box.hidden = !o.confirmText
+    box.required = !!o.confirmText
+    box.placeholder = o.confirmText || ''
+    label.innerHTML = ''
+    if (o.confirmText) {
+      label.appendChild(document.createTextNode('Type '))
+      label.appendChild(document.createElement('b')).textContent = o.confirmText
+      label.appendChild(document.createTextNode(' to confirm'))
+    }
+    q<HTMLElement>('.gerr').textContent = ''
   }
 
   function cancel(): void {
@@ -222,20 +277,33 @@ interface Window {
     e.preventDefault()
     if (!pending) return
     const p = pending
+    const o = p.opts
     const pw = q<HTMLInputElement>('.gpw').value
     const name = q<HTMLInputElement>('.gname').value.trim()
     const err = q<HTMLElement>('.gerr')
-    err.textContent = 'Checking…'
-    checkPassword(p.worker, pw)
-      .then(() => {
-        sset(KEY_PW, pw, 'session')
+    const submitBtn = q<HTMLButtonElement>('.gsubmit')
+    if (o.confirmText && q<HTMLInputElement>('.gconfirm').value.trim() !== o.confirmText) {
+      err.textContent = 'Type ' + o.confirmText + ' exactly to confirm.'
+      return
+    }
+    err.textContent = o.check ? 'Working…' : 'Checking…'
+    submitBtn.disabled = true
+    const run: Promise<unknown> = o.check ? o.check(pw, name) : checkPassword(o.worker, pw)
+    run
+      .then((data) => {
+        if (o.remember !== false) sset(KEY_PW, pw, 'session')
         sset(KEY_NAME, name || null, 'local')
         if (pending === p) pending = null
         close()
-        p.resolve({ password: pw, name })
+        p.resolve({ password: pw, name, data })
       })
       .catch((x: Error & { status?: number }) => {
-        err.textContent = x.status === 401 ? 'Wrong password.' : 'Could not reach the edit service (' + x.message + ').'
+        err.textContent =
+          x.status === 401 ? 'Wrong password.' : x.status ? x.message : 'Could not reach the edit service (' + x.message + ').'
+      })
+      .then(() => {
+        submitBtn.disabled = false
+        syncConfirm()
       })
   }
 
@@ -245,9 +313,8 @@ interface Window {
     /** Show the sign-in. Resolves once the password is accepted; rejects ("cancelled") on Cancel / Esc. */
     open(opts) {
       mount()
-      q<HTMLElement>('.gwhy').textContent = opts.why || 'Enter the editor password.'
-      q<HTMLButtonElement>('.gcancel').textContent = opts.cancelLabel || 'Cancel'
-      q<HTMLElement>('.gerr').textContent = ''
+      /* a protected action never shares a sign-in that is already open for something else */
+      if (pending && (opts.check || pending.opts.check)) cancel()
       if (!pending) {
         q<HTMLInputElement>('.gname').value = DeckGate.name()
         let resolve!: (r: GateResult) => void
@@ -256,8 +323,10 @@ interface Window {
           resolve = res
           reject = rej
         })
-        pending = { promise, resolve, reject, worker: opts.worker }
-      } else pending.worker = opts.worker || pending.worker
+        pending = { promise, resolve, reject, opts }
+      } else pending.opts = { ...opts, worker: opts.worker || pending.opts.worker }
+      configure(pending.opts)
+      syncConfirm()
       q<HTMLElement>('.gate').hidden = false
       setTimeout(() => q<HTMLInputElement>('.gpw').focus(), 30)
       return pending.promise

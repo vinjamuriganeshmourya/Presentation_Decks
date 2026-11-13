@@ -1,0 +1,1510 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "Serverless Computing",
+    "course": "Cloud Computing",
+    "htmlName": "serverless-computing",
+    "previous": {
+      "title": "Elastic Compute Instances",
+      "items": [
+        "Compute in the Cloud",
+        "Instance Families",
+        "Sizing & Selection",
+        "Images & Provisioning",
+        "Scaling"
+      ]
+    },
+    "agenda": [
+      "Serverless Basics",
+      "The Execution Model",
+      "Cold Starts & Warm Starts",
+      "Limits & Constraints",
+      "BaaS & Anti-Patterns"
+    ],
+    "next": "Cloud Provider Comparison"
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "S-TITLE",
+      "layout": "title"
+    },
+    {
+      "id": "S-RECAP",
+      "layout": "recap",
+      "notes": "RECAP: Session 9 : Elastic Compute Instances\n1. Compute in the Cloud: The instance as the unit of compute; the provisioning model\n2. Instance Families: General purpose, compute, memory & storage optimized; GPU & accelerator families for AI/ML\n3. Sizing & Selection: vCPU, memory, network & storage characteristics; right-sizing; VRAM as the AI constraint\n4. Images & Provisioning: Machine images; user data & bootstrapping; key pairs & instance access\n5. Scaling: Auto scaling groups & launch templates"
+    },
+    {
+      "id": "S-AGENDA",
+      "layout": "agenda",
+      "notes": "Agenda for Today's Session\n1. Serverless Basics: No server management; event-driven execution; Function as a Service (FaaS)\n2. The Execution Model: Triggers & events; the handler contract; stateless execution; concurrency\n3. Cold Starts & Warm Starts: Causes of cold start; init phase vs invoke phase; mitigation strategies\n4. Limits & Constraints: Execution timeout, memory, payload size & ephemeral storage\n5. BaaS & Anti-Patterns: Backend as a Service: managed databases, auth & storage; when not to use serverless: long-running jobs, heavy state, steady load"
+    },
+    {
+      "id": "D1",
+      "layout": "breaker",
+      "index": 1
+    },
+    {
+      "id": "T01",
+      "layout": "points",
+      "kicker": "Serverless Computing",
+      "title": "No Server Management",
+      "lead": "Elastic compute instances still require choosing and managing a virtual machine; serverless computing removes server management from the user, letting code run without any provisioning or capacity planning by the user",
+      "points": [
+        {
+          "text": "Covers Function as a Service (FaaS): code triggered by events",
+          "icon": "Zap"
+        },
+        {
+          "text": "Also covers Backend as a Service: managed databases, auth, storage",
+          "icon": "Database"
+        },
+        {
+          "text": "Provider owns all server provisioning, patching and capacity",
+          "icon": "ServerCog"
+        },
+        {
+          "text": "User supplies only code or configuration, never infrastructure",
+          "icon": "FileCode"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T01",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 480,
+      "figH": 330,
+      "notes": "Stress that serverless is broader than a single compute service: it is any model removing server management. Note that BaaS returns later as managed databases and auth. Exam angle: define serverless versus FaaS precisely."
+    },
+    {
+      "id": "T01-AN",
+      "layout": "analogy",
+      "label": "Analogy: paying only for a taxi ride",
+      "kicker": "Serverless Computing",
+      "title": "No Server Management",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T01Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T01Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: Like a taxi: you pay only for the ride, with no car, parking or servicing to manage. Likewise, serverless charges only for what you actually use, and there is no server to manage."
+    },
+    {
+      "id": "T02",
+      "layout": "points",
+      "kicker": "No Server Management",
+      "title": "What Disappears",
+      "lead": "Removing server management shifts operational work a virtual-machine user would normally own entirely onto the provider",
+      "points": [
+        {
+          "text": "Provider patches the operating system and runtime automatically",
+          "icon": "RefreshCw"
+        },
+        {
+          "text": "Capacity is allocated per invocation, not sized in advance",
+          "icon": "Gauge"
+        },
+        {
+          "text": "No idle infrastructure cost when the function is not running",
+          "icon": "Coins"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02",
+        "props": {
+          "steps": 3
+        }
+      },
+      "pointsW": 480,
+      "figH": 340,
+      "notes": "Point to the AWS Lambda console as the real location where this shows up: it has no instance-sizing field, unlike EC2. Contrast with the instance sizing decision from the previous session. Exam angle: list the operational tasks serverless removes."
+    },
+    {
+      "id": "T03",
+      "layout": "points",
+      "kicker": "Event-Driven Execution",
+      "title": "Compute On Demand",
+      "lead": "A traditional server process runs continuously, waiting for requests even when idle; a serverless function stays absent until a triggering event occurs, then runs and stops",
+      "points": [
+        {
+          "text": "No continuously running process consumes compute between events",
+          "icon": "PowerOff"
+        },
+        {
+          "text": "Execution begins only when an event source fires a trigger",
+          "icon": "Zap"
+        },
+        {
+          "text": "Resource use and cost track actual run time, not uptime",
+          "icon": "Timer"
+        },
+        {
+          "text": "Billing covers only execution time, not idle time; the environment may be kept briefly for reuse",
+          "icon": "Receipt"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T03",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 500,
+      "figH": 330,
+      "notes": "Contrast an always-on EC2 instance with a function appearing only on trigger. Point out the table: initialization adds overhead only on the first call. Exam angle: event-driven execution versus a request-response polling loop. The Init duration column is a preview of the cold-start section: define it in one line here, and note that handler Duration varies between runs, so the Init column is what to compare."
+    },
+    {
+      "id": "T03-B",
+      "layout": "table",
+      "kicker": "Event-Driven Execution",
+      "title": "Compute On Demand",
+      "table": {
+        "type": "table",
+        "size": 20,
+        "columns": [
+          {
+            "label": "Invocation",
+            "icon": "Zap",
+            "weight": 1.4
+          },
+          {
+            "label": "Duration",
+            "icon": "Timer",
+            "weight": 0.8
+          },
+          {
+            "label": "Init Duration",
+            "icon": "Hourglass",
+            "weight": 0.8
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Snowflake",
+            "cells": [
+              "First call (new environment)",
+              "1.96 ms",
+              "99.72 ms"
+            ]
+          },
+          {
+            "icon": "Flame",
+            "cells": [
+              "Later call (reused environment)",
+              "40.98 ms",
+              "Not present"
+            ]
+          }
+        ]
+      },
+      "notes": "Contrast an always-on EC2 instance with a function appearing only on trigger. Point out the table: initialization adds overhead only on the first call. Exam angle: event-driven execution versus a request-response polling loop. The Init duration column is a preview of the cold-start section: define it in one line here, and note that handler Duration varies between runs, so the Init column is what to compare."
+    },
+    {
+      "id": "T04",
+      "layout": "table",
+      "kicker": "FaaS Execution Unit",
+      "title": "Function Vs Instance",
+      "lead": "Function as a Service (FaaS) makes a single function invocation the unit a platform schedules and bills, far finer-grained than an entire virtual machine",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Aspect",
+            "icon": "Layers",
+            "weight": 0.9
+          },
+          {
+            "label": "Elastic Compute Instance",
+            "icon": "img:images/aws-ec2.svg",
+            "weight": 1.1
+          },
+          {
+            "label": "FaaS Function",
+            "icon": "img:images/aws-lambda.svg",
+            "weight": 1.1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Box",
+            "cells": [
+              "Execution unit",
+              "Whole virtual machine",
+              "Single function invocation"
+            ]
+          },
+          {
+            "icon": "ChartNoAxesColumnIncreasing",
+            "cells": [
+              "Scaling granularity",
+              "Per instance, configured by the user",
+              "Per invocation, automatic"
+            ]
+          },
+          {
+            "icon": "Wrench",
+            "cells": [
+              "Server management",
+              "User patches and configures OS",
+              "None required"
+            ]
+          }
+        ],
+        "bigIcons": true
+      },
+      "notes": "Point out that this granularity difference drives cost: functions bill in milliseconds, an instance bills for every second it runs, busy or idle. Exam angle: why is FaaS billing finer-grained than instance billing."
+    },
+    {
+      "id": "T04-B",
+      "layout": "lead",
+      "kicker": "FaaS Execution Unit",
+      "title": "Function Vs Instance",
+      "figure": {
+        "type": "custom",
+        "name": "A_T04B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figW": 1080,
+      "figH": 400,
+      "notes": "Point out that this granularity difference drives cost: functions bill in milliseconds, an instance bills for every second it runs, busy or idle. Exam angle: why is FaaS billing finer-grained than instance billing."
+    },
+    {
+      "id": "D2",
+      "layout": "breaker",
+      "index": 2
+    },
+    {
+      "id": "T05",
+      "layout": "lead",
+      "kicker": "Execution Model Map",
+      "title": "Four Core Pieces",
+      "lead": "Beyond knowing a function runs on trigger, Lambda's execution model defines exactly how an invocation starts, runs and ends",
+      "figure": {
+        "type": "custom",
+        "name": "A_T05",
+        "props": {
+          "steps": 4,
+          "items": [
+            {
+              "title": "Triggers and Events",
+              "text": "What starts an invocation and the data it carries",
+              "icon": "Zap"
+            },
+            {
+              "title": "Handler Contract",
+              "text": "The fixed signature every function must implement",
+              "icon": "FileSignature"
+            },
+            {
+              "title": "Stateless Execution",
+              "text": "No data survives reliably between separate invocations",
+              "icon": "Eraser"
+            },
+            {
+              "title": "Concurrency",
+              "text": "How many invocations run at the same time",
+              "icon": "Layers"
+            }
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 360,
+      "notes": "Set up the four pieces as one map before going into each. Ask: which of these four decides how many copies of the function can run together? Answer: concurrency."
+    },
+    {
+      "id": "T06",
+      "layout": "points",
+      "kicker": "The Handler Contract",
+      "title": "Event Context Response",
+      "lead": "The handler contract is the fixed shape every Lambda function must follow so the platform knows how to call it and read its reply",
+      "points": [
+        {
+          "text": "`event`: payload carrying the trigger's data, JSON-like structure",
+          "icon": "FileJson",
+          "at": 1
+        },
+        {
+          "text": "`context`: runtime metadata: request ID, time remaining, memory limit",
+          "icon": "Info",
+          "at": 2
+        },
+        {
+          "text": "Return value becomes the response for synchronous calls (e.g., API Gateway)",
+          "icon": "CornerDownLeft",
+          "at": 3
+        },
+        {
+          "text": "Asynchronous triggers ignore it",
+          "icon": "Inbox",
+          "at": 3
+        },
+        {
+          "text": "The configured handler setting (for example, `file.function`) must match the code exactly",
+          "icon": "Settings2",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T06",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 520,
+      "figH": 330,
+      "notes": "Walk through event, context and return value as the three parts of one fixed contract. Point out context is metadata about the run, not the input data. Exam hook: ask what context exposes versus event."
+    },
+    {
+      "id": "T06-AN",
+      "layout": "analogy",
+      "label": "Analogy: a service counter",
+      "kicker": "The Handler Contract",
+      "title": "Event Context Response",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T06Everyday",
+        "props": {
+          "steps": 2
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T06Concept",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "TR analogy: Like a service counter: the visitor hands over a filled form (event), and the clerk also gets a token slip showing the token number and the time left to serve (context). The clerk's written reply (return value) is what the visitor receives back, just as Lambda passes event and context into the handler and sends its return value back as the response."
+    },
+    {
+      "id": "T07",
+      "layout": "points",
+      "kicker": "Triggers And Events",
+      "title": "Invocation Types Explained",
+      "lead": "A trigger decides which service calls the function, and the invocation type decides whether the caller waits for a result",
+      "points": [
+        {
+          "text": "API Gateway requests typically invoke the function synchronously",
+          "icon": "Globe"
+        },
+        {
+          "text": "Asynchronous invocation: event is queued, caller gets acknowledgement only",
+          "icon": "Inbox"
+        },
+        {
+          "text": "Event shape varies by trigger: each service defines its own schema",
+          "icon": "Shapes"
+        },
+        {
+          "text": "Polling-based triggers batch several records into a single event",
+          "icon": "Layers"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T07",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 500,
+      "figH": 330,
+      "notes": "Separate the trigger source from the invocation type since both vary independently. Mention API Gateway as a synchronous example and S3 upload as asynchronous. Interviewers often ask which invocation type a given trigger uses."
+    },
+    {
+      "id": "T08",
+      "layout": "points",
+      "kicker": "Stateless Execution",
+      "title": "No Persisted State",
+      "lead": "Because an execution environment can be torn down and rebuilt at any point, a function cannot depend on anything it remembered from an earlier call",
+      "points": [
+        {
+          "text": "Local variables and temporary disk space are not guaranteed to persist",
+          "icon": "Eraser"
+        },
+        {
+          "text": "Each invocation may land in a fresh or a reused environment",
+          "icon": "Shuffle"
+        },
+        {
+          "text": "Durable data belongs in an external database, cache or storage service",
+          "icon": "Database"
+        },
+        {
+          "text": "Idempotent handler logic protects against duplicate retried events",
+          "icon": "ShieldCheck"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T08",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 500,
+      "figH": 330,
+      "notes": "Explain statelessness as the price paid for elastic scaling, not a limitation by accident. Give the example of a counter variable resetting unexpectedly between calls. Exam hook: ask why Lambda functions should write session data externally."
+    },
+    {
+      "id": "T09",
+      "layout": "points",
+      "kicker": "Concurrency Model",
+      "title": "Scaling Via Environments",
+      "lead": "Statelessness is what lets Lambda run many invocations in parallel, each in its own isolated execution environment",
+      "points": [
+        {
+          "text": "A concurrency limit caps how many environments run at once",
+          "icon": "Gauge"
+        },
+        {
+          "text": "Reserved concurrency guarantees capacity for one function",
+          "icon": "Lock"
+        },
+        {
+          "text": "Remaining capacity is shared across other functions in one pool",
+          "icon": "Share2"
+        },
+        {
+          "text": "Exceeding the limit throttles invocations: sync calls get a 429 error, async events are retried",
+          "icon": "Ban"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T09",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 500,
+      "figH": 330,
+      "notes": "Tie concurrency back to the isolated environments just described: more concurrent events simply means more environments spun up together. Mention throttling as the failure mode of exceeding limits. Common interview question: what happens when concurrency limit is exceeded."
+    },
+    {
+      "id": "D3",
+      "layout": "breaker",
+      "index": 3
+    },
+    {
+      "id": "T10",
+      "layout": "points",
+      "kicker": "Execution Env Lifecycle",
+      "title": "Cold Vs Warm",
+      "lead": "A serverless platform does not keep every execution environment running forever; whether one must be built from scratch decides if an invocation is cold or warm",
+      "points": [
+        {
+          "text": "Cold start: a new execution environment is built before code runs",
+          "icon": "Snowflake"
+        },
+        {
+          "text": "Warm start: an existing environment is reused, no setup needed",
+          "icon": "Flame"
+        },
+        {
+          "text": "Every cold start runs two internal phases: init, then invoke",
+          "icon": "Columns2"
+        },
+        {
+          "text": "Idle environments are reclaimed after a period of inactivity",
+          "icon": "Recycle"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T10",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 480,
+      "figH": 330,
+      "notes": "Frame this as the map before going into causes and phases individually. Point out that warm start skips a whole stage, not just runs faster. Exam hook: ask what decides cold vs warm for a given call."
+    },
+    {
+      "id": "T11",
+      "layout": "points",
+      "kicker": "Causes Of Cold Start",
+      "title": "What Triggers Setup",
+      "lead": "A cold start, the delay from building a fresh execution environment, happens whenever no idle environment is available to reuse for the incoming request",
+      "points": [
+        {
+          "text": "First-ever invocation: no environment exists yet to reuse",
+          "icon": "Play"
+        },
+        {
+          "text": "Scale-out: extra concurrent requests need fresh environments",
+          "icon": "TrendingUp"
+        },
+        {
+          "text": "Idle reclaim: an unused environment was torn down earlier",
+          "icon": "Clock"
+        },
+        {
+          "text": "New deployment: updated code forces a fresh environment build",
+          "icon": "Upload"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T11",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 480,
+      "figH": 330,
+      "notes": "Walk through the four causes as the reasons no warm environment was sitting ready. Everyday phrasing: nothing was 'kept on' for this request, so it had to be switched on. Exam hook: a deployment update is a cold-start trigger even under steady traffic."
+    },
+    {
+      "id": "T11-AN",
+      "layout": "analogy",
+      "label": "Analogy: a food stall's stove",
+      "kicker": "Causes Of Cold Start",
+      "title": "What Triggers Setup",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T11Everyday",
+        "props": {
+          "steps": 2
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T11Concept",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "TR analogy: Like a food stall that switches off its stove when there are no customers: when an order comes in and the stove is off, the cook must light it and heat the pan first, so that customer waits longer. If the stove is still hot from the last order, cooking starts immediately, just as a cold start happens only when no ready environment is available."
+    },
+    {
+      "id": "T12",
+      "layout": "table",
+      "kicker": "Init Vs Invoke",
+      "title": "Two Internal Phases",
+      "lead": "A cold start is not one delay but two stages stacked together: setting the environment up, then running the function logic inside it",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Phase",
+            "icon": "Columns2",
+            "weight": 0.6
+          },
+          {
+            "label": "What Happens",
+            "icon": "Cog",
+            "weight": 1.4
+          },
+          {
+            "label": "Reported As",
+            "icon": "Receipt",
+            "weight": 1.0
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Hourglass",
+            "cells": [
+              "Init",
+              "Download code, start the runtime, run code outside the handler",
+              "Init duration (billed)"
+            ]
+          },
+          {
+            "icon": "Play",
+            "cells": [
+              "Invoke",
+              "Runs the handler with the event payload",
+              "Duration (billed)"
+            ]
+          }
+        ]
+      },
+      "notes": "Point at the table while explaining that init is setup work, invoke is the actual code. Mention that the console reports the two separately, so they must not be confused. Exam hook: ask which phase a warm call skips."
+    },
+    {
+      "id": "T12-B",
+      "layout": "points",
+      "kicker": "Init Vs Invoke",
+      "title": "Two Internal Phases",
+      "points": [
+        {
+          "text": "Environment freezes after invoke completes, ready for reuse",
+          "icon": "Snowflake"
+        },
+        {
+          "text": "Warm invocations skip init entirely and start at invoke",
+          "icon": "SkipForward"
+        },
+        {
+          "text": "Init overhead delays the handler before it even starts running",
+          "icon": "Hourglass"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T12B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "pointsW": 470,
+      "figH": 340,
+      "notes": "Point at the table while explaining that init is setup work, invoke is the actual code. Mention that the console reports the two separately, so they must not be confused. Exam hook: ask which phase a warm call skips."
+    },
+    {
+      "id": "T12-C",
+      "layout": "points",
+      "kicker": "Warm Start Reuse",
+      "title": "What Carries Over",
+      "lead": "A warm start skips init, so anything created during init is already in memory when the handler runs",
+      "points": [
+        {
+          "text": "Reused: global variables, SDK clients, DB connections, files in /tmp",
+          "icon": "Recycle"
+        },
+        {
+          "text": "Best practice: initialize clients and connections outside the handler",
+          "icon": "Lightbulb"
+        },
+        {
+          "text": "Reuse is a performance bonus only; never rely on it for correctness",
+          "icon": "TriangleAlert"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T12C",
+        "props": {
+          "steps": 3
+        }
+      },
+      "pointsW": 480,
+      "figH": 340
+    },
+    {
+      "id": "T13",
+      "layout": "points",
+      "kicker": "Reducing Cold Starts",
+      "title": "Mitigation Strategies",
+      "lead": "Because init overhead adds latency before any code runs, several practices reduce how often it occurs or how costly it is",
+      "points": [
+        {
+          "text": "Provisioned concurrency: environments pre-initialized, billed even when idle",
+          "icon": "BatteryCharging"
+        },
+        {
+          "text": "Smaller deployment package: less code to download at init",
+          "icon": "Package"
+        },
+        {
+          "text": "Fewer, lighter dependencies: runtime starts up faster",
+          "icon": "Feather"
+        },
+        {
+          "text": "Scheduled warm-up calls: reduce idle reclaim, but not guaranteed",
+          "icon": "CalendarClock"
+        },
+        {
+          "text": "Faster-starting runtimes: interpreted languages init quicker than JVM-based ones",
+          "icon": "Rocket"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T13",
+        "props": {
+          "steps": 5
+        }
+      },
+      "pointsW": 500,
+      "figH": 340,
+      "notes": "Explain that provisioned concurrency trades idle cost for predictable latency, unlike pure pay-per-invocation. Everyday phrasing: keeping a few shops pre-opened costs rent even with no customer. Exam hook: ask why provisioned concurrency is not free despite serverless billing being usage-based."
+    },
+    {
+      "id": "D4",
+      "layout": "breaker",
+      "index": 4
+    },
+    {
+      "id": "T14",
+      "layout": "points",
+      "kicker": "Limits Overview",
+      "title": "Four Operational Boundaries",
+      "lead": "Every Function as a Service (FaaS) platform bounds how long, how much memory, how much data, and how much local disk a function may use, since unmetered execution would inflate cost indefinitely",
+      "points": [
+        {
+          "text": "Ephemeral storage: temporary local disk (/tmp), lost when the environment is torn down",
+          "icon": "HardDrive"
+        },
+        {
+          "text": "Memory allocation: RAM assigned, with CPU scaled proportionally",
+          "icon": "MemoryStick"
+        },
+        {
+          "text": "Payload size: maximum request and response body size",
+          "icon": "Mail"
+        },
+        {
+          "text": "Ephemeral storage: temporary local disk cleared after execution",
+          "icon": "Eraser"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T14",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 500,
+      "figH": 320,
+      "notes": "Introduce the four limit categories before detailing each; mention the Lambda console's Configuration tab as where these are set. Interview hook: ask why serverless needs hard limits despite auto-scaling."
+    },
+    {
+      "id": "T15",
+      "layout": "points",
+      "kicker": "Execution Timeout",
+      "title": "Maximum Run Duration",
+      "lead": "A function that never finished would hold resources and billing open forever, so every invocation carries a maximum duration after which the platform forcibly stops it",
+      "points": [
+        {
+          "text": "AWS Lambda timeout: configurable up to 15 minutes maximum",
+          "icon": "Timer"
+        },
+        {
+          "text": "Default timeout is 3 seconds unless explicitly raised",
+          "icon": "Clock3"
+        },
+        {
+          "text": "Timed-out invocation returns a task timed out error",
+          "icon": "CircleX"
+        },
+        {
+          "text": "Long batch or streaming jobs need a different compute model",
+          "icon": "Server"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T15",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 480,
+      "figH": 330,
+      "notes": "Explain timeout caps cost and resource hold time, not just failures. Point to the General configuration section, where the default 3-second timeout of s10-serverless-demo can be viewed and changed. Exam hook: ask what happens to in-progress work at timeout: it is killed, not paused."
+    },
+    {
+      "id": "T15-AN",
+      "layout": "analogy",
+      "label": "Analogy: booked time in a gaming zone",
+      "kicker": "Execution Timeout",
+      "title": "Maximum Run Duration",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T15Everyday",
+        "props": {
+          "steps": 2
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T15Concept",
+        "props": {
+          "steps": 2
+        }
+      },
+      "notes": "TR analogy: Like a game in a gaming zone that switches off when the booked time ends, even mid-level, a function is stopped at its timeout whether or not the code has finished."
+    },
+    {
+      "id": "T16",
+      "layout": "table",
+      "kicker": "Memory & Payload",
+      "title": "Sizing And Data Caps",
+      "lead": "Memory is sized separately from the instance families studied earlier, because a function's memory setting also fixes its CPU share and its cost rate",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Limit",
+            "icon": "Gauge",
+            "weight": 0.9
+          },
+          {
+            "label": "Range / Value",
+            "icon": "Ruler",
+            "weight": 1.1
+          },
+          {
+            "label": "Note",
+            "icon": "StickyNote",
+            "weight": 1.2
+          }
+        ],
+        "rows": [
+          {
+            "icon": "MemoryStick",
+            "cells": [
+              "Memory",
+              "128 MB – 10,240 MB",
+              "CPU scales up with memory, to several vCPUs"
+            ]
+          },
+          {
+            "icon": "ArrowLeftRight",
+            "cells": [
+              "Synchronous payload",
+              "6 MB request/response",
+              "API-style calls return inline"
+            ]
+          },
+          {
+            "icon": "Inbox",
+            "cells": [
+              "Asynchronous payload",
+              "1 MB",
+              "Event-triggered invocations"
+            ]
+          },
+          {
+            "icon": "Package",
+            "cells": [
+              "Deployment package",
+              "50 MB zipped, 250 MB unzipped",
+              "Container images allow up to 10 GB"
+            ]
+          }
+        ]
+      },
+      "notes": "Stress that payload limits differ for synchronous versus event-driven calls, and memory also sets CPU power. Point to the memory setting under General configuration, which shows 128 MB for s10-serverless-demo. Exam hook: ask why the asynchronous payload cap is smaller than the synchronous one."
+    },
+    {
+      "id": "T16-B",
+      "layout": "lead",
+      "kicker": "Memory & Payload",
+      "title": "Sizing And Cost",
+      "lead": "Higher memory raises per-millisecond cost, so right-sizing memory balances speed against spend, the same trade-off used when sizing compute instances",
+      "figure": {
+        "type": "custom",
+        "name": "B_T16B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figW": 1000,
+      "figH": 380,
+      "notes": "Stress that payload limits differ for synchronous versus event-driven calls, and memory also sets CPU power. Point to the memory setting under General configuration, which shows 128 MB for s10-serverless-demo. Exam hook: ask why the asynchronous payload cap is smaller than the synchronous one."
+    },
+    {
+      "id": "T17",
+      "layout": "points",
+      "kicker": "Ephemeral Storage",
+      "title": "Temporary Local Disk",
+      "lead": "A function sometimes needs scratch space mid-execution, unzipping a file or caching a lookup, so each execution environment gets a temporary disk at /tmp, wiped when that environment is removed",
+      "points": [
+        {
+          "text": "Default ephemeral storage is 512 MB per execution environment",
+          "icon": "HardDrive"
+        },
+        {
+          "text": "Configurable up to 10,240 MB (10 GB) if needed",
+          "icon": "SlidersHorizontal"
+        },
+        {
+          "text": "Data in /tmp does not persist across cold starts",
+          "icon": "Eraser"
+        },
+        {
+          "text": "Not durable: use managed databases or object storage instead",
+          "icon": "Database"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T17",
+        "props": {
+          "steps": 4
+        }
+      },
+      "pointsW": 480,
+      "figH": 330,
+      "notes": "Clarify ephemeral storage is scratch space tied to the environment's lifecycle, not a database substitute. Point to the ephemeral storage field under Configuration, the same console area used for the practical function. Exam hook: ask what happens to /tmp data between two cold invocations: it is gone."
+    },
+    {
+      "id": "T17-AN",
+      "layout": "analogy",
+      "label": "Analogy: a hotel room after checkout",
+      "kicker": "Ephemeral Storage",
+      "title": "Temporary Local Disk",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T17Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T17Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A hotel room is cleaned out after checkout, leaving nothing for the next guest: just as an execution environment's /tmp storage is erased once that environment is recycled."
+    },
+    {
+      "id": "D5",
+      "layout": "breaker",
+      "index": 5
+    },
+    {
+      "id": "T18",
+      "layout": "points",
+      "kicker": "BaaS & Anti-Patterns",
+      "title": "Section Landscape",
+      "lead": "Serverless computing covers more than functions\nBackend as a Service (BaaS) supplies ready-made backend pieces, while certain workload shapes fit serverless poorly",
+      "points": [
+        {
+          "text": "Backend as a Service (BaaS): managed database, authentication and storage used directly",
+          "icon": "Boxes"
+        },
+        {
+          "text": "Anti-patterns: workload shapes where FaaS billing or limits cost more than they save",
+          "icon": "TriangleAlert"
+        },
+        {
+          "text": "Three anti-pattern cases: long-running jobs, heavy state, steady load",
+          "icon": "ListChecks"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T18",
+        "props": {
+          "steps": 3
+        }
+      },
+      "pointsW": 500,
+      "figH": 330,
+      "notes": "Set up the two halves of this takeaway before going into either. Mention that BaaS removes even the function-writing step that FaaS still needs. Exam angle: distinguishing BaaS from FaaS is a common interview question."
+    },
+    {
+      "id": "T19",
+      "layout": "points",
+      "kicker": "Backend As Service",
+      "title": "BaaS Defined",
+      "lead": "Backend as a Service (BaaS) is a managed backend component an application calls directly through an API, with no custom function code or server to run",
+      "points": [
+        {
+          "text": "Provider manages scaling, patching and availability of that backend piece",
+          "icon": "ServerCog"
+        },
+        {
+          "text": "Covers data storage, identity checks and file storage as ready services",
+          "icon": "Database"
+        },
+        {
+          "text": "Billed per request or per resource used, not per function invocation",
+          "icon": "Receipt"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T19",
+        "props": {
+          "steps": 3
+        }
+      },
+      "pointsW": 480,
+      "figH": 340,
+      "notes": "Contrast with FaaS: FaaS still runs an application's own code per trigger, BaaS has no custom code at all. Ask: is a managed database call BaaS or FaaS?"
+    },
+    {
+      "id": "T19-AN",
+      "layout": "analogy",
+      "label": "Analogy: plugging into the power grid",
+      "kicker": "Backend As Service",
+      "title": "BaaS Defined",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T19Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T19Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: Plugging into the power grid instead of running a generator: a household draws electricity through a socket without owning a power station, just as an application calls a managed database, login check or file store without owning or running that backend."
+    },
+    {
+      "id": "T20",
+      "layout": "table",
+      "kicker": "BaaS Components",
+      "title": "DB, Auth, Storage",
+      "lead": "Each BaaS category maps to a specific managed AWS service that an application calls instead of running its own database, login or file server",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "BaaS Category",
+            "icon": "Layers",
+            "weight": 0.9
+          },
+          {
+            "label": "AWS Service",
+            "icon": "Cloud",
+            "weight": 1.0
+          },
+          {
+            "label": "What It Replaces",
+            "icon": "Replace",
+            "weight": 1.2
+          }
+        ],
+        "rows": [
+          {
+            "icon": "img:images/aws-dynamodb.svg",
+            "cells": [
+              "Managed database",
+              "DynamoDB / Aurora Serverless",
+              "A self-managed database server"
+            ]
+          },
+          {
+            "icon": "img:images/aws-cognito.svg",
+            "cells": [
+              "Authentication",
+              "Cognito",
+              "Custom login and session code"
+            ]
+          },
+          {
+            "icon": "img:images/aws-s3.svg",
+            "cells": [
+              "Storage",
+              "S3",
+              "A file server the application would run"
+            ]
+          }
+        ]
+      },
+      "notes": "Point to the real AWS console names so the mapping is concrete, not generic. Mention Cognito issues tokens, DynamoDB holds data, S3 holds files. Exam angle: naming the AWS service behind each BaaS category."
+    },
+    {
+      "id": "T20-B",
+      "layout": "lead",
+      "kicker": "BaaS Components",
+      "title": "DB, Auth, Storage",
+      "lead": "The common thread: each is reached by a direct API call, with no function or server standing between the application and the service",
+      "figure": {
+        "type": "custom",
+        "name": "C_T20B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figW": 1000,
+      "figH": 380,
+      "notes": "Point to the real AWS console names so the mapping is concrete, not generic. Mention Cognito issues tokens, DynamoDB holds data, S3 holds files. Exam angle: naming the AWS service behind each BaaS category."
+    },
+    {
+      "id": "T21",
+      "layout": "points",
+      "kicker": "Serverless Anti-Patterns",
+      "title": "When It Fails",
+      "lead": "Function as a Service bills per invocation and duration, and does not guarantee state between runs\nSome workloads do not fit that model, and using serverless there costs more or fails outright",
+      "points": [
+        {
+          "text": "Cost mismatch: frequent or constant invocations add up to more than a fixed server price",
+          "icon": "Coins"
+        },
+        {
+          "text": "Correctness mismatch: run-time limits and lost state between runs can break the job itself",
+          "icon": "Bug"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T21",
+        "props": {
+          "steps": 2
+        }
+      },
+      "pointsW": 500,
+      "figH": 320,
+      "notes": "Frame anti-pattern as a cost-and-fit mismatch, not a technical failure of serverless itself. Link the taxi analogy to the steady-load case. Exam angle: listing workload types unsuited to serverless is a standard interview question."
+    },
+    {
+      "id": "T21-AN",
+      "layout": "analogy",
+      "label": "Analogy: a daily commuter's taxi fares",
+      "kicker": "Serverless Anti-Patterns",
+      "title": "When It Fails",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T21Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T21Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A daily commuter paying per taxi ride spends more than someone owning a car for the same fixed route: just as a workload invoked constantly, or needing a long single run, is billed and bounded in a way a dedicated server is not."
+    },
+    {
+      "id": "T22",
+      "layout": "lead",
+      "kicker": "Three Anti-Patterns",
+      "title": "Jobs, State, Load",
+      "lead": "Long-running jobs, heavy state and steady load each break a different assumption FaaS makes, and each has a better-fitting alternative",
+      "figure": {
+        "type": "custom",
+        "name": "C_T22",
+        "props": {
+          "steps": 3,
+          "rows": [
+            [
+              "Long-running jobs",
+              "Exceeds the function's execution timeout limit",
+              "A long-running instance or container"
+            ],
+            [
+              "Heavy state",
+              "Execution is stateless; in-memory data is not guaranteed between runs",
+              "A server holding state in memory or on disk"
+            ],
+            [
+              "Steady, predictable load",
+              "Per-invocation billing costs more than a reserved instance running continuously",
+              "A reserved or always-on instance"
+            ]
+          ],
+          "columns": [
+            "Anti-Pattern",
+            "Why Serverless Fails",
+            "Better Fit"
+          ]
+        }
+      },
+      "figW": 1100,
+      "figH": 380,
+      "notes": "Link timeout and stateless execution to what the execution-model and limits slides already defined: this is where that limit stops fitting a workload. Mention the utilisation threshold as the cost trigger an interviewer may probe."
+    },
+    {
+      "id": "T22-B",
+      "layout": "lead",
+      "kicker": "Three Anti-Patterns",
+      "title": "Jobs, State, Load",
+      "lead": "Reserved compute beats per-invocation pricing once load stays near continuous; the break-even point varies with memory size and run time, and 40% utilisation is only a rough guide",
+      "figure": {
+        "type": "custom",
+        "name": "C_T22B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figW": 1000,
+      "figH": 360,
+      "notes": "Link timeout and stateless execution to what the execution-model and limits slides already defined: this is where that limit stops fitting a workload. Mention the utilisation threshold as the cost trigger an interviewer may probe."
+    },
+    {
+      "id": "D-LAB",
+      "layout": "breaker",
+      "index": 6,
+      "lab": true,
+      "kicker": "Practical Hands-On",
+      "title": "Deploying a Lambda Function and Observing Cold and Warm Starts"
+    },
+    {
+      "id": "P01",
+      "layout": "custom",
+      "component": "L_Steps",
+      "label": "Practical Steps",
+      "props": {
+        "id": "P01",
+        "kicker": "Task Overview",
+        "title": "What Gets Built",
+        "lead": "Creating a Lambda function, then invoking it to observe cold and warm starts",
+        "steps": [
+          {
+            "text": "Create the Lambda function `s10-serverless-demo` in one available region",
+            "icon": "SquarePlus"
+          },
+          {
+            "text": "Deploy the provided Python handler",
+            "icon": "Upload"
+          },
+          {
+            "text": "Create a test event and invoke the function",
+            "icon": "Play"
+          },
+          {
+            "text": "Compare the first and third invocations: Duration and Init duration",
+            "icon": "GitCompare"
+          },
+          {
+            "text": "Clean up the function, execution role and log group",
+            "icon": "Trash2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "P02",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Function Created",
+      "props": {
+        "id": "P02",
+        "kicker": "Create and Deploy",
+        "title": "Function and Handler",
+        "lead": "The function is created with an automatically created execution role, and the Python handler is deployed",
+        "step": "Function Created",
+        "icon": "SquarePlus",
+        "image": "images/shot-fn-created.png",
+        "rings": [
+          [
+            8,
+            20,
+            1972,
+            80
+          ],
+          [
+            572,
+            172,
+            564,
+            182
+          ]
+        ],
+        "caption": "`s10-serverless-demo` created successfully",
+        "below": true
+      }
+    },
+    {
+      "id": "P02-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Handler In The Code Editor",
+      "props": {
+        "id": "P02-B",
+        "kicker": "Create and Deploy",
+        "title": "Function and Handler",
+        "step": "Handler In The Code Editor",
+        "icon": "FileCode",
+        "image": "images/shot-code-editor.png",
+        "rings": [
+          [
+            1030,
+            464,
+            794,
+            74
+          ],
+          [
+            168,
+            1123,
+            674,
+            90
+          ]
+        ],
+        "caption": "`lambda_function.py` in the code editor"
+      }
+    },
+    {
+      "id": "P03",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Test Event Created",
+      "props": {
+        "id": "P03",
+        "kicker": "Invoke the Function",
+        "title": "Test Event Run",
+        "lead": "A test event is saved and used to invoke the function once; a successful run returns `statusCode` 200",
+        "step": "Test Event Created",
+        "icon": "FlaskConical",
+        "image": "images/shot-test-event.png",
+        "rings": [
+          [
+            62,
+            620,
+            2314,
+            104
+          ],
+          [
+            72,
+            932,
+            2304,
+            88
+          ]
+        ],
+        "caption": "Test event `s10-test-event` being created",
+        "leadSide": true
+      }
+    },
+    {
+      "id": "P03-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Successful Run",
+      "props": {
+        "id": "P03-B",
+        "kicker": "Invoke the Function",
+        "title": "Test Event Run",
+        "step": "Successful Run",
+        "icon": "CircleCheck",
+        "image": "images/shot-run-success.png",
+        "rings": [
+          [
+            154,
+            374,
+            2996,
+            178
+          ]
+        ],
+        "caption": "Successful run: `statusCode` 200 and the handler message",
+        "below": true
+      }
+    },
+    {
+      "id": "P04",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "First And Later Invocations (1/2)",
+      "props": {
+        "id": "P04",
+        "kicker": "Cold vs Warm",
+        "title": "Observed Summaries (1/2)",
+        "lead": "The Init duration line appears only when a new execution environment is built before the handler runs",
+        "icon": "Snowflake",
+        "image": "images/shot-first-invoke.png",
+        "rings": [
+          [
+            150,
+            312,
+            262,
+            140
+          ]
+        ],
+        "caption": "First invocation: Duration 1.96 ms, Init duration 99.72 ms",
+        "below": true
+      }
+    },
+    {
+      "id": "P04-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "First And Later Invocations (2/2)",
+      "props": {
+        "id": "P04-B",
+        "kicker": "Cold vs Warm",
+        "title": "Observed Summaries (2/2)",
+        "icon": "Flame",
+        "image": "images/shot-later-invoke.png",
+        "rings": [
+          [
+            56,
+            958,
+            196,
+            134
+          ]
+        ],
+        "caption": "Later invocation: Duration 40.98 ms, no Init duration line",
+        "note": "Cold-start cost is Init duration plus Duration, about 101.7 ms here (billed as 102 ms), against 40.98 ms for the warm run\nHandler Duration alone varies between runs, so Init duration is the evidence to compare"
+      }
+    },
+    {
+      "id": "P05",
+      "layout": "custom",
+      "component": "L_Steps",
+      "label": "Expected Result And Clean Up",
+      "props": {
+        "id": "P05",
+        "kicker": "Expected Result",
+        "title": "What To Check",
+        "steps": [
+          {
+            "text": "Expected result: `statusCode` 200, an Init duration on the first invocation, and none on a later one",
+            "icon": "CircleCheck"
+          },
+          {
+            "text": "A later invocation is not guaranteed to be warm, so record exactly what the console shows",
+            "icon": "ClipboardList"
+          },
+          {
+            "text": "Clean up: delete the function, then review the IAM execution role and the CloudWatch log group `/aws/lambda/s10-serverless-demo`",
+            "icon": "Trash2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S-QUIZ",
+      "layout": "quiz"
+    },
+    {
+      "id": "S-TAKEAWAYS",
+      "layout": "takeaways",
+      "notes": "Key Takeaways\n1. Serverless Basics: No server management; event-driven execution; Function as a Service (FaaS)\n2. The Execution Model: Triggers & events; the handler contract; stateless execution; concurrency\n3. Cold Starts & Warm Starts: Causes of cold start; init phase vs invoke phase; mitigation strategies\n4. Limits & Constraints: Execution timeout, memory, payload size & ephemeral storage\n5. BaaS & Anti-Patterns: Backend as a Service: managed databases, auth & storage; when not to use serverless: long-running jobs, heavy state, steady load"
+    },
+    {
+      "id": "S-NEXT",
+      "layout": "next",
+      "title": "Cloud Provider Comparison"
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}

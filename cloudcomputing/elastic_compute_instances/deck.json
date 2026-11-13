@@ -1,0 +1,1584 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Elastic Compute Instances",
+  "course": "Cloud Computing",
+  "htmlName": "elastic-compute-instances",
+  "previous": {
+   "title": "Storage Tiering, Backup & DR",
+   "items": [
+    "Durability & Availability",
+    "Replication & Consistency",
+    "Storage Classes & Tiering",
+    "Lifecycle Policies",
+    "Backup & Disaster Recovery"
+   ]
+  },
+  "agenda": [
+   "Compute in the Cloud",
+   "Instance Families",
+   "Sizing & Selection",
+   "Images & Provisioning",
+   "Scaling"
+  ],
+  "next": "Serverless Computing"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 8 : Storage Tiering, Backup & DR\n1. Durability & Availability: Durability vs availability; provider guarantees\n2. Replication & Consistency: Replication within & across regions; consistency models\n3. Storage Classes & Tiering: Hot, cool & archive tiers; retrieval time & cost trade-offs\n4. Lifecycle Policies: Automated transition between tiers; expiration rules\n5. Backup & Disaster Recovery: Backup strategies; RPO & RTO; DR patterns: backup-restore, pilot light, warm standby"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Compute in the Cloud: The instance as the unit of compute; the provisioning model\n2. Instance Families: General purpose, compute, memory & storage optimized; GPU & accelerator families for AI/ML\n3. Sizing & Selection: vCPU, memory, network & storage characteristics; right-sizing; VRAM as the AI constraint\n4. Images & Provisioning: Machine images; user data & bootstrapping; key pairs & instance access\n5. Scaling: Auto scaling groups & launch templates"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "The Compute Instance",
+   "title": "Unit Of Compute",
+   "lead": "A hypervisor is software that creates and runs multiple virtual machines on one physical server by sharing its resources\nAn instance is one such virtual machine: a virtual server in the cloud that you rent and pay for as you use it",
+   "points": [
+    {
+     "text": "Bundles virtual CPU (vCPU), memory, network and storage together",
+     "icon": "Boxes"
+    },
+    {
+     "text": "Each instance gets a unique instance ID at launch",
+     "icon": "Tag"
+    },
+    {
+     "text": "Moves through lifecycle states: pending, running, stopped, terminated",
+     "icon": "RefreshCw"
+    },
+    {
+     "text": "One instance is one isolated compute boundary per workload",
+     "icon": "ShieldCheck"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 470,
+   "figH": 340,
+   "notes": "Explain that an instance bundles compute, memory and storage into one billable unit. Point out the lifecycle states as a common exam question. Mention EC2 as the AWS name for this unit."
+  },
+  {
+   "id": "T01-AN",
+   "layout": "analogy",
+   "label": "Analogy: drawing electricity from a utility grid",
+   "kicker": "The Compute Instance",
+   "title": "Unit Of Compute",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T01Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T01Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: Similar to drawing electricity from a utility grid, compute capacity is used on demand and billed only for the time it is consumed — just as an instance incurs compute charges only while it is running."
+  },
+  {
+   "id": "T02",
+   "layout": "lead",
+   "kicker": "Provisioning Mechanism",
+   "title": "Request To Running",
+   "lead": "Provisioning is the automated path from a request to a running instance: a console click or a programmatic call triggers allocation, not weeks of physical setup",
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 5
+    }
+   },
+   "figW": 1080,
+   "figH": 330,
+   "notes": "Walk through the four steps from request to a reachable instance. Name the EC2 console and the RunInstances API as where this happens in AWS. Ask what happens between clicking launch and the instance becoming reachable."
+  },
+  {
+   "id": "T02-B",
+   "layout": "points",
+   "kicker": "Provisioning Mechanism",
+   "title": "Request To Running",
+   "points": [
+    {
+     "text": "Request names the image, instance type and network settings",
+     "icon": "FileText"
+    },
+    {
+     "text": "Scheduler picks a physical host with free capacity",
+     "icon": "Server"
+    },
+    {
+     "text": "Hypervisor boots the virtual machine from the chosen image",
+     "icon": "Power"
+    },
+    {
+     "text": "Instance enters the running state, then status checks confirm it is healthy",
+     "icon": "CircleCheck"
+    },
+    {
+     "text": "In AWS, this is triggered from the EC2 console or the `RunInstances` Application Programming Interface (API) call",
+     "icon": "MousePointerClick"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "Z_T02BPointer",
+    "props": {
+     "steps": 5
+    }
+   },
+   "pointsW": 630,
+   "figH": 400,
+   "notes": "Walk through the four steps from request to a reachable instance. Name the EC2 console and the RunInstances API as where this happens in AWS. Ask what happens between clicking launch and the instance becoming reachable."
+  },
+  {
+   "id": "T03",
+   "layout": "points",
+   "kicker": "Provisioning In AWS",
+   "title": "Where Billing Begins",
+   "lead": "This on-demand provisioning is what makes elasticity possible: capacity is requested and released in minutes, turning compute into a metered utility rather than a fixed purchase",
+   "points": [
+    {
+     "text": "Billing starts the moment the instance enters Running state",
+     "icon": "Play"
+    },
+    {
+     "text": "Terminating an instance returns its capacity to the shared pool",
+     "icon": "Undo2"
+    },
+    {
+     "text": "Stopped instances stop compute charges but keep storage billed",
+     "icon": "Pause"
+    },
+    {
+     "text": "No separate fee is charged for provisioning",
+     "icon": "BadgeCheck"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T03",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 470,
+   "figH": 340,
+   "notes": "Stress that billing starts only at Running, not Pending. Point to the lifecycle bar on the diagram. Ask what happens to cost if an instance is left Stopped rather than Terminated."
+  },
+  {
+   "id": "T04",
+   "layout": "table",
+   "kicker": "Sizing One Workload",
+   "title": "Picking An Instance",
+   "lead": "A low-traffic web app and a CPU-heavy batch job need different instances, since provisioning lets each request exactly the capacity its load demands",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Workload",
+      "icon": "Briefcase",
+      "weight": 1.1
+     },
+     {
+      "label": "Instance",
+      "icon": "Server",
+      "weight": 0.8
+     },
+     {
+      "label": "vCPU / Memory",
+      "icon": "Cpu",
+      "weight": 0.9
+     },
+     {
+      "label": "Why",
+      "icon": "Lightbulb",
+      "weight": 1.1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "Globe",
+      "cells": [
+       "Low-traffic web app",
+       "`t3.micro`",
+       "2 vCPU / 1 GB",
+       "Light, bursty requests"
+      ]
+     },
+     {
+      "icon": "Cog",
+      "cells": [
+       "CPU-bound batch job",
+       "`c5.large`",
+       "2 vCPU / 4 GB",
+       "Sustained compute load"
+      ]
+     }
+    ]
+   },
+   "notes": "Walk through why the batch job needs sustained compute while the web app only needs light, bursty capacity. Point to the table's vCPU and memory columns. Ask which instance type fits a steady, heavy workload."
+  },
+  {
+   "id": "T04-B",
+   "layout": "lead",
+   "kicker": "Sizing One Workload",
+   "title": "Picking An Instance",
+   "lead": "t3 instances are burstable and run on CPU credits, while c5 instances deliver full CPU performance continuously",
+   "figure": {
+    "type": "custom",
+    "name": "A_T04B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1000,
+   "figH": 360,
+   "notes": "Walk through why the batch job needs sustained compute while the web app only needs light, bursty capacity. Point to the table's vCPU and memory columns. Ask which instance type fits a steady, heavy workload."
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2
+  },
+  {
+   "id": "T05",
+   "layout": "lead",
+   "kicker": "Instance Families Overview",
+   "title": "Five Resource-Based Types",
+   "lead": "EC2 instance types are grouped into families, each tuned for a different resource balance (compute, memory, storage, or specialised hardware) based on what its workloads need most",
+   "figure": {
+    "type": "custom",
+    "name": "A_T05",
+    "props": {
+     "steps": 5,
+     "items": [
+      {
+       "title": "General Purpose",
+       "text": "Balanced vCPU-to-memory ratio for mixed workloads",
+       "icon": "Scale"
+      },
+      {
+       "title": "Compute Optimized",
+       "text": "High vCPU-to-memory ratio for CPU-bound tasks",
+       "icon": "Cpu"
+      },
+      {
+       "title": "Memory Optimized",
+       "text": "Large RAM-to-vCPU ratio for in-memory workloads",
+       "icon": "MemoryStick"
+      },
+      {
+       "title": "Storage Optimized",
+       "text": "Fast local disks for I/O-heavy tasks",
+       "icon": "HardDrive"
+      },
+      {
+       "title": "GPU & Accelerator",
+       "text": "Dedicated chips for AI/ML training and inference",
+       "icon": "CircuitBoard"
+      }
+     ]
+    }
+   },
+   "figW": 1100,
+   "figH": 380,
+   "notes": "Present this as the map of families before going into any one of them in detail. Mention that AWS, Azure and GCP all group instance types this same way, just with different naming letters."
+  },
+  {
+   "id": "T05-B",
+   "layout": "lead",
+   "kicker": "Instance Families Overview",
+   "title": "Five Resource-Based Types",
+   "figure": {
+    "type": "custom",
+    "name": "A_T05B",
+    "props": {
+     "steps": 5
+    }
+   },
+   "figW": 1060,
+   "figH": 440,
+   "notes": "Present this as the map of families before going into any one of them in detail. Mention that AWS, Azure and GCP all group instance types this same way, just with different naming letters."
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "General Purpose Family",
+   "title": "Balanced Resource Mix",
+   "lead": "General purpose instances, AWS’s M and T families, offer a balanced ratio of about 4 GB memory per virtual CPU (vCPU), so no single resource is starved for typical mixed workloads",
+   "points": [
+    {
+     "text": "Typical use: web servers, small-to-medium databases, dev environments",
+     "icon": "Globe"
+    },
+    {
+     "text": "Moderately priced: a sensible default when the main bottleneck is not yet known",
+     "icon": "Wallet"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T06",
+    "props": {
+     "steps": 2
+    }
+   },
+   "pointsW": 470,
+   "figH": 360,
+   "notes": "Explain that balanced does not mean weak; it means no bottleneck is designed in advance. Ask: why would a web server rarely need the heaviest memory or CPU ratio?"
+  },
+  {
+   "id": "T06-AN",
+   "layout": "analogy",
+   "label": "Analogy: a family sedan car",
+   "kicker": "General Purpose Family",
+   "title": "Balanced Resource Mix",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T06Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T06Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: A general-purpose instance is like a family sedan car — not the fastest, not the biggest boot, but balanced for most everyday trips — just as it balances CPU and memory instead of maximising either."
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Compute Optimized Family",
+   "title": "High CPU Ratio",
+   "lead": "Compute optimized instances shift the balance toward more vCPU per gigabyte of memory, suiting workloads limited mainly by processing speed rather than memory",
+   "points": [
+    {
+     "text": "Typical use: batch processing, video encoding, gaming servers, scientific simulation",
+     "icon": "Film"
+    },
+    {
+     "text": "Resource ratio: about 2 GB memory per vCPU, half of general purpose",
+     "icon": "Scale"
+    },
+    {
+     "text": "AWS example: the C-family instance types",
+     "icon": "Server"
+    },
+    {
+     "text": "Cost: lower price per vCPU than general purpose",
+     "icon": "Wallet"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T07",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 540,
+   "figH": 360,
+   "notes": "Contrast directly with the general purpose ratio shown earlier on the same scale image. Point out video encoding and simulation as the canonical interview example of a CPU-bound job."
+  },
+  {
+   "id": "T08",
+   "layout": "table",
+   "kicker": "Memory & Storage Families",
+   "title": "RAM And Disk Focus",
+   "lead": "Memory optimized instances favour RAM-heavy workloads, while storage optimized instances favour fast local-disk access: two separate bottlenecks that general purpose and compute families do not target",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Family",
+      "icon": "Layers",
+      "weight": 0.9
+     },
+     {
+      "label": "Optimized For",
+      "icon": "Target",
+      "weight": 1
+     },
+     {
+      "label": "AWS Example",
+      "icon": "Server",
+      "weight": 0.75
+     },
+     {
+      "label": "Typical Workload",
+      "icon": "Briefcase",
+      "weight": 1.1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "MemoryStick",
+      "cells": [
+       "Memory optimized",
+       "Large RAM per vCPU",
+       "R-family",
+       "In-memory caches, large databases"
+      ]
+     },
+     {
+      "icon": "HardDrive",
+      "cells": [
+       "Storage optimized",
+       "High-IOPS local NVMe disks",
+       "I-family",
+       "NoSQL databases, data warehousing"
+      ]
+     }
+    ]
+   },
+   "notes": "Clarify that storage optimized local disks are ephemeral, unlike the persistent EBS block volumes used for durable data. Point to this table when contrasting memory-heavy and disk-heavy workloads. Exam angle: ask which family suits a Cassandra-style database needing heavy disk I/O."
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "GPU Accelerator Family",
+   "title": "Built For AI/ML",
+   "lead": "GPU and accelerator instances attach a graphics processing unit (GPU) or a purpose-built AI chip beside the CPU, giving the massively parallel compute that AI/ML workloads need",
+   "points": [
+    {
+     "text": "Use case: deep learning training, large-scale inference, rendering",
+     "icon": "BrainCircuit",
+     "at": 1
+    },
+    {
+     "text": "AWS examples: P-family (GPU training), G-family (GPU inference/graphics)",
+     "icon": "Server",
+     "at": 2
+    },
+    {
+     "text": "Trn-family (Trainium chip for training), Inf-family (Inferentia chip for inference)",
+     "icon": "Cpu",
+     "at": 2
+    },
+    {
+     "text": "Cost: priced well above CPU-only families per running hour",
+     "icon": "Wallet",
+     "at": 3
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T09",
+    "props": {
+     "steps": 3
+    }
+   },
+   "pointsW": 520,
+   "figH": 400,
+   "notes": "Stress that a GPU instance is still an EC2 instance, just with specialised hardware attached. The memory constraint this hardware introduces is covered separately under sizing."
+  },
+  {
+   "id": "T09-AN",
+   "layout": "analogy",
+   "label": "Analogy: a toll plaza of open booths",
+   "kicker": "GPU Accelerator Family",
+   "title": "Built For AI/ML",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T09Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T09Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Analogy: A GPU is like a toll plaza with hundreds of open booths letting cars through at the same time, instead of a single booth clearing vehicles one by one — just as thousands of GPU cores process data in parallel, instead of a few CPU cores working through tasks largely in sequence."
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3
+  },
+  {
+   "id": "T11",
+   "layout": "lead",
+   "kicker": "Sizing Dimensions",
+   "title": "Four Key Axes",
+   "lead": "Choosing an instance size means balancing four characteristics together, not picking one number",
+   "figure": {
+    "type": "custom",
+    "name": "B_T11",
+    "props": {
+     "steps": 4,
+     "items": [
+      {
+       "title": "vCPU",
+       "text": "Virtual CPU threads allocated to the instance (usually 2 vCPU = 1 physical core)",
+       "icon": "Cpu"
+      },
+      {
+       "title": "Memory",
+       "text": "RAM available for applications and caches",
+       "icon": "MemoryStick"
+      },
+      {
+       "title": "Network",
+       "text": "Bandwidth for data transfer, measured in Gbps",
+       "icon": "Network"
+      },
+      {
+       "title": "Storage",
+       "text": "IOPS and throughput to attached EBS volumes",
+       "icon": "HardDrive"
+      }
+     ]
+    }
+   },
+   "figW": 1060,
+   "figH": 360,
+   "notes": "Introduce the four axes learners will size against before taking each one in turn. Interview angle: naming all four dimensions when asked how to size an instance."
+  },
+  {
+   "id": "T12",
+   "layout": "points",
+   "kicker": "vCPU & Memory",
+   "title": "Compute And RAM",
+   "lead": "A virtual CPU (vCPU) is a thread of a physical processor core assigned to one instance; memory is the RAM it can address directly",
+   "points": [
+    {
+     "text": "vCPU count sets how many parallel threads the instance runs",
+     "icon": "Cpu"
+    },
+    {
+     "text": "Memory size limits data held in RAM before swapping or failure",
+     "icon": "MemoryStick"
+    },
+    {
+     "text": "`m6i.xlarge` offers 4 vCPUs and 16 GiB memory",
+     "icon": "Server"
+    },
+    {
+     "text": "Burstable instances (T-family) earn CPU credits to run above a baseline CPU level",
+     "icon": "TrendingUp"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T12",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 500,
+   "figH": 380,
+   "notes": "Explain vCPU as a thread, not a full physical core, and memory as the shared workspace it works in. Point to the m6i.xlarge figures as a concrete reference. Exam hook: vCPU versus physical core distinction."
+  },
+  {
+   "id": "T12-AN",
+   "layout": "analogy",
+   "label": "Analogy: a student at a study table",
+   "kicker": "vCPU & Memory",
+   "title": "Compute And RAM",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T12Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T12Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Analogy: A vCPU is like a student working at a study table and memory is the size of that table — just as a bigger table lets students keep more books open without running back to the shelf, more memory lets the vCPUs keep more data ready without slowing down to fetch it from disk."
+  },
+  {
+   "id": "T13",
+   "layout": "points",
+   "kicker": "Network & Storage",
+   "title": "Bandwidth And IOPS",
+   "lead": "Network and storage characteristics decide how fast data moves to the instance and its attached disks, as a separate limit from vCPU or memory",
+   "points": [
+    {
+     "text": "Network bandwidth: measured in Gbps, scales with instance size",
+     "icon": "Network"
+    },
+    {
+     "text": "Baseline bandwidth can burst higher for short periods",
+     "icon": "Zap"
+    },
+    {
+     "text": "EBS-optimized throughput: dedicated MB/s bandwidth to attached volumes",
+     "icon": "HardDrive"
+    },
+    {
+     "text": "IOPS: input/output operations per second a volume sustains",
+     "icon": "Gauge"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T13",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Clarify that EBS-optimized bandwidth is separate from general network bandwidth, so a storage-heavy job can bottleneck with spare vCPU still free. Exam hook: difference between network Gbps and EBS throughput MB/s."
+  },
+  {
+   "id": "T14",
+   "layout": "points",
+   "kicker": "Right-Sizing",
+   "title": "Matching Size To Load",
+   "lead": "Right-sizing means picking the smallest instance that meets sustained CPU, memory, network and storage needs, checked against real usage data",
+   "points": [
+    {
+     "text": "AWS Compute Optimizer analyses CloudWatch metrics for sizing recommendations",
+     "icon": "ChartLine"
+    },
+    {
+     "text": "Over-provisioning pays for idle capacity every billing hour",
+     "icon": "Wallet"
+    },
+    {
+     "text": "Under-provisioning causes throttling, swapping or dropped network packets",
+     "icon": "TriangleAlert"
+    },
+    {
+     "text": "Resize by stopping, changing instance type, then restarting",
+     "icon": "RefreshCw"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T14",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Stress that right-sizing is a recurring check as workload patterns shift, not a one-time launch decision. Reserved pricing only pays off once utilization stays consistently high. Exam hook: name the AWS tool used for sizing recommendations."
+  },
+  {
+   "id": "T15",
+   "layout": "points",
+   "kicker": "VRAM Constraint",
+   "title": "GPU Memory Limit",
+   "lead": "Video RAM (VRAM) is the dedicated memory on a GPU that holds model weights and data during AI training or inference, separate from the instance’s system RAM",
+   "points": [
+    {
+     "text": "VRAM capacity caps the model size a GPU can load",
+     "icon": "Ruler"
+    },
+    {
+     "text": "Exceeding VRAM causes an out-of-memory failure, not slowdown",
+     "icon": "OctagonX"
+    },
+    {
+     "text": "`g5.xlarge`: one NVIDIA A10G GPU with 24 GB VRAM",
+     "icon": "CircuitBoard"
+    },
+    {
+     "text": "`g4dn.xlarge`: one NVIDIA T4 GPU with 16 GB VRAM",
+     "icon": "CircuitBoard"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T15",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Emphasise VRAM as a hard ceiling, not a performance dial like vCPU or memory. Point to the two GPU figures as sizing references. Exam hook: why VRAM overflow fails outright instead of degrading gracefully."
+  },
+  {
+   "id": "T15-AN",
+   "layout": "analogy",
+   "label": "Analogy: a suitcase of fixed size",
+   "kicker": "VRAM Constraint",
+   "title": "GPU Memory Limit",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "G_T15Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "G_T15Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Analogy: A suitcase with a fixed size cannot fit more clothes than its capacity, however fast you pack — just as a model larger than the VRAM cannot load, regardless of how fast the GPU is."
+  },
+  {
+   "id": "T16",
+   "layout": "lead",
+   "kicker": "Worked Sizing Case",
+   "title": "Two Workload Types",
+   "lead": "Two workloads illustrate the same sizing method: a web application bound by vCPU and memory, and an inference job bound by VRAM",
+   "notes": "Walk through both rows: the web app fits comfortably on m6i.xlarge, while the inference job needs the larger VRAM of the A10G GPU, not just more vCPUs. Exam hook: explain why g4dn.xlarge fails the 18 GB model despite having free vCPU capacity.",
+   "figure": {
+    "type": "custom",
+    "name": "B_T16B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1060,
+   "figH": 360
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4
+  },
+  {
+   "id": "T18",
+   "layout": "points",
+   "kicker": "Provisioning Building Blocks",
+   "title": "Three Launch Inputs",
+   "lead": "Launching a compute instance needs more than picking a size: it needs a starting operating system, a way to run setup automatically, and a way to log in securely",
+   "points": [
+    {
+     "text": "Machine image: OS and software template the instance boots from",
+     "icon": "Disc3"
+    },
+    {
+     "text": "User data: script that bootstraps the instance on first boot",
+     "icon": "FileCode"
+    },
+    {
+     "text": "Key pair: public/private credential for secure access",
+     "icon": "KeyRound"
+    },
+    {
+     "text": "All three are chosen together when the instance is launched",
+     "icon": "Rocket"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T18",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Frame this as the three decisions made at launch time, beyond just size. Ask: which of these three decides what software is already installed? Point out each will get its own slide."
+  },
+  {
+   "id": "T19",
+   "layout": "lead",
+   "kicker": "What Machine Images Are",
+   "title": "AMI Template",
+   "lead": "A machine image is a saved template of an operating system plus installed software and configuration\nOn AWS it is called an AMI (Amazon Machine Image), and launching from it gives every instance an identical starting state",
+   "figure": {
+    "type": "custom",
+    "name": "C_T19",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1000,
+   "figH": 330,
+   "notes": "Emphasise 'identical starting state' as the exam-testable idea, not just 'it has an OS'. Mention that a custom AMI is how a configured server becomes repeatable. Interview angle: why would a team build its own AMI instead of using the provider's base image?"
+  },
+  {
+   "id": "T19-B",
+   "layout": "lead",
+   "kicker": "What Machine Images Are",
+   "title": "AMI Template",
+   "figure": {
+    "type": "custom",
+    "name": "C_T19B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1060,
+   "figH": 440,
+   "notes": "Emphasise 'identical starting state' as the exam-testable idea, not just 'it has an OS'. Mention that a custom AMI is how a configured server becomes repeatable. Interview angle: why would a team build its own AMI instead of using the provider's base image?"
+  },
+  {
+   "id": "T19-C",
+   "layout": "points",
+   "kicker": "What Machine Images Are",
+   "title": "AMI Template",
+   "points": [
+    {
+     "text": "Provider images: pre-built, maintained OS templates (Amazon Linux, Ubuntu)",
+     "icon": "Building2"
+    },
+    {
+     "text": "Custom images: captured from a configured running instance",
+     "icon": "Camera"
+    },
+    {
+     "text": "Marketplace images: vendor-packaged software bundled with an OS",
+     "icon": "Store"
+    },
+    {
+     "text": "Images are tied to one region and must be copied to launch elsewhere",
+     "icon": "MapPin"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T19C",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 500,
+   "figH": 400,
+   "notes": "Emphasise 'identical starting state' as the exam-testable idea, not just 'it has an OS'. Mention that a custom AMI is how a configured server becomes repeatable. Interview angle: why would a team build its own AMI instead of using the provider's base image?"
+  },
+  {
+   "id": "T19-AN",
+   "layout": "analogy",
+   "label": "Analogy: a recipe card",
+   "kicker": "What Machine Images Are",
+   "title": "AMI Template",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "G_T19Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "G_T19Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: A machine image is like a recipe card with every ingredient pre-measured — just as every instance launched from it starts in the exact same state, with nothing improvised."
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "User Data Script",
+   "title": "First-Boot Automation",
+   "lead": "User data is a script supplied at launch time that the instance runs automatically once it boots, replacing manual setup after the instance appears",
+   "points": [
+    {
+     "text": "Passed as plain text or shell commands at launch time",
+     "icon": "FileCode"
+    },
+    {
+     "text": "Executed once by the boot-time init process, on first boot only, by default",
+     "icon": "Power"
+    },
+    {
+     "text": "Typical use: install packages, pull application code, start a service",
+     "icon": "Package"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T20",
+    "props": {
+     "steps": 3
+    }
+   },
+   "pointsW": 440,
+   "figH": 380,
+   "notes": "Stress 'once, at first boot' — a common exam trap is assuming it reruns on every restart. Give the example of a script that installs a web server before anyone connects. Ask: how does a team re-run setup if the instance reboots?"
+  },
+  {
+   "id": "T21",
+   "layout": "points",
+   "kicker": "Key Pair Access",
+   "title": "Public Private Keys",
+   "lead": "Cloud instances replace password login with a key pair, two mathematically linked keys that let an owner prove identity without ever sending a password over the network",
+   "points": [
+    {
+     "text": "Public key: installed into the instance’s authorized list at launch",
+     "icon": "LockKeyhole"
+    },
+    {
+     "text": "Private key: downloaded once by the owner, never stored by the provider again",
+     "icon": "KeyRound"
+    },
+    {
+     "text": "Password-based login is disabled by default on cloud OS images",
+     "icon": "Ban"
+    },
+    {
+     "text": "A lost private key means lost access unless a new key is attached",
+     "icon": "TriangleAlert"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T21",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Clarify this is asymmetric cryptography applied to login, not encryption of data. Point out the private key download is one-time only. Interview hook: why can't the provider recover a lost private key?"
+  },
+  {
+   "id": "T21-AN",
+   "layout": "analogy",
+   "label": "Analogy: a lock and its key",
+   "kicker": "Key Pair Access",
+   "title": "Public Private Keys",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "G_T21Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "G_T21Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Analogy: A key pair is like a lock and its key — the lock (public key) stays on the instance, and only the person holding the matching key (private key) can open it."
+  },
+  {
+   "id": "T22",
+   "layout": "table",
+   "kicker": "Launch Sequence",
+   "title": "Image Data Key",
+   "lead": "Launching an instance chains the three building blocks into one sequence: the image decides what boots, the key pair decides who can log in, and user data decides what runs next",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Step",
+      "icon": "ListOrdered",
+      "weight": 0.9
+     },
+     {
+      "label": "Input Used",
+      "icon": "Inbox",
+      "weight": 0.9
+     },
+     {
+      "label": "Determines",
+      "icon": "Target",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "Disc3",
+      "cells": [
+       "Choose template",
+       "Machine image",
+       "OS and pre-installed software"
+      ]
+     },
+     {
+      "icon": "KeyRound",
+      "cells": [
+       "Attach credential",
+       "Key pair",
+       "Who can log in, and how"
+      ]
+     },
+     {
+      "icon": "FileCode",
+      "cells": [
+       "Supply script",
+       "User data",
+       "What gets configured on first boot"
+      ]
+     },
+     {
+      "icon": "CircleCheck",
+      "cells": [
+       "Instance ready",
+       "All three combined",
+       "A working, reachable instance"
+      ]
+     }
+    ]
+   },
+   "notes": "Walk the table row by row as the actual launch order. Note the AWS console surfaces all three on the same launch screen. Mention this sequence is identical whether the instance is launched manually or by an auto scaling group."
+  },
+  {
+   "id": "T22-B",
+   "layout": "lead",
+   "kicker": "Launch Sequence",
+   "title": "Image Data Key",
+   "figure": {
+    "type": "custom",
+    "name": "C_T22B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1080,
+   "figH": 400,
+   "notes": "Walk the table row by row as the actual launch order. Note the AWS console surfaces all three on the same launch screen. Mention this sequence is identical whether the instance is launched manually or by an auto scaling group."
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5
+  },
+  {
+   "id": "T24",
+   "layout": "lead",
+   "kicker": "Scaling The Fleet",
+   "title": "ASG And Templates",
+   "lead": "An auto scaling group (ASG) keeps a fleet of instances at the right size automatically, using a launch template as the blueprint for every new instance it starts",
+   "figure": {
+    "type": "custom",
+    "name": "C_T24",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1060,
+   "figH": 380,
+   "notes": "Frame the ASG as the fleet manager and the launch template as its recipe card. Point out that every part named here gets its own detail on the next slides. Exam hook: ASG without a launch template cannot launch anything."
+  },
+  {
+   "id": "T24-B",
+   "layout": "points",
+   "kicker": "Scaling The Fleet",
+   "title": "ASG And Templates",
+   "points": [
+    {
+     "text": "Scaling policies: rules deciding when to add or remove instances",
+     "icon": "SlidersHorizontal"
+    },
+    {
+     "text": "Health checks: detect and replace unhealthy instances automatically",
+     "icon": "HeartPulse"
+    },
+    {
+     "text": "Capacity limits: minimum, maximum and desired instance counts",
+     "icon": "Ruler"
+    },
+    {
+     "text": "Spans multiple availability zones for resilience",
+     "icon": "MapPin"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T24B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 470,
+   "figH": 420,
+   "notes": "Frame the ASG as the fleet manager and the launch template as its recipe card. Point out that every part named here gets its own detail on the next slides. Exam hook: ASG without a launch template cannot launch anything."
+  },
+  {
+   "id": "T25",
+   "layout": "lead",
+   "kicker": "Launch Templates",
+   "title": "Versioned Blueprint",
+   "lead": "Launching instances by hand means repeating the same setup each time\nA launch template stores that configuration (Amazon Machine Image (AMI), instance type, key pair and security group) as a reusable, versioned blueprint the auto scaling group reads whenever it starts a new instance",
+   "figure": {
+    "type": "custom",
+    "name": "C_T25",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1000,
+   "figH": 320,
+   "notes": "Stress that editing a template never changes running instances — it only affects future launches. Ask: how would a bad new version be rolled back without touching live traffic? Mention this is what the ASG actually reads at launch time."
+  },
+  {
+   "id": "T25-B",
+   "layout": "points",
+   "kicker": "Launch Templates",
+   "title": "Versioned Blueprint",
+   "points": [
+    {
+     "text": "Each edit creates a new numbered version",
+     "icon": "GitBranch"
+    },
+    {
+     "text": "Auto scaling group launches from the version it is set to use: default, latest or a fixed number",
+     "icon": "Pointer"
+    },
+    {
+     "text": "Rolling back means pointing the group at a prior version",
+     "icon": "Undo2"
+    },
+    {
+     "text": "Replaces the older, non-versioned launch configuration format",
+     "icon": "Replace"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T25B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 400,
+   "notes": "Stress that editing a template never changes running instances — it only affects future launches. Ask: how would a bad new version be rolled back without touching live traffic? Mention this is what the ASG actually reads at launch time."
+  },
+  {
+   "id": "T25-AN",
+   "layout": "analogy",
+   "label": "Analogy: a builder's standard house plan",
+   "kicker": "Launch Templates",
+   "title": "Versioned Blueprint",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "G_T25Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "G_T25Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: A launch template is like a builder's standard house plan: every house built from it gets the same layout and door locks — just as every instance launched gets the same AMI, instance type and security group from the template."
+  },
+  {
+   "id": "T26",
+   "layout": "points",
+   "kicker": "Scaling Policies",
+   "title": "How ASG Reacts",
+   "lead": "Capacity sits between a minimum and maximum; a scaling policy decides how many instances run at any moment inside that range, and a cooldown stops it reacting too fast",
+   "points": [
+    {
+     "text": "Desired capacity: the current target instance count maintained",
+     "icon": "Crosshair"
+    },
+    {
+     "text": "Health check grace period: wait before marking an instance unhealthy",
+     "icon": "Hourglass"
+    },
+    {
+     "text": "Cooldown period: pause between scaling actions to let changes settle",
+     "icon": "Timer"
+    },
+    {
+     "text": "Cost: new capacity is billed only while it actually runs",
+     "icon": "Wallet"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T26",
+    "props": {
+     "steps": 4
+    }
+   },
+   "pointsW": 480,
+   "figH": 380,
+   "notes": "Walk through why target tracking suits steady load while scheduled scaling suits predictable daily patterns. Point at the cooldown bullet when explaining why a group does not scale on every single data point. Exam hook: step scaling needs defined step adjustments, target tracking does not."
+  },
+  {
+   "id": "T26-B",
+   "layout": "table",
+   "kicker": "Scaling Policies",
+   "title": "How ASG Reacts",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Policy Type",
+      "icon": "Layers",
+      "weight": 0.9
+     },
+     {
+      "label": "Trigger",
+      "icon": "Bell",
+      "weight": 1.1
+     },
+     {
+      "label": "Example",
+      "icon": "Lightbulb",
+      "weight": 1.1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "Target",
+      "cells": [
+       "Target tracking",
+       "Keeps a metric near a set value",
+       "Hold average CPU near 50%"
+      ]
+     },
+     {
+      "icon": "ChartNoAxesColumnIncreasing",
+      "cells": [
+       "Step scaling",
+       "CloudWatch alarm thresholds in steps",
+       "Add 2 instances above 70% CPU, 4 above 90%"
+      ]
+     },
+     {
+      "icon": "CalendarClock",
+      "cells": [
+       "Scheduled scaling",
+       "A fixed date or time",
+       "Scale up every weekday at 9 AM"
+      ]
+     }
+    ]
+   },
+   "notes": "Walk through why target tracking suits steady load while scheduled scaling suits predictable daily patterns. Point at the cooldown bullet when explaining why a group does not scale on every single data point. Exam hook: step scaling needs defined step adjustments, target tracking does not."
+  },
+  {
+   "id": "D-LAB",
+   "layout": "breaker",
+   "index": 6,
+   "lab": true,
+   "kicker": "Practical Hands-On",
+   "title": "EC2 Launch and Flask Deployment on Beanstalk"
+  },
+  {
+   "id": "P01",
+   "layout": "lead",
+   "kicker": "Practical Overview",
+   "title": "EC2 Plus Beanstalk",
+   "lead": "Launch an EC2 instance, then deploy a Flask app on Elastic Beanstalk, to compare self-managed and managed provisioning live",
+   "figure": {
+    "type": "custom",
+    "name": "C_P01",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1000,
+   "figH": 330
+  },
+  {
+   "id": "P01-B",
+   "layout": "custom",
+   "component": "L_Steps",
+   "label": "Practical Steps",
+   "props": {
+    "id": "P01-B",
+    "kicker": "Practical Overview",
+    "title": "EC2 Plus Beanstalk",
+    "steps": [
+     {
+      "text": "Sign in to the AWS console and select the Mumbai region",
+      "icon": "LogIn"
+     },
+     {
+      "text": "Launch an EC2 instance with a chosen AMI, instance type and key pair",
+      "icon": "Rocket"
+     },
+     {
+      "text": "Connect to the instance and run basic verification commands",
+      "icon": "SquareTerminal"
+     },
+     {
+      "text": "Package a small Flask application as a ZIP archive",
+      "icon": "FileArchive"
+     },
+     {
+      "text": "Create an Elastic Beanstalk application and environment from the ZIP",
+      "icon": "Layers"
+     },
+     {
+      "text": "Deploy and verify Version 1, then update to Version 2",
+      "icon": "Upload"
+     },
+     {
+      "text": "Clean up every resource created to avoid charges",
+      "icon": "Trash2"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P02",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Instance Running With Status Checks Passed",
+   "props": {
+    "id": "P02",
+    "kicker": "EC2 Instance Launch",
+    "title": "Image and Sizing Choices",
+    "lead": "The instance launches from a machine image on a general-purpose size, with a security group allowing only the learner’s own IP for remote access",
+    "step": "Instance Running With Status Checks Passed",
+    "icon": "Server",
+    "image": "images/ec2-running.png",
+    "rings": [
+     [
+      1014,
+      356,
+      180,
+      50
+     ],
+     [
+      1788,
+      356,
+      346,
+      50
+     ]
+    ],
+    "caption": "s9-ec2-vm-demo in Running state with 3/3 status checks passed"
+   }
+  },
+  {
+   "id": "P02-B",
+   "layout": "points",
+   "kicker": "EC2 Instance Launch",
+   "title": "Image and Sizing Choices",
+   "points": [
+    {
+     "text": "AMI Amazon Linux 2023 on a `t3.micro` instance",
+     "icon": "Disc3"
+    },
+    {
+     "text": "Key pair `s9-ec2-key` for access",
+     "icon": "KeyRound"
+    },
+    {
+     "text": "Security group `s9-ec2-sg` allowing SSH (port 22) from My IP only",
+     "icon": "ShieldCheck"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_P02B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "pointsW": 500,
+   "figH": 380
+  },
+  {
+   "id": "P03",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Verification Commands On The Instance",
+   "props": {
+    "id": "P03",
+    "kicker": "Instance Connect",
+    "title": "Confirming Access",
+    "lead": "A browser-based terminal opens on the instance through SSH from a local terminal using the private key (.pem) file, and basic Linux commands confirm access",
+    "step": "Verification Commands On The Instance",
+    "icon": "SquareTerminal",
+    "image": "images/ec2-terminal.png",
+    "rings": [
+     [
+      0,
+      66,
+      172,
+      38
+     ],
+     [
+      0,
+      330,
+      378,
+      38
+     ]
+    ],
+    "caption": "`whoami`, `hostname`, `uname -a` and os-release output on the instance",
+    "leadSide": true,
+    "ringInset": true
+   }
+  },
+  {
+   "id": "P04",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Application Files In The Project Folder",
+   "props": {
+    "id": "P04",
+    "kicker": "Application Packaging",
+    "title": "Files Before Upload",
+    "lead": "The Flask application file and dependency list are archived in a ZIP with both files at the root, not inside a folder",
+    "step": "Application Files In The Project Folder",
+    "icon": "FolderOpen",
+    "image": "images/app-folder.png",
+    "rings": [
+     [
+      130,
+      84,
+      320,
+      106
+     ]
+    ],
+    "caption": "`application.py` and `requirements.txt` in the `s9-paas-demo` folder"
+   }
+  },
+  {
+   "id": "P05",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Environment Launched With Health Ok",
+   "props": {
+    "id": "P05",
+    "kicker": "Beanstalk Environment",
+    "title": "First Deployment Live",
+    "lead": "The ZIP is uploaded to a new Elastic Beanstalk environment on the Python platform, which provisions and manages the servers for us, unlike the EC2 VM we managed ourselves\nBehind the scenes, Beanstalk creates the EC2 instances, an auto scaling group and a launch template",
+    "step": "Environment Launched With Health Ok",
+    "icon": "Layers",
+    "image": "images/eb-env.png",
+    "rings": [
+     [
+      118,
+      548,
+      124,
+      90
+     ]
+    ],
+    "caption": "S9-paas-demo-env with Health Ok",
+    "leadSide": true
+   }
+  },
+  {
+   "id": "P06",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Version 2 Served At The Same URL",
+   "props": {
+    "id": "P06",
+    "kicker": "Version Update",
+    "title": "Redeploy and Confirm",
+    "lead": "The code is updated, re-zipped as Version 2 and deployed to the same environment, with no new server created",
+    "step": "Version 2 Served At The Same URL",
+    "icon": "Globe",
+    "image": "images/eb-v2.png",
+    "rings": [
+     [
+      584,
+      16,
+      1024,
+      40
+     ],
+     [
+      12,
+      262,
+      850,
+      44
+     ]
+    ],
+    "caption": "Version 2 page served at the same environment URL"
+   }
+  },
+  {
+   "id": "P06-B",
+   "layout": "custom",
+   "component": "L_Steps",
+   "label": "Verify And Clean Up",
+   "props": {
+    "id": "P06-B",
+    "kicker": "Version Update",
+    "title": "Redeploy and Confirm",
+    "steps": [
+     {
+      "text": "Verify that the Version 2 page loads at the same URL and the running version is the latest upload",
+      "icon": "CircleCheck"
+     },
+     {
+      "text": "Clean up to avoid charges: terminate the EC2 instance, the Elastic Beanstalk environment and delete the Beanstalk application",
+      "icon": "Trash2"
+     },
+     {
+      "text": "Then delete security group `s9-ec2-sg`, empty and delete the Beanstalk S3 bucket (`elasticbeanstalk-ap-south-1-…`), and check for leftover EBS volumes and Elastic IP addresses",
+      "icon": "PackageX"
+     }
+    ]
+   }
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz"
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Compute in the Cloud: The instance as the unit of compute; the provisioning model\n2. Instance Families: General purpose, compute, memory & storage optimized; GPU & accelerator families for AI/ML\n3. Sizing & Selection: vCPU, memory, network & storage characteristics; right-sizing; VRAM as the AI constraint\n4. Images & Provisioning: Machine images; user data & bootstrapping; key pairs & instance access\n5. Scaling: Auto scaling groups & launch templates"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Serverless Computing"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}

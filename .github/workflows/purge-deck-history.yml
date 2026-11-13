@@ -1,0 +1,86 @@
+name: Delete a deck's version history
+
+# Started by the edit Worker (POST /api/purge-history, admin password) from a deck's
+# Git menu -> "Delete version history". Removes ONE deck folder from every commit on
+# main, then adds its current files back as a single commit, and force-pushes.
+# Every commit after the folder's first one gets a new id. No backup is kept.
+
+on:
+  repository_dispatch:
+    types: [purge-deck-history]
+
+permissions:
+  contents: write # force-push main
+  actions: write # start the Pages deploy afterwards (a GITHUB_TOKEN push does not trigger it)
+
+# One rewrite at a time; never cut one off half way.
+concurrency:
+  group: purge-deck-history
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    env:
+      DECK_FOLDER: ${{ github.event.client_payload.folder }}
+      REQUESTED_BY: ${{ github.event.client_payload.by }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check the deck folder
+        run: |
+          if ! [[ "$DECK_FOLDER" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || [[ "$DECK_FOLDER" == *..* ]] || [[ "$DECK_FOLDER" == .* ]]; then
+            echo "::error::bad deck folder: $DECK_FOLDER"; exit 1
+          fi
+          if ! ls "$DECK_FOLDER"/dist-single/*.htm* >/dev/null 2>&1; then
+            echo "::error::$DECK_FOLDER is not a deck folder (no dist-single/*.html)"; exit 1
+          fi
+          echo "deck folder: $DECK_FOLDER  requested by: ${REQUESTED_BY:-Admin}"
+          echo "commits touching it: $(git rev-list --count HEAD -- "$DECK_FOLDER")"
+
+      - name: Install git-filter-repo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq git-filter-repo >/dev/null
+          git filter-repo --version
+
+      - name: Rewrite history without the folder, then add its current files back
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          base="$(git rev-parse HEAD)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          url="$(git remote get-url origin)"
+          keep="$(mktemp -d)"
+          cp -a "$DECK_FOLDER/." "$keep/"
+
+          git filter-repo --force --refs main --invert-paths --path "$DECK_FOLDER/"
+
+          mkdir -p "$DECK_FOLDER"
+          cp -a "$keep/." "$DECK_FOLDER/"
+          # -f: some tracked files sit under .gitignore'd names (e.g. review/); the copy holds only tracked files
+          git add -A -f -- "$DECK_FOLDER"
+          session="${DECK_FOLDER#*/}"
+          git commit -q -m "history($session): delete version history, keep the current files [by ${REQUESTED_BY:-Admin}]"
+          git log --oneline -3
+          # the files must be exactly what they were; only the history may change
+          if [ "$(git rev-parse 'HEAD^{tree}')" != "$tree" ]; then
+            echo "::error::rewritten files differ from main, nothing pushed"
+            git diff --stat "$tree" HEAD | tail -20
+            exit 1
+          fi
+
+          # filter-repo drops the remote; the checkout's auth header stays in the local config
+          git remote add origin "$url" 2>/dev/null || git remote set-url origin "$url"
+          # refuses if anyone pushed after this run started (re-run it then)
+          git push --force-with-lease="main:$base" origin HEAD:main
+          echo "rewrote main: $base -> $(git rev-parse HEAD)"
+
+      - name: Rebuild the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main --repo "$GITHUB_REPOSITORY"

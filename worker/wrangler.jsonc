@@ -20,6 +20,7 @@
   }
   // Secrets (set with `wrangler secret put`, never committed):
   //   EDITOR_PASSWORD    the editors' shared password
+  //   ADMIN_PASSWORD     admin-only actions (delete a deck's version history); never the editor password
   //   DEPLOY_HOOK_TOKEN  bearer token the Pages workflow uses to report a deploy
   //   GH_TOKEN           fine-grained PAT, this repo only, Contents: read/write
 }

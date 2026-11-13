@@ -499,7 +499,8 @@
       '<div class="gitpop" role="dialog" aria-label="Git commands" hidden><div class="gp-h">Git · <span class="gp-t"></span></div>' +
       '<button type="button" class="gp-row" data-git-act="clone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>Copy Git Command</button>' +
       '<button type="button" class="gp-row" data-git-act="push"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9"/><path d="m7 14 5-5 5 5"/><path d="M5 4h14"/></svg>Copy Push Command</button>' +
-      '<p class="gp-note"></p></div>'
+      '<p class="gp-note"></p>' +
+      '<button type="button" class="gp-row gp-danger" data-git-act="purge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg>Delete version history…</button></div>'
 
     var $ = function (sel) { return root.querySelector(sel) }
     wireNav(root)
@@ -1261,11 +1262,40 @@
       var b = e.composedPath()[0].closest && e.composedPath()[0].closest('[data-git-act]')
       if (!b) return
       closeGit()
+      if (b.getAttribute('data-git-act') === 'purge') return purgeHistory()
       if (!window.DeckGit) return toast('Git commands are not available on this page. Reload and try again.')
       window.DeckGit.copy(b.getAttribute('data-git-act'), { config: SITE.git, deck: gitDeck(), worker: WORKER, toast: function (t) { toast(t) } }).then(function () {
         lastCommentsSig = '' /* signing in here also unlocks commenting */
       })
     })
+    /* delete this deck folder's version history: same sign-in modal, but the ADMIN password and a typed confirmation;
+       the Worker starts a GitHub Action that rewrites main (no backup) and then rebuilds the site */
+    function purgeHistory() {
+      if (!window.DeckGate) return toast('Sign-in is not available on this page. Reload and try again.')
+      var deck = gitDeck()
+      var folder = deck.course + '/' + deck.session
+      window.DeckGate.open({
+        worker: WORKER,
+        title: 'Delete version history',
+        why: 'Deletes every earlier version of ' + folder + ' from the repository history and keeps only its current files. ' +
+          'Other decks are not changed, but every commit id after this deck was added changes, so everyone must re-clone. No backup is kept and this cannot be undone.',
+        placeholder: 'Admin password',
+        submitLabel: 'Delete history',
+        danger: true,
+        confirmText: deck.session,
+        remember: false,
+        check: function (pw, name) {
+          return fetchJson(
+            WORKER + '/api/purge-history',
+            { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-password': pw }, body: JSON.stringify({ deck: DECK, confirm: deck.session, author: name || myName() || 'Admin' }) },
+            20000,
+          )
+        },
+      }).then(
+        function () { toast('History deletion started · site rebuilds in ~2 min') },
+        function () {},
+      )
+    }
     document.addEventListener('click', closeGit) /* clicks inside the overlay never reach the document */
     window.addEventListener('resize', closeGit)
 
@@ -1639,6 +1669,7 @@
     '.gp-row:hover{background:#f3f4f6}',
     '.gp-row svg{width:16px;height:16px;flex:none;fill:none;stroke:#6b7280;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
     '.gp-note{margin:4px 0 0;padding:8px 10px 4px;border-top:1px solid #f3f4f6;color:#6b7280;font-size:12px}',
+    '.gp-danger{margin-top:4px;border-top:1px solid #f3f4f6;border-radius:0 0 8px 8px;color:#b91c1c}.gp-danger svg{stroke:#b91c1c}.gp-danger:hover{background:#fef2f2}',
     '[hidden]{display:none!important}',
     /* phone: the panel docks along the bottom and the deck takes the top half */
     '@media (max-width:760px){.panel{top:auto;left:0;width:auto;height:48dvh;border-left:none;border-top:1px solid #e5e7eb;box-shadow:0 -8px 24px rgba(15,23,42,.12)}',

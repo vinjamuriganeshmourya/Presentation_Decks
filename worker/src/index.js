@@ -6,6 +6,8 @@
  *   POST /api/save                 commit per-slide patches to the repo, then publish them to D1
  *   GET  /api/status?sha=<sha>     is that commit in the live build yet?
  *   POST /api/deployed             called by the Pages workflow after a deploy (Bearer DEPLOY_HOOK_TOKEN)
+ *   POST /api/purge-history        ADMIN password: start .github/workflows/purge-deck-history.yml, which
+ *                                  deletes one deck folder's version history and keeps its current files
  *   cron                           same deploy sync + 24h expiry, as a safety net
  *
  * Rows in D1 are keyed (deck, slide, field): two editors saving different
@@ -35,6 +37,7 @@ export default {
       else if (url.pathname === '/api/comment' && req.method === 'POST') res = await comment(req, env)
       else if (url.pathname === '/api/status' && req.method === 'GET') res = await status(url, env)
       else if (url.pathname === '/api/deployed' && req.method === 'POST') res = await deployed(req, env)
+      else if (url.pathname === '/api/purge-history' && req.method === 'POST') res = await purgeHistory(req, env)
       else if (url.pathname === '/' || url.pathname === '/api/health') res = json({ ok: true, service: 'presentation-decks-live' })
       else res = json({ error: 'not found' }, 404)
       for (const [k, v] of Object.entries(cors)) res.headers.set(k, v)
@@ -73,7 +76,7 @@ function corsHeaders(req, env) {
   const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim())
   const h = {
     'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': 'content-type, x-editor-password, authorization',
+    'access-control-allow-headers': 'content-type, x-editor-password, x-admin-password, authorization',
     'access-control-max-age': '86400',
     vary: 'origin',
   }
@@ -98,6 +101,13 @@ async function requireEditor(req, env) {
   const pw = req.headers.get('x-editor-password') || ''
   if (!env.EDITOR_PASSWORD) throw httpError(503, 'editor password not configured')
   if (!pw || !(await safeEqual(pw, env.EDITOR_PASSWORD))) throw httpError(401, 'wrong editor password')
+}
+
+/** A separate secret (ADMIN_PASSWORD) for repo-level actions; the shared editor password never unlocks them. */
+async function requireAdmin(req, env) {
+  const pw = req.headers.get('x-admin-password') || ''
+  if (!env.ADMIN_PASSWORD) throw httpError(503, 'admin password not configured on the edit service')
+  if (!pw || !(await safeEqual(pw, env.ADMIN_PASSWORD))) throw httpError(401, 'wrong admin password')
 }
 
 async function getMeta(env, k) {
@@ -438,3 +448,34 @@ async function deployed(req, env) {
   const r = await cleanup(env, sha)
   return json({ ok: true, deployedSha: sha, ...r })
 }
+
+/**
+ * Delete one deck folder's version history (admin only). The rewrite needs a real git checkout, so this only
+ * validates the request and starts .github/workflows/purge-deck-history.yml (repository_dispatch, which the
+ * Worker's token can already do with Contents: write). Body: { deck, confirm, author }.
+ */
+async function purgeHistory(req, env) {
+  await requireAdmin(req, env)
+  let body
+  try {
+    body = await req.json()
+  } catch {
+    throw httpError(400, 'bad json')
+  }
+  const deck = String(body.deck || '')
+  if (!DECK_RE.test(deck)) throw httpError(400, 'bad deck id')
+  const [course, session] = deck.split('/')
+  if (String(body.confirm || '').trim() !== session) throw httpError(400, `type ${session} to confirm`)
+  const folder = `${course}/${session}`
+  const check = await gh(env, `/contents/${encodeURIComponent(course)}/${encodeURIComponent(session)}/dist-single?ref=${encodeURIComponent(env.BRANCH || 'main')}`)
+  if (check.status === 404) throw httpError(404, `no deck folder ${folder} on ${env.BRANCH || 'main'}`)
+  if (!check.ok) throw httpError(502, `GitHub read failed (${check.status})`)
+  const by = cleanName(body.author) || 'Admin'
+  const res = await gh(env, '/dispatches', {
+    method: 'POST',
+    body: JSON.stringify({ event_type: 'purge-deck-history', client_payload: { folder, by } }),
+  })
+  if (res.status !== 204) throw httpError(502, `could not start the GitHub Action (${res.status})`)
+  return json({ ok: true, folder, actions: `https://github.com/${env.REPO}/actions/workflows/purge-deck-history.yml` })
+}
+
