@@ -853,11 +853,12 @@ function RowIcon({ icon, size = 38, d = 0 }: { icon: string; size?: number; d?: 
 /* Session 13 review (T13, "can we split this"): `part` 1 is the two types side by side without the resource-only
  * details; `part` 2 is the resource side alone, centred, with Principal and the other account; no `part` is the
  * original single slide. The rows come from deck.json in press order, as before.
- * Second review (2026-11-16): part 1 no longer has the "Resource-based: attached…" card; part 2 shows it, unchanged,
- * to the left of the resource picture (a row tagged 'aside'), and the Principal and Account rows sit under the picture. */
+ * Second review (2026-11-16): part 1 is the identity side alone, centred; its resource picture (bucket and policy, no
+ * Principal) moves, unchanged, to part 2, left of the picture with Principal and Account (press 1), and the
+ * Principal and Account rows sit under that picture (presses 2 and 3). */
 function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string[][]; part?: 0 | 1 | 2 }) {
   const W = 1040
-  const P = useParts(step, part ? 3 : 5)
+  const P = useParts(step, part === 1 ? 2 : part === 2 ? 3 : 5)
   const instant = useInstant()
   const COL_W = 500
   const GAP = W - COL_W * 2
@@ -865,21 +866,22 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
   const ROW_H = 58
   const ROW_GAP = 8
   const ROW_Y0 = BOX_H + 14
-  const left = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'identity')
+  /* 'aside' (part 2): the "Resource-based: attached…" point, under the plain resource picture on the left */
+  const left = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'identity' || x.r[2] === 'aside')
   const right = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'resource')
-  const aside = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'aside')
   const H = part ? ROW_Y0 + Math.max(left.length, right.length) * (ROW_H + ROW_GAP) - ROW_GAP : 320
-  /* the press that shows each row: part 1 keeps the resource picture on press 2 between its two identity rows */
-  const rowAt = (i: number) => (part === 1 ? [1, 3][i] ?? i + 1 : i + 1)
+  /* the press that shows each row; in part 2, press 1 is the plain resource picture with its point */
+  const rowAt = (i: number) => i + 1
   const rowLit = (i: number) => P.lit(rowAt(i))
   /* the press that shows (and lights) each part of the picture; 0 = from the start, -1 = not on this slide */
-  const at = part === 1 ? { id: 1, res: 2, principal: -1, acc: -1 } : part === 2 ? { id: -1, res: 0, principal: 2, acc: 3 } : { id: 1, res: 2, principal: 3, acc: 4 }
+  const at = part === 1 ? { id: 1, res: -1, principal: -1, acc: -1 } : part === 2 ? { id: -1, res: 0, principal: 2, acc: 3 } : { id: 1, res: 2, principal: 3, acc: 4 }
   const has = (k: number) => k >= 0
   const idLit = P.lit(1) || P.lit(part === 1 ? 3 : 5)
-  const bucketLit = part === 2 ? P.lit(1) : P.lit(at.res)
+  const bucketLit = part !== 2 && P.lit(at.res)
   const principalLit = has(at.principal) && P.lit(at.principal)
   const crossLit = has(at.acc) && P.lit(at.acc)
   const RX = COL_W + GAP
+  const IX = part === 1 ? (W - COL_W) / 2 : 0 // the identity side, centred when it is alone
   const CY = 48 // the icon row's centre inside each panel
   /* identity panel: user tile → policy page */
   const U = { x: 120, s: 62 }
@@ -890,11 +892,39 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
   const BP = { x: 136, y: 12, w: 216, h: 88 }
   const ACC = { x: 444, s: 46 }
   const accLine: Pt[] = [[RX + ACC.x - ACC.s / 2, CY], [RX + BP.x + BP.w, CY]]
-  const Row = ({ r, i, x, k, top }: { r: string[]; i: number; x: number; k: number; top?: number }) => (
-    <Show on={P.shown(rowAt(i))} style={{ position: 'absolute', left: x, top: top ?? ROW_Y0 + k * (ROW_H + ROW_GAP), width: COL_W }}>
+  const Row = ({ r, i, x, k }: { r: string[]; i: number; x: number; k: number }) => (
+    <Show on={P.shown(rowAt(i))} style={{ position: 'absolute', left: x, top: ROW_Y0 + k * (ROW_H + ROW_GAP), width: COL_W }}>
       <div style={{ height: ROW_H, borderRadius: 14, background: '#FFFFFF', boxShadow: rowLit(i) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, display: 'flex', alignItems: 'center', gap: 12, padding: '0 14px', boxSizing: 'border-box' }}>
         <RowIcon icon={r[1]} size={40} d={i * 0.6} />
         <span style={{ fontFamily: FONT, fontSize: 16, lineHeight: 1.28, color: colors.ink }}>{r[0]}</span>
+      </div>
+    </Show>
+  )
+  /* the resource picture: a bucket holding its policy, Principal named when `withPrincipal` */
+  const resPanel = (x: number, on: boolean, lit: boolean, withPrincipal: boolean) => (
+    <Show on={on} style={{ position: 'absolute', left: x, top: 0, width: COL_W, height: BOX_H }}>
+      <div style={{ position: 'relative', height: '100%', borderRadius: 18 }}>
+        <SceneBg kind="resource" w={COL_W} h={BOX_H} />
+        <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, boxShadow: panelRing(lit), transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, pointerEvents: 'none' }} />
+        <At x={B.x} y={CY}>
+          <MarkTile src={resBucket} size={B.s} k={0.7} />
+        </At>
+        <At x={B.x} y={BOX_H - 13}>
+          <span style={tagStyle(14)}>Resource-Based</span>
+        </At>
+        <Elbow pts={[[B.x + B.s / 2, CY], [BP.x, CY]]} on={on} head={0} color={`${colors.brand}aa`} delay={200} />
+        <span aria-hidden className={lc('pulse')} style={{ position: 'absolute', left: B.x + B.s / 2 - 4, top: CY - 4, width: 8, height: 8, borderRadius: 99, background: colors.brand, ...lv(0.6, 2.2) }} />
+        <div style={{ position: 'absolute', left: BP.x, top: BP.y, width: BP.w, height: BP.h, borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F4F7FE 100%)', boxShadow: CARD_RIM, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', boxSizing: 'border-box' }}>
+          <Ico3D name="policy" size={42} loop="tilt" t={3.6} d={0.8} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+            <span style={{ display: 'block', height: 6, width: '82%', borderRadius: 4, background: '#D9E2F3' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '3px 6px', background: withPrincipal && principalLit ? '#DDE7FF' : '#F2F5FC', boxShadow: withPrincipal && principalLit ? BLUE_RING(true) : 'none', opacity: withPrincipal && has(at.principal) && P.shown(at.principal) ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, box-shadow 420ms ${EASE}` }}>
+              <Ico3D name="user" badge="check" size={22} loop="bob" />
+              <span style={{ ...tagStyle(13, colors.brandDark), textAlign: 'left' }}>Principal</span>
+            </div>
+            <span style={{ display: 'block', height: 6, width: '64%', borderRadius: 4, background: '#D9E2F3' }} />
+          </div>
+        </div>
       </div>
     </Show>
   )
@@ -902,7 +932,7 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
   return (
     <Frame w={W} h={H}>
       {/* identity side: a user carrying its policy (a group and a role could carry one too) */}
-      {has(at.id) && <Show on={P.shown(1)} style={{ position: 'absolute', left: 0, top: 0, width: COL_W, height: BOX_H }}>
+      {has(at.id) && <Show on={P.shown(1)} style={{ position: 'absolute', left: IX, top: 0, width: COL_W, height: BOX_H }}>
         <div style={{ position: 'relative', height: '100%', borderRadius: 18 }}>
           <SceneBg kind="identity" w={COL_W} h={BOX_H} />
           <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, boxShadow: panelRing(idLit), transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, pointerEvents: 'none' }} />
@@ -931,31 +961,9 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
         </div>
       </Show>}
       {/* resource side: a bucket holding its policy, Principal named, another account's arrow on this side only */}
-      <Show on={P.shown(at.res)} style={{ position: 'absolute', left: RX, top: 0, width: COL_W, height: BOX_H }}>
-        <div style={{ position: 'relative', height: '100%', borderRadius: 18 }}>
-          <SceneBg kind="resource" w={COL_W} h={BOX_H} />
-          <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, boxShadow: panelRing(bucketLit), transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, pointerEvents: 'none' }} />
-          <At x={B.x} y={CY}>
-            <MarkTile src={resBucket} size={B.s} k={0.7} />
-          </At>
-          <At x={B.x} y={BOX_H - 13}>
-            <span style={tagStyle(14)}>Resource-Based</span>
-          </At>
-          <Elbow pts={[[B.x + B.s / 2, CY], [BP.x, CY]]} on={P.shown(at.res)} head={0} color={`${colors.brand}aa`} delay={200} />
-          <span aria-hidden className={lc('pulse')} style={{ position: 'absolute', left: B.x + B.s / 2 - 4, top: CY - 4, width: 8, height: 8, borderRadius: 99, background: colors.brand, ...lv(0.6, 2.2) }} />
-          <div style={{ position: 'absolute', left: BP.x, top: BP.y, width: BP.w, height: BP.h, borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F4F7FE 100%)', boxShadow: CARD_RIM, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', boxSizing: 'border-box' }}>
-            <Ico3D name="policy" size={42} loop="tilt" t={3.6} d={0.8} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-              <span style={{ display: 'block', height: 6, width: '82%', borderRadius: 4, background: '#D9E2F3' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '3px 6px', background: principalLit ? '#DDE7FF' : '#F2F5FC', boxShadow: principalLit ? BLUE_RING(true) : 'none', opacity: has(at.principal) && P.shown(at.principal) ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, box-shadow 420ms ${EASE}` }}>
-                <Ico3D name="user" badge="check" size={22} loop="bob" />
-                <span style={{ ...tagStyle(13, colors.brandDark), textAlign: 'left' }}>Principal</span>
-              </div>
-              <span style={{ display: 'block', height: 6, width: '64%', borderRadius: 4, background: '#D9E2F3' }} />
-            </div>
-          </div>
-        </div>
-      </Show>
+      {has(at.res) && resPanel(RX, P.shown(at.res), bucketLit, true)}
+      {/* part 2: the plain resource picture from part 1, unchanged, on the left */}
+      {part === 2 && resPanel(0, P.shown(1), P.lit(1), false)}
       {/* another AWS account, granted from the resource side */}
       {has(at.acc) && <Show on={P.shown(at.acc)} style={{ position: 'absolute', left: RX + ACC.x - 34, top: 0, width: 68, height: BOX_H, zIndex: 4 }}>
         <div style={{ position: 'relative', height: '100%' }}>
@@ -969,9 +977,8 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
       </Show>}
       {has(at.acc) && <Elbow pts={accLine} on={P.shown(at.acc)} delay={200} z={5} />}
       {has(at.acc) && <Ride pts={accLine} on={P.done} period={2.4} z={6} />}
-      {left.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={0} k={k} />)}
+      {left.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={IX} k={k} />)}
       {right.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={RX} k={k} />)}
-      {aside.map((x) => <Row key={x.i} r={x.r} i={x.i} x={0} k={0} top={(BOX_H - ROW_H) / 2} />)}
     </Frame>
   )
 }

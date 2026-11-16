@@ -690,7 +690,7 @@
         "type": "custom",
         "name": "B_T13",
         "props": {
-          "steps": 3,
+          "steps": 2,
           "part": 1,
           "rows": [
             [
