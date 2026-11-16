@@ -121,6 +121,14 @@
       "author": "Editor",
       "text": "in visla change it\n\n❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
       "at": 1794814398962
+    },
+    "mwiy5v0w8l02xd": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T22",
+      "author": "Editor",
+      "text": "❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
+      "at": 1794814416532
     }
   }
 }
