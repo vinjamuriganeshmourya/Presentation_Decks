@@ -699,11 +699,6 @@
               "identity"
             ],
             [
-              "Resource-based: attached directly to the resource, e.g. a bucket",
-              "img:images/res-s3-bucket.svg",
-              "resource"
-            ],
-            [
               "Identity-based policies are the default for most access setups",
               "BadgeCheck",
               "identity"
@@ -720,14 +715,18 @@
       "layout": "lead",
       "kicker": "Two Policy Types",
       "title": "Where It Attaches",
-      "lead": "A resource-based policy names who gets the access in one more element, Principal, which is how one AWS account can grant access to another",
       "figure": {
         "type": "custom",
         "name": "B_T13",
         "props": {
-          "steps": 2,
+          "steps": 3,
           "part": 2,
           "rows": [
+            [
+              "Resource-based: attached directly to the resource, e.g. a bucket",
+              "img:images/res-s3-bucket.svg",
+              "aside"
+            ],
             [
               "A resource-based policy has one more element, Principal, which names who gets the access",
               "UserCheck",
@@ -1013,37 +1012,6 @@
       "figW": 1100,
       "figH": 360,
       "notes": "Trace the IP check live: allowed by A, trapped by B's condition. Point to the condition clause as the exact cause of denial. Exam angle: combining identity and resource policies is common in cross-account questions."
-    },
-    {
-      "id": "T19",
-      "layout": "points",
-      "kicker": "Policies Combine Fully",
-      "title": "Union With Deny Override",
-      "lead": "All identity-based and resource-based policies that apply to a request are evaluated together: allows add up, and an explicit deny overrides them",
-      "points": [
-        {
-          "text": "Allow permissions from several identity-based policies on one user add together",
-          "icon": "Plus"
-        },
-        {
-          "text": "Cross-account sharing needs agreement from both the identity side and the resource side",
-          "icon": "Handshake"
-        },
-        {
-          "text": "Within one account, an allow in either the identity-based or the resource-based policy is enough",
-          "icon": "CircleCheck"
-        }
-      ],
-      "figure": {
-        "type": "custom",
-        "name": "C_T19",
-        "props": {
-          "steps": 3
-        }
-      },
-      "figH": 330,
-      "pointsW": 590,
-      "notes": "Summarise the merge rule in one line: allows add up, one deny removes. Point to the IAM Policy Simulator as where this logic is checked in the console. The next section traces this logic through a real denial message."
     },
     {
       "id": "D5",

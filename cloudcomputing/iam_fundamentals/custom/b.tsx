@@ -852,10 +852,12 @@ function RowIcon({ icon, size = 38, d = 0 }: { icon: string; size?: number; d?: 
 
 /* Session 13 review (T13, "can we split this"): `part` 1 is the two types side by side without the resource-only
  * details; `part` 2 is the resource side alone, centred, with Principal and the other account; no `part` is the
- * original single slide. The rows come from deck.json in press order, as before. */
+ * original single slide. The rows come from deck.json in press order, as before.
+ * Second review (2026-11-16): part 1 no longer has the "Resource-based: attached…" card; part 2 shows it, unchanged,
+ * to the left of the resource picture (a row tagged 'aside'), and the Principal and Account rows sit under the picture. */
 function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string[][]; part?: 0 | 1 | 2 }) {
   const W = 1040
-  const P = useParts(step, part ? rows.length : 5)
+  const P = useParts(step, part ? 3 : 5)
   const instant = useInstant()
   const COL_W = 500
   const GAP = W - COL_W * 2
@@ -865,16 +867,19 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
   const ROW_Y0 = BOX_H + 14
   const left = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'identity')
   const right = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'resource')
+  const aside = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'aside')
   const H = part ? ROW_Y0 + Math.max(left.length, right.length) * (ROW_H + ROW_GAP) - ROW_GAP : 320
-  const rowLit = (i: number) => P.lit(i + 1)
+  /* the press that shows each row: part 1 keeps the resource picture on press 2 between its two identity rows */
+  const rowAt = (i: number) => (part === 1 ? [1, 3][i] ?? i + 1 : i + 1)
+  const rowLit = (i: number) => P.lit(rowAt(i))
   /* the press that shows (and lights) each part of the picture; 0 = from the start, -1 = not on this slide */
-  const at = part === 1 ? { id: 1, res: 2, principal: -1, acc: -1 } : part === 2 ? { id: -1, res: 0, principal: 1, acc: 2 } : { id: 1, res: 2, principal: 3, acc: 4 }
+  const at = part === 1 ? { id: 1, res: 2, principal: -1, acc: -1 } : part === 2 ? { id: -1, res: 0, principal: 2, acc: 3 } : { id: 1, res: 2, principal: 3, acc: 4 }
   const has = (k: number) => k >= 0
   const idLit = P.lit(1) || P.lit(part === 1 ? 3 : 5)
-  const bucketLit = part !== 2 && P.lit(at.res)
+  const bucketLit = part === 2 ? P.lit(1) : P.lit(at.res)
   const principalLit = has(at.principal) && P.lit(at.principal)
   const crossLit = has(at.acc) && P.lit(at.acc)
-  const RX = part === 2 ? (W - COL_W) / 2 : COL_W + GAP
+  const RX = COL_W + GAP
   const CY = 48 // the icon row's centre inside each panel
   /* identity panel: user tile → policy page */
   const U = { x: 120, s: 62 }
@@ -885,8 +890,8 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
   const BP = { x: 136, y: 12, w: 216, h: 88 }
   const ACC = { x: 444, s: 46 }
   const accLine: Pt[] = [[RX + ACC.x - ACC.s / 2, CY], [RX + BP.x + BP.w, CY]]
-  const Row = ({ r, i, x, k }: { r: string[]; i: number; x: number; k: number }) => (
-    <Show on={P.shown(i + 1)} style={{ position: 'absolute', left: x, top: ROW_Y0 + k * (ROW_H + ROW_GAP), width: COL_W }}>
+  const Row = ({ r, i, x, k, top }: { r: string[]; i: number; x: number; k: number; top?: number }) => (
+    <Show on={P.shown(rowAt(i))} style={{ position: 'absolute', left: x, top: top ?? ROW_Y0 + k * (ROW_H + ROW_GAP), width: COL_W }}>
       <div style={{ height: ROW_H, borderRadius: 14, background: '#FFFFFF', boxShadow: rowLit(i) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, display: 'flex', alignItems: 'center', gap: 12, padding: '0 14px', boxSizing: 'border-box' }}>
         <RowIcon icon={r[1]} size={40} d={i * 0.6} />
         <span style={{ fontFamily: FONT, fontSize: 16, lineHeight: 1.28, color: colors.ink }}>{r[0]}</span>
@@ -966,6 +971,7 @@ function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string
       {has(at.acc) && <Ride pts={accLine} on={P.done} period={2.4} z={6} />}
       {left.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={0} k={k} />)}
       {right.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={RX} k={k} />)}
+      {aside.map((x) => <Row key={x.i} r={x.r} i={x.i} x={0} k={0} top={(BOX_H - ROW_H) / 2} />)}
     </Frame>
   )
 }
