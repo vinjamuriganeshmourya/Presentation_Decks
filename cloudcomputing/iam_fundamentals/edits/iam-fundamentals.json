@@ -25,6 +25,14 @@
       "author": "Editor",
       "text": "Change: the red circle-with-slash (prohibited) icon under “Permission”.\n\nReplace it with: a checklist / policy document icon (a page with ticks), or a key with a tick.",
       "at": 1794812107424
+    },
+    "mwix0uxhg5w3jc": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T07",
+      "author": "Editor",
+      "text": "chnage the 3rd point\n\nNow: “One identity can be allowed here, denied there”\nChange to: “One identity can be allowed one action and denied another”",
+      "at": 1794812503510
     }
   }
 }
