@@ -136,8 +136,9 @@
       "resolved": false,
       "slide": "T24",
       "author": "Editor",
-      "text": "❌ Flow order\nNow: Statement Identified → Policy Corrected → 3 fix options\nChange to: Statement Identified → 3 fix options → “Access Restored ✅”",
-      "at": 1794814813603
+      "text": "Now: “Policy Corrected”\nChange to: “Choose a Fix”\n\nin visual",
+      "at": 1794814813603,
+      "edited": 1794814877347
     }
   }
 }
