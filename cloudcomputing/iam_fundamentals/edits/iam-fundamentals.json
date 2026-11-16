@@ -73,6 +73,14 @@
       "author": "Editor",
       "text": "3rd point change it to \n\nNow: “An allow from an unrelated policy cannot cancel a matching deny”\nChange to: “An allow from any other policy cannot cancel a matching deny”",
       "at": 1794813788565
+    },
+    "mwixvmkp11v8jx": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T18-B",
+      "author": "Editor",
+      "text": "Policy B line\nNow: 203.0.113.0/24\nChange to: Deny s3:GetObject if IP not in 203.0.113.0/24",
+      "at": 1794813940416
     }
   }
 }
