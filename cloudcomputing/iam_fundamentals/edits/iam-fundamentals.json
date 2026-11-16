@@ -41,6 +41,14 @@
       "author": "Editor",
       "text": "in visual \n\nNow: “Password”\nChange to: “Password Policy”",
       "at": 1794812711864
+    },
+    "mwixfob2gvxx24": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T12",
+      "author": "Editor",
+      "text": "Intro text\nNow: “Resource pins the action to one specific item…”\nChange to: “Resource pins the action to a specific item or group of items…”\n Bottom-left box (IP / Time / MFA)\nNow: no title\nChange to: add title “Condition”\n Bottom-right box (finance-reports/*)\nNow: no title\nChange to: add title “Wildcard”",
+      "at": 1794813194766
     }
   }
 }
