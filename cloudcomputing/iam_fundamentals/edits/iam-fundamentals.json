@@ -81,7 +81,7 @@
     },
     "mwixvmkp11v8jx": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T18-B",
       "author": "Editor",
       "text": "Policy B line\nNow: 203.0.113.0/24\nChange to: Deny s3:GetObject if IP not in 203.0.113.0/24",
