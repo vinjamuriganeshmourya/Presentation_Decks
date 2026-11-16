@@ -49,6 +49,14 @@
       "author": "Editor",
       "text": "Intro text\nNow: “Resource pins the action to one specific item…”\nChange to: “Resource pins the action to a specific item or group of items…”\n Bottom-left box (IP / Time / MFA)\nNow: no title\nChange to: add title “Condition”\n Bottom-right box (finance-reports/*)\nNow: no title\nChange to: add title “Wildcard”",
       "at": 1794813194766
+    },
+    "mwixgocwy98kuz": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T13",
+      "author": "Editor",
+      "text": "can we split this",
+      "at": 1794813241489
     }
   }
 }
