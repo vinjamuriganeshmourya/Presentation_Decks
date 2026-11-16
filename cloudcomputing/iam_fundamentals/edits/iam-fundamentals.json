@@ -73,7 +73,7 @@
     },
     "mwixsehda8ityz": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T17",
       "author": "Editor",
       "text": "3rd point change it to \n\nNow: “An allow from an unrelated policy cannot cancel a matching deny”\nChange to: “An allow from any other policy cannot cancel a matching deny”",
