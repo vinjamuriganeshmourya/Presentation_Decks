@@ -558,7 +558,8 @@ function B_T11({ step = 0, head = [], rows = [] }: { step?: number; head?: strin
             bigIcons
             shown={shown}
             columns={head.map((label, i) => ({ label, weight: [0.7, 1, 1][i] ?? 1, icon: HEAD[i] }))}
-            rows={rows.map((r) => ({ icon: <Ico3D name={ROW3D[r[3]] ?? 'doc'} size={34} loop="none" />, cells: [r[0], r[1].includes(':') ? mono(r[1]) : r[1], r[2].includes(':') ? mono(r[2]) : r[2]] }))}
+            /* second review (2026-11-16): no row icons; the field name lines up with the "Field" heading text (40 px icon + 8 px gap) */
+            rows={rows.map((r) => ({ cells: [<span key="f" style={{ display: 'block', paddingLeft: 48 }}>{r[0]}</span>, r[1].includes(':') ? mono(r[1]) : r[1], r[2].includes(':') ? mono(r[2]) : r[2]] }))}
           />
         </div>
       </div>
