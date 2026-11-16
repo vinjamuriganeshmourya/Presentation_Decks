@@ -718,7 +718,9 @@ function B_T12({ step = 0 }: { step?: number }) {
   const CH_X = lastColon + 16
   const segCX = segX.map((sx, i) => sx + SEGS[i].w / 2)
   const toRes: Pt[] = [[CH_X, BUS_Y], [CH_X, resCY], [resX + RES.w, resCY]]
-  const CARD = { y: 186, h: 74, w: (W - 14) / 2 }
+  const CARD = { y: 180, h: 80, w: (W - 14) / 2 }
+  /* each lower card's own title (Session 13 review, T12): Condition, Wildcard */
+  const cardTitle: CSSProperties = { ...tagStyle(13, colors.brand), fontWeight: 700 }
   const segBox = (empty: boolean, walkOn: boolean): CSSProperties => ({
     height: SEG_H, borderRadius: 10, boxSizing: 'border-box', display: 'grid', placeItems: 'center',
     background: empty ? 'rgba(255,255,255,0.6)' : 'linear-gradient(180deg, #FFFFFF 0%, #F2F6FF 100%)', border: empty ? `2px dashed ${colors.brand}55` : undefined,
@@ -761,26 +763,30 @@ function B_T12({ step = 0 }: { step?: number }) {
       </Show>
       {/* point 3: condition keys */}
       <Show on={P.shown(3)} style={{ position: 'absolute', left: 0, top: CARD.y, width: CARD.w, height: CARD.h }}>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: '100%', borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F5F8FF 100%)', boxShadow: P.lit(3) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, padding: '0 10px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 4, height: '100%', borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F5F8FF 100%)', boxShadow: P.lit(3) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, padding: '6px 10px', boxSizing: 'border-box' }}>
+          <span style={cardTitle}>Condition</span>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
           {([
             { icon: 'globe', tag: 'IP', loop: 'spin' },
             { icon: 'clock', tag: 'Time', loop: 'pulse' },
             { icon: 'phone', tag: 'MFA', loop: 'swing' },
           ] as { icon: Ico3DName; tag: string; loop: Loop }[]).map((c, i) => (
-            <div key={c.tag} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <Ico3D name={c.icon} size={36} loop={c.loop} d={i * 0.7} t={c.loop === 'spin' ? 12 : undefined} />
+            <div key={c.tag} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <Ico3D name={c.icon} size={30} loop={c.loop} d={i * 0.7} t={c.loop === 'spin' ? 12 : undefined} />
               <span style={tagStyle(12.5)}>{c.tag}</span>
             </div>
           ))}
+          </div>
         </div>
       </Show>
       {/* point 4: a wildcard covers a group of items */}
       <Show on={P.shown(4)} style={{ position: 'absolute', left: CARD.w + 14, top: CARD.y, width: CARD.w, height: CARD.h }}>
-        <div style={{ height: '100%', borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F5F8FF 100%)', boxShadow: P.lit(4) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '8px 10px', boxSizing: 'border-box' }}>
+        <div style={{ height: '100%', borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F5F8FF 100%)', boxShadow: P.lit(4) ? BLUE_RING(true, CARD_RIM) : CARD_RIM, transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '6px 10px', boxSizing: 'border-box' }}>
+          <span style={cardTitle}>Wildcard</span>
           <span style={{ fontFamily: MONO, fontSize: 14, color: colors.brandDark, whiteSpace: 'nowrap', ...NOLIG }}>finance-reports/*</span>
           <div style={{ display: 'flex', gap: 14 }}>
             {[0, 1, 2].map((k) => (
-              <Ico3D key={k} name="object" size={30} loop="bob" d={k * 0.45} />
+              <Ico3D key={k} name="object" size={26} loop="bob" d={k * 0.45} />
             ))}
           </div>
         </div>
@@ -844,10 +850,12 @@ function RowIcon({ icon, size = 38, d = 0 }: { icon: string; size?: number; d?: 
   return <Tile3D name={name} badge={badge} size={size} k={0.82} d={d} loop="bob" />
 }
 
-function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
+/* Session 13 review (T13, "can we split this"): `part` 1 is the two types side by side without the resource-only
+ * details; `part` 2 is the resource side alone, centred, with Principal and the other account; no `part` is the
+ * original single slide. The rows come from deck.json in press order, as before. */
+function B_T13({ step = 0, rows = [], part = 0 }: { step?: number; rows?: string[][]; part?: 0 | 1 | 2 }) {
   const W = 1040
-  const H = 320
-  const P = useParts(step, 5)
+  const P = useParts(step, part ? rows.length : 5)
   const instant = useInstant()
   const COL_W = 500
   const GAP = W - COL_W * 2
@@ -857,12 +865,16 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
   const ROW_Y0 = BOX_H + 14
   const left = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'identity')
   const right = rows.map((r, i) => ({ r, i })).filter((x) => x.r[2] === 'resource')
+  const H = part ? ROW_Y0 + Math.max(left.length, right.length) * (ROW_H + ROW_GAP) - ROW_GAP : 320
   const rowLit = (i: number) => P.lit(i + 1)
-  const idLit = P.lit(1) || P.lit(5)
-  const bucketLit = P.lit(2)
-  const principalLit = P.lit(3)
-  const crossLit = P.lit(4)
-  const RX = COL_W + GAP
+  /* the press that shows (and lights) each part of the picture; 0 = from the start, -1 = not on this slide */
+  const at = part === 1 ? { id: 1, res: 2, principal: -1, acc: -1 } : part === 2 ? { id: -1, res: 0, principal: 1, acc: 2 } : { id: 1, res: 2, principal: 3, acc: 4 }
+  const has = (k: number) => k >= 0
+  const idLit = P.lit(1) || P.lit(part === 1 ? 3 : 5)
+  const bucketLit = part !== 2 && P.lit(at.res)
+  const principalLit = has(at.principal) && P.lit(at.principal)
+  const crossLit = has(at.acc) && P.lit(at.acc)
+  const RX = part === 2 ? (W - COL_W) / 2 : COL_W + GAP
   const CY = 48 // the icon row's centre inside each panel
   /* identity panel: user tile → policy page */
   const U = { x: 120, s: 62 }
@@ -885,7 +897,7 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
   return (
     <Frame w={W} h={H}>
       {/* identity side: a user carrying its policy (a group and a role could carry one too) */}
-      <Show on={P.shown(1)} style={{ position: 'absolute', left: 0, top: 0, width: COL_W, height: BOX_H }}>
+      {has(at.id) && <Show on={P.shown(1)} style={{ position: 'absolute', left: 0, top: 0, width: COL_W, height: BOX_H }}>
         <div style={{ position: 'relative', height: '100%', borderRadius: 18 }}>
           <SceneBg kind="identity" w={COL_W} h={BOX_H} />
           <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, boxShadow: panelRing(idLit), transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, pointerEvents: 'none' }} />
@@ -912,9 +924,9 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
             <PolicyPage3D w={IDP.w} h={IDP.h} mark={40} d={0.4} />
           </div>
         </div>
-      </Show>
+      </Show>}
       {/* resource side: a bucket holding its policy, Principal named, another account's arrow on this side only */}
-      <Show on={P.shown(2)} style={{ position: 'absolute', left: RX, top: 0, width: COL_W, height: BOX_H }}>
+      <Show on={P.shown(at.res)} style={{ position: 'absolute', left: RX, top: 0, width: COL_W, height: BOX_H }}>
         <div style={{ position: 'relative', height: '100%', borderRadius: 18 }}>
           <SceneBg kind="resource" w={COL_W} h={BOX_H} />
           <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, boxShadow: panelRing(bucketLit), transition: instant ? 'none' : `box-shadow 420ms ${EASE}`, pointerEvents: 'none' }} />
@@ -924,13 +936,13 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
           <At x={B.x} y={BOX_H - 13}>
             <span style={tagStyle(14)}>Resource-Based</span>
           </At>
-          <Elbow pts={[[B.x + B.s / 2, CY], [BP.x, CY]]} on={P.shown(2)} head={0} color={`${colors.brand}aa`} delay={200} />
+          <Elbow pts={[[B.x + B.s / 2, CY], [BP.x, CY]]} on={P.shown(at.res)} head={0} color={`${colors.brand}aa`} delay={200} />
           <span aria-hidden className={lc('pulse')} style={{ position: 'absolute', left: B.x + B.s / 2 - 4, top: CY - 4, width: 8, height: 8, borderRadius: 99, background: colors.brand, ...lv(0.6, 2.2) }} />
           <div style={{ position: 'absolute', left: BP.x, top: BP.y, width: BP.w, height: BP.h, borderRadius: 14, background: 'linear-gradient(180deg, #FFFFFF 0%, #F4F7FE 100%)', boxShadow: CARD_RIM, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', boxSizing: 'border-box' }}>
             <Ico3D name="policy" size={42} loop="tilt" t={3.6} d={0.8} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
               <span style={{ display: 'block', height: 6, width: '82%', borderRadius: 4, background: '#D9E2F3' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '3px 6px', background: principalLit ? '#DDE7FF' : '#F2F5FC', boxShadow: principalLit ? BLUE_RING(true) : 'none', opacity: P.shown(3) ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, box-shadow 420ms ${EASE}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '3px 6px', background: principalLit ? '#DDE7FF' : '#F2F5FC', boxShadow: principalLit ? BLUE_RING(true) : 'none', opacity: has(at.principal) && P.shown(at.principal) ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, box-shadow 420ms ${EASE}` }}>
                 <Ico3D name="user" badge="check" size={22} loop="bob" />
                 <span style={{ ...tagStyle(13, colors.brandDark), textAlign: 'left' }}>Principal</span>
               </div>
@@ -940,7 +952,7 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
         </div>
       </Show>
       {/* another AWS account, granted from the resource side */}
-      <Show on={P.shown(4)} style={{ position: 'absolute', left: RX + ACC.x - 34, top: 0, width: 68, height: BOX_H, zIndex: 4 }}>
+      {has(at.acc) && <Show on={P.shown(at.acc)} style={{ position: 'absolute', left: RX + ACC.x - 34, top: 0, width: 68, height: BOX_H, zIndex: 4 }}>
         <div style={{ position: 'relative', height: '100%' }}>
           <At x={34} y={CY}>
             <Tile3D name="building" size={ACC.s} k={0.82} loop="bob" d={0.3} ring={crossLit ? BLUE_RING(true, 'inset 0 0 0 1.5px #D3DEF6') : undefined} />
@@ -949,9 +961,9 @@ function B_T13({ step = 0, rows = [] }: { step?: number; rows?: string[][] }) {
             <span style={tagStyle(14)}>Account</span>
           </At>
         </div>
-      </Show>
-      <Elbow pts={accLine} on={P.shown(4)} delay={200} z={5} />
-      <Ride pts={accLine} on={P.done} period={2.4} z={6} />
+      </Show>}
+      {has(at.acc) && <Elbow pts={accLine} on={P.shown(at.acc)} delay={200} z={5} />}
+      {has(at.acc) && <Ride pts={accLine} on={P.done} period={2.4} z={6} />}
       {left.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={0} k={k} />)}
       {right.map((x, k) => <Row key={x.i} r={x.r} i={x.i} x={RX} k={k} />)}
     </Frame>

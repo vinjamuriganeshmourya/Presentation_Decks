@@ -233,22 +233,6 @@
       "notes": "Point to the IAM console's Users and Groups tabs as the real screens where these identities are managed. Note root account settings sit under the account name dropdown, not IAM. Exam angle: matching each identity type to its correct use case is commonly tested."
     },
     {
-      "id": "T04-B",
-      "layout": "lead",
-      "kicker": "Identity Comparison",
-      "title": "Root Users Groups",
-      "figure": {
-        "type": "custom",
-        "name": "A_T04B",
-        "props": {
-          "steps": 1
-        }
-      },
-      "figW": 1000,
-      "figH": 430,
-      "notes": "Point to the IAM console's Users and Groups tabs as the real screens where these identities are managed. Note root account settings sit under the account name dropdown, not IAM. Exam angle: matching each identity type to its correct use case is commonly tested."
-    },
-    {
       "id": "D2",
       "layout": "breaker",
       "index": 2
@@ -363,7 +347,7 @@
               "img:images/res-iam-permissions.svg"
             ],
             [
-              "One identity can be allowed here, denied there",
+              "One identity can be allowed one action and denied another",
               "Split"
             ],
             [
@@ -495,6 +479,13 @@
       "figH": 250,
       "pointsW": 640,
       "notes": "Name the exact IAM console locations rather than describing them generically. This bridges naturally into how a policy document actually decides allow or deny."
+    },
+    {
+      "id": "S-QUIZ-1",
+      "layout": "quiz",
+      "section": "Authentication vs Authorization",
+      "label": "Quiz Time",
+      "notes": "Quiz on Identity in the Cloud and Authentication vs Authorization. Q1. Which identity is created automatically when a cloud account is opened? Answer: The root account. Q2. Why should the root account not be used for daily work? Answer: It has unrestricted access to every resource and to billing; AWS recommends MFA and avoiding daily use. Q3. What does adding a user to a group do? Answer: The user gets every permission of that group at once. Q4. Can a group sign in? Answer: No; a group has no credentials, its members inherit its permissions. Q5. Which check runs first, authentication or authorization? Answer: Authentication, which proves who the caller is. Q6. A user signs in successfully but no policy allows the action. What happens? Answer: The request is denied. Q7. Which credential does a CLI or SDK call use? Answer: An access key (ID and secret). Q8. Which AWS service issues temporary tokens for an assumed role? Answer: AWS Security Token Service (STS)."
     },
     {
       "id": "D3",
@@ -659,7 +650,7 @@
       "layout": "points",
       "kicker": "Resource And Condition",
       "title": "Target And Constraint",
-      "lead": "Resource pins the action to one specific item, identified by its Amazon Resource Name (ARN), while Condition adds an extra test that must also be true before the effect applies",
+      "lead": "Resource pins the action to a specific item or group of items, identified by its Amazon Resource Name (ARN), while Condition adds an extra test that must also be true before the effect applies",
       "points": [
         {
           "text": "ARN format: arn:partition:service:region:account-id:resource (some fields can be empty, as in S3 ARNs)",
@@ -699,7 +690,8 @@
         "type": "custom",
         "name": "B_T13",
         "props": {
-          "steps": 5,
+          "steps": 3,
+          "part": 1,
           "rows": [
             [
               "Identity-based: attached to a user, group or role",
@@ -712,16 +704,6 @@
               "resource"
             ],
             [
-              "A resource-based policy has one more element, Principal, which names who gets the access",
-              "UserCheck",
-              "resource"
-            ],
-            [
-              "Resource-based policies can grant access to another AWS account",
-              "Building2",
-              "resource"
-            ],
-            [
               "Identity-based policies are the default for most access setups",
               "BadgeCheck",
               "identity"
@@ -730,8 +712,38 @@
         }
       },
       "figW": 1080,
-      "figH": 360,
-      "notes": "Clarify that identity-based policies travel with the user wherever they go, while resource-based policies stay fixed to that one resource. Point to the bucket policy tab inside the S3 console as a resource-based example. Interviewers test whether a bucket policy or an IAM policy is needed for cross-account sharing."
+      "figH": 290,
+      "notes": "Clarify that identity-based policies travel with the user wherever they go, while resource-based policies stay fixed to that one resource. Point to the bucket policy tab inside the S3 console as a resource-based example."
+    },
+    {
+      "id": "T13-B",
+      "layout": "lead",
+      "kicker": "Two Policy Types",
+      "title": "Where It Attaches",
+      "lead": "A resource-based policy names who gets the access in one more element, Principal, which is how one AWS account can grant access to another",
+      "figure": {
+        "type": "custom",
+        "name": "B_T13",
+        "props": {
+          "steps": 2,
+          "part": 2,
+          "rows": [
+            [
+              "A resource-based policy has one more element, Principal, which names who gets the access",
+              "UserCheck",
+              "resource"
+            ],
+            [
+              "Resource-based policies can grant access to another AWS account",
+              "Building2",
+              "resource"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 290,
+      "notes": "Point to Principal as the element only a resource-based policy has: it names who gets the access. Interviewers test whether a bucket policy or an IAM policy is needed for cross-account sharing."
     },
     {
       "id": "T13-AN",
@@ -920,7 +932,7 @@
           "icon": "OctagonX"
         },
         {
-          "text": "An allow from an unrelated policy cannot cancel a matching deny",
+          "text": "An allow from any other policy cannot cancel a matching deny",
           "icon": "Unlink"
         },
         {
@@ -1042,7 +1054,7 @@
       "id": "T20",
       "layout": "points",
       "kicker": "Diagnosing Denials",
-      "title": "Three Pieces Evidence",
+      "title": "Three Pieces of Evidence",
       "lead": "A denied request is not a dead end: it leaves three pieces of evidence that together explain why it failed",
       "points": [
         {
@@ -1054,7 +1066,7 @@
           "icon": "img:images/aws-cloudtrail.svg"
         },
         {
-          "text": "The policy statement: the exact rule that produced the deny",
+          "text": "The policy statement: the exact rule that produced the deny, or the missing allow",
           "icon": "FileText"
         }
       ],
@@ -1182,7 +1194,9 @@
             [
               "CloudTrail Event",
               "img:images/aws-cloudtrail.svg",
-              []
+              [
+                "Shows source IP 203.0.113.5, time of call, and mfaAuthenticated: false"
+              ]
             ],
             [
               "Policy Document",

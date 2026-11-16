@@ -365,7 +365,8 @@ type Card23 = [string, string, string[]]
  * Policy Document card). Arrows run from one card's right edge to the next card's left edge, tip on the edge.
  */
 const D_PAD = 20
-const D_WIDTHS = [225, 124, 317, 316]
+/* Session 13 review (T23): the CloudTrail card carries a bullet now, so it is wider and the gaps narrower */
+const D_WIDTHS = [222, 166, 306, 316]
 const D_AY = 20 + 28
 function dLayout(w: number) {
   const W = Math.min(w, 1110) - D_PAD * 2
@@ -388,8 +389,8 @@ const C_T23: Fig = ({ step = 0, cards = [], w = 1100, h = 300 }) => {
   const held = useHeld()
   const { W, xs } = dLayout(w as number)
   const H = (h as number) - D_PAD * 2
-  const iconFor = (icon: string, i: number, sid: boolean, empty: boolean) => {
-    if (icon.startsWith('img:')) return <MarkTile src={icon.slice(4).replace(/^images\//, '../images/')} size={empty ? 72 : 56} />
+  const iconFor = (icon: string, i: number, sid: boolean, empty: boolean, stack = false) => {
+    if (icon.startsWith('img:')) return <MarkTile src={icon.slice(4).replace(/^images\//, '../images/')} size={empty ? 72 : stack ? 48 : 56} />
     if (sid) return <Plinth warm size={52}><Pair main="tag" over="cross" size={36} k={0.6} loop="tilt" d={0.4} overLoop="beat" /></Plinth>
     return <Plinth size={52}><Ico3D name={icon === 'MessageSquareWarning' ? 'alert' : 'doc'} size={40} loop="beat" d={i * 0.6} t={2.8} /></Plinth>
   }
@@ -398,18 +399,20 @@ const C_T23: Fig = ({ step = 0, cards = [], w = 1100, h = 300 }) => {
       {cs.map(([title, icon, bullets], i) => {
         const sid = i === cs.length - 1
         const empty = bullets.length === 0
+        /* a narrow card keeps its icon above its title, and its bullets come under both, a size smaller */
+        const stack = empty || D_WIDTHS[i] < 200
         return (
           <div key={title}>
             <Panel x={xs[i]} y={0} w={D_WIDTHS[i]} h={H} on={s >= i + 1} lit={hot === i} tint={sid ? 'linear-gradient(180deg,#FFF8F2 0%,#FFEBDC 100%)' : undefined} edge={sid ? ORANGE : undefined}>
-              <div style={{ position: 'absolute', inset: 0, padding: empty ? 16 : 20, display: 'flex', flexDirection: 'column', gap: 12, alignItems: empty ? 'center' : 'flex-start', justifyContent: empty ? 'center' : 'flex-start' }}>
-                <div style={{ display: 'flex', flexDirection: empty ? 'column' : 'row', alignItems: 'center', gap: 12, marginBottom: empty ? 0 : 2 }}>
-                  {iconFor(icon, i, sid, empty)}
-                  <span style={{ ...heading(sid ? 16 : 17), whiteSpace: empty ? 'normal' : 'nowrap', textAlign: empty ? 'center' : 'left' }}>{title}</span>
+              <div style={{ position: 'absolute', inset: 0, padding: stack ? 16 : '18px 16px', display: 'flex', flexDirection: 'column', gap: 12, alignItems: empty ? 'center' : 'flex-start', justifyContent: empty ? 'center' : 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: stack ? 'column' : 'row', alignItems: 'center', alignSelf: stack ? 'stretch' : undefined, gap: stack ? 8 : 12, marginBottom: empty ? 0 : 2 }}>
+                  {iconFor(icon, i, sid, empty, stack)}
+                  <span style={{ ...heading(sid ? 16 : 17), whiteSpace: stack ? 'normal' : 'nowrap', textAlign: stack ? 'center' : 'left' }}>{title}</span>
                 </div>
                 {bullets.map((b, k2) => (
-                  <div key={k2} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 99, background: sid ? ORANGE : colors.brand, marginTop: 8, flexShrink: 0 }} />
-                    <span style={{ ...body(15), overflowWrap: 'break-word' }}>{b}</span>
+                  <div key={k2} style={{ display: 'flex', gap: stack ? 7 : 9, alignItems: 'flex-start' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 99, background: sid ? ORANGE : colors.brand, marginTop: stack ? 7 : 8, flexShrink: 0 }} />
+                    <span style={{ ...body(stack ? 13.5 : 15), overflowWrap: 'break-word' }}>{b}</span>
                   </div>
                 ))}
                 {/* the resolution, icons only: signed in without MFA, so the deny is laid over the allow it overrides */}
@@ -439,7 +442,7 @@ const C_T23: Fig = ({ step = 0, cards = [], w = 1100, h = 300 }) => {
 
 /*
  * 634 x 330, PAD on every side. Top row: the three stages, joined edge to edge. Bottom row: the three fix options, one
- * under each column so the lower-left is no longer empty; an orthogonal tree runs from Policy Corrected's bottom edge
+ * under each column so the lower-left is no longer empty; an orthogonal tree runs from Choose a Fix's bottom edge
  * down to a bus, across, and down into the top edge of each option card.
  */
 const A = { W: 634, H: 330, PAD: 20, GAP: 40, BH: 132, OH: 100 }
@@ -460,7 +463,7 @@ const C_T24: Fig = ({ step = 0 }) => {
   const boxes: [string, ReactNode][] = [
     ['Evidence Gathered', <Ico3D key="a" name="log" size={46} loop="bob" />],
     ['Statement Identified', <Pair key="b" main="doc" over="search" size={42} k={0.58} loop="bob" d={0.7} overLoop="glint" />],
-    ['Policy Corrected', <Ico3D key="c" name="docfix" size={46} loop="bob" d={1.4} />],
+    ['Choose a Fix', <Ico3D key="c" name="docfix" size={46} loop="bob" d={1.4} />],
   ]
   const fixes: [string, Ico3DName, Badge | undefined][] = [
     ['Add Allow', 'plus', undefined],

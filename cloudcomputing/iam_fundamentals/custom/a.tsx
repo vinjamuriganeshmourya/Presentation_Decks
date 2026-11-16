@@ -728,7 +728,7 @@ function A_T05({ step }: { step: number }) {
       {/* 2 · each gate fails with its own kind of error */}
       {[
         { x: G1, name: 'user-x' as Ico3DName, tag: 'Identity' },
-        { x: G2, name: 'ban' as Ico3DName, tag: 'Permission' },
+        { x: G2, name: 'checklist' as Ico3DName, tag: 'Permission' },
       ].map((e, k) => (
         <Show key={e.tag} on={on(2)} delay={k * 120} style={{ position: 'absolute', left: e.x - 50, top: LY + GATE_BAR_H / 2 + 34, width: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <span style={{ position: 'relative' }}>
@@ -932,12 +932,12 @@ function A_T09({ step }: { step: number }) {
     { t: 'Security Credentials', y: 94, x: 34 },
     { t: 'Account Settings', y: 190, x: 18 },
   ]
-  const TX = 326 // the credential tiles' centre
+  const TX = 298 // the credential tiles' centre (moved left for the longer "Password Policy", Session 13 review)
   /* point order: 1 STS token, 2 password policy, 3 MFA, 4 access keys; tiles top → bottom so no lines cross */
   const creds = [
     { y: 34, src: mfaMark, icon: '', tag: 'MFA', from: 1, point: 3 },
     { y: 94, src: keyMark, icon: '', tag: 'Access Keys', from: 1, point: 4 },
-    { y: 158, src: '', icon: 'RectangleEllipsis', tag: 'Password', from: 2, point: 2 },
+    { y: 158, src: '', icon: 'RectangleEllipsis', tag: 'Password Policy', from: 2, point: 2 },
     { y: 218, src: stsMark, icon: '', tag: 'STS Token', from: 2, point: 1 },
   ]
   return (

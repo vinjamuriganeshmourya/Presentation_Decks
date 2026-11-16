@@ -33,6 +33,7 @@ export type Ico3DName =
   | 'clock' | 'tag' | 'filter' | 'play' | 'toggle' | 'target' | 'building' | 'fingerprint' | 'server' | 'code' | 'list'
   | 'version' | 'receipt' | 'door' | 'laptop' | 'asterisk' | 'link' | 'cloud' | 'eye' | 'trash' | 'idcard' | 'object'
   | 'merge' | 'gavel' | 'bolt' | 'scale' | 'trail' | 'flag' | 'user-x' | 'user-plus' | 'user-minus' | 'token' | 'docfix'
+  | 'checklist'
 
 export type Badge = 'check' | 'cross' | 'plus' | 'minus' | 'lock' | 'clock' | 'star' | 'alert'
 
@@ -240,6 +241,20 @@ const DRAW: Record<Ico3DName, (id: string) => ReactNode> = {
         <g key={y}>
           <Ball id={id} cx={22} cy={y} r={4} t={i === 1 ? 'red' : 'green'} />
           {i === 1 ? <W d={`M 20.4 ${y - 1.6} l 3.2 3.2 m 0 -3.2 l -3.2 3.2`} w={1.6} /> : <W d={`M 20 ${y} l 1.5 1.5 l 2.8 -2.8`} w={1.6} />}
+          <rect x={29} y={y - 2} width={15} height={4} rx={2} fill="#B7C6E4" />
+        </g>
+      ))}
+    </>
+  ),
+  /* a policy document whose every line is ticked: a granted permission (Session 13 review, T05) */
+  checklist: (id) => (
+    <>
+      <Shadow id={id} rx={18} />
+      <Sheet id={id} />
+      {[18, 30, 42].map((y) => (
+        <g key={y}>
+          <Ball id={id} cx={22} cy={y} r={4} t="green" />
+          <W d={`M 20 ${y} l 1.5 1.5 l 2.8 -2.8`} w={1.6} />
           <rect x={29} y={y - 2} width={15} height={4} rx={2} fill="#B7C6E4" />
         </g>
       ))}

@@ -312,17 +312,18 @@ const T22: Fig = ({ step = 0 }) => {
   const W = 620
   const H = 322
   const CH = 236 // console height
-  const NAV = 104
-  const LIST = 146
+  /* the list is wider for PutBucketPolicy (Session 13 review, T22), taken from the menu and the record */
+  const NAV = 98
+  const LIST = 158
   const events: [string, boolean][] = [
-    ['DeleteObject', false],
-    ['GetObject', true],
-    ['PutObject', true],
-    ['DeleteObject', false],
+    ['DeleteBucket', false],
+    ['CreateUser', true],
+    ['PutBucketPolicy', true],
+    ['DeleteBucket', false],
   ]
   const filtered = s >= 2
   const fields: [string, string, boolean][] = [
-    ['eventName', '"DeleteObject"', true],
+    ['eventName', '"DeleteBucket"', true],
     ['errorCode', '"AccessDenied"', true],
     ['sourceIPAddress', '"203.0.113.5"', false],
     ['userIdentity', '{\n  "arn": "arn:aws:iam::123456789012:user/alice"\n}', true],
@@ -355,11 +356,11 @@ const T22: Fig = ({ step = 0 }) => {
           </div>
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 5 }}>
             {events.map(([name, ok], i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, height: 30, padding: '0 8px', borderRadius: 7, background: i === 0 ? '#EEF3FF' : 'transparent', opacity: filtered && ok ? 0.28 : 1, transition: instant ? 'none' : `opacity 420ms ${EASE}` }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, height: 30, padding: '0 6px', borderRadius: 7, background: i === 0 ? '#EEF3FF' : 'transparent', opacity: filtered && ok ? 0.28 : 1, transition: instant ? 'none' : `opacity 420ms ${EASE}` }}>
                 <span style={{ display: 'grid', placeItems: 'center', color: ok ? GOOD : colors.accent }}>
                   <Icon name={ok ? 'CircleCheck' : 'CircleX'} size={15} />
                 </span>
-                <span style={mono(12.5)}>{name}</span>
+                <span style={mono(11.5)}>{name}</span>
               </div>
             ))}
           </div>

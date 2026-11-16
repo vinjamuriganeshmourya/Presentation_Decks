@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/iam_fundamentals/iam-fundamentals",
-  "slides": {},
+  "slides": {
+    "T19": {
+      "status": "skipped"
+    }
+  },
   "threads": {
     "mwiwr87c8ruh4j": {
       "replies": {},

@@ -290,7 +290,7 @@ const F15_BOX: [string, Ico3DName][] = [
   ['Default Deny', 'lock'],
   ['Explicit Deny', 'cross'],
   ['Explicit Allow', 'check'],
-  ['Final Decision', 'gavel'],
+  ['Allowed \u2705', 'gavel'],
 ]
 /* which press shows each box, and which press lights it */
 const F15_ON = [1, 2, 3, 4, 4]
@@ -341,6 +341,13 @@ const C_T15: Fig = (p) => {
       {/* the deny branch, orange (the TR's red, rule 51), and the no-allow fall-through, grey dashed */}
       <Elbow pts={[[F15.MX + F15.MW, f15cy(2)], [F15_DX, f15cy(2)]]} on={on(3)} color={ORANGE} width={2.6} />
       <Elbow pts={[[F15.MX + F15.MW, f15cy(3)], [F15_DX, f15cy(3)]]} on={on(4)} color={GREY} width={2} dashed />
+      {/* the two ways out of Explicit Allow, named (Session 13 review, T15) */}
+      <Show on={on(4)} delay={200} style={{ position: 'absolute', left: F15.MX + F15.MW, top: f15cy(3) - 34, width: F15_DX - F15.MX - F15.MW, zIndex: 4 }}>
+        <div style={{ ...tagS(12.5, '#6B7891'), whiteSpace: 'normal', lineHeight: 1.1 }}>No allow found</div>
+      </Show>
+      <Show on={on(4)} delay={360} lift={0} style={{ position: 'absolute', left: F15CX + 8, top: f15y(3) + F15.BH + 3, zIndex: 4 }}>
+        <div style={{ ...tagS(12.5, colors.brandDeep), textAlign: 'left' }}>Allow found</div>
+      </Show>
       <Panel x={F15_DX} y={denyTop} w={F15.DW} h={denyH} on={on(3)} delay={300} lit={hot === 2} edge={`${ORANGE}99`} radius={14} z={3} tint="linear-gradient(180deg, #FFFFFF 0%, #FFF3EA 100%)">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, height: '100%' }}>
           <Ico3D name="cross" size={40} loop="pulse" t={2.2} />
@@ -552,7 +559,7 @@ const F18_TO_D = ride('t18-d', [[F18_PR + 8, F18_BC], [F18.EB, F18_BC], [F18.EB,
 function AddrLine({ show }: { show: boolean }) {
   const instant = useInstant()
   return (
-    <span style={{ position: 'relative', display: 'block', flex: 1, height: 14, minWidth: 90 }}>
+    <span style={{ position: 'relative', display: 'block', flex: 1, height: 14, minWidth: 56 }}>
       <span style={{ position: 'absolute', left: 0, right: 0, top: 5, height: 4, borderRadius: 4, background: '#DCE4F4' }} />
       <span style={{ position: 'absolute', left: '58%', width: '26%', top: 2, height: 10, borderRadius: 6, background: `linear-gradient(180deg, #8DB0FF, ${colors.brand})`, boxShadow: `0 4px 8px -4px ${colors.brand}` }} />
       <span style={{ position: 'absolute', left: '22%', top: 0, width: 14, height: 14, marginLeft: -7, opacity: show ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE} 300ms` }}>
@@ -618,9 +625,10 @@ const C_T18B: Fig = (p) => {
       <Panel x={F18.PX} y={F18_BY} w={F18.PW} h={F18.PH} lit={hot === 1 || hot === 2} radius={18} edge={on(2) ? `${ORANGE}99` : undefined}>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, height: '100%', padding: '0 22px' }}>
           {head(<MarkTile src={s3Bucket} size={46} />, 'Policy B', 'Resource-Based')}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 32 }}>
             <Ico3D name="filter" size={24} loop="none" />
-            <span style={mono(15)}>203.0.113.0/24</span>
+            {/* the whole rule, not only its range (Session 13 review, T18-B) */}
+            <span style={{ ...mono(14), lineHeight: 1.3 }}>Deny s3:GetObject<br />if IP not in 203.0.113.0/24</span>
             <AddrLine show={on(2)} />
             {status(on(2), false)}
           </div>

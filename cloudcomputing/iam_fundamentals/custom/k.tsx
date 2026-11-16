@@ -539,6 +539,21 @@ function rigToWorld(p: Pt, h: number, root: THREE.Vector3, camera: THREE.Camera,
   out.set(root.x + Math.cos(phi) * lx, root.y + (600 - p.y) * u, root.z - Math.sin(phi) * lx)
   return out
 }
+/** the rig-frame point on a sprite (height `h`, at `root`, facing the camera) that the camera sees at `local` on `obj` */
+function handOn(obj: THREE.Object3D, local: THREE.Vector3, root: THREE.Vector3, h: number, camera: THREE.Camera): Pt {
+  obj.updateMatrixWorld(true)
+  camera.updateMatrixWorld(true)
+  const k = obj.localToWorld(local.clone())
+  const cam = camera.position
+  const phi = Math.atan2(cam.x - root.x, cam.z - root.z)
+  const n = new THREE.Vector3(Math.sin(phi), 0, Math.cos(phi))
+  const ray = k.clone().sub(cam)
+  const t = n.dot(root.clone().sub(cam)) / n.dot(ray)
+  const p = cam.clone().addScaledVector(ray, t)
+  const u = h / 0.93 / 600
+  const lx = Math.cos(phi) * (p.x - root.x) - Math.sin(phi) * (p.z - root.z)
+  return { x: 200 + lx / u, y: 600 - (p.y - root.y) / u }
+}
 /** move a point toward the camera along its view ray, so a prop sits in front of the sprite and projects onto the hand */
 function towardCamera(p: THREE.Vector3, camera: THREE.Camera, d: number) {
   const v = camera.position.clone().sub(p).normalize()
@@ -968,11 +983,14 @@ function setupCloud(kit: StageKit): Update {
 
   /* the developer, at the right of his desk, his left hand on the laptop */
   const shD = buildSkin(DEVELOPER).shoulderHalf
-  const KEYS: Pt = { x: 30, y: 333 }
+  /* Session 13 review (T21-AN): the hand rests flat ON the keyboard. The grip was a fixed point on his own plane, which
+   * lies behind the laptop, so the hand was drawn behind the lid. Now it is the keyboard's right-hand side seen from
+   * the camera, carried back onto his plane (so it projects onto the keys), and he is drawn over the desk and laptop
+   * (below). The taps are small: the hand stays put. */
+  const KEYS = handOn(laptop, new THREE.Vector3(0.07, 0.02, 0.05), CLOUD.dev, CLOUD.hD, camera)
   const keys = (c: number): Pt => {
-    /* typing: small taps; Enter pressed hard just before the request leaves */
-    const typing = (1 - hold(c, 0.9, 1.0, 5.45, 5.55)) * Math.max(0, Math.sin(c * Math.PI * 2 * 5.5)) * 5
-    const enter = hold(c, 0.75, 0.88, 0.92, 1.05) * 14
+    const typing = (1 - hold(c, 0.9, 1.0, 5.45, 5.55)) * Math.max(0, Math.sin(c * Math.PI * 2 * 5.5)) * 1.2
+    const enter = hold(c, 0.75, 0.88, 0.92, 1.05) * 4
     return { x: KEYS.x, y: KEYS.y - enter - typing }
   }
   const dev = castSprite({
@@ -996,7 +1014,12 @@ function setupCloud(kit: StageKit): Update {
       const a = solveL(shD, keys(c))
       p.shoulderL = a.s
       p.elbowL = a.e
-      p.wristL = 18
+      /* the hand lies flat on the keys: turned along the keyboard, fingers straight (Session 13 review, T21-AN) */
+      p.wristL = -62
+      p.fL1 = p.fL2 = p.fL3 = p.fL4 = 0.05
+      p.tL = 0.3
+      p.spreadL = 0.1
+      p.palmL = 0.1
       p.shoulderR = 9
       p.elbowR = 14
       const glance = hold(c, T.glanceA, T.glanceA + 0.3, T.glanceB - 0.3, T.glanceB)
@@ -1013,6 +1036,14 @@ function setupCloud(kit: StageKit): Update {
     },
   })
   dev.object.position.copy(CLOUD.dev)
+  /* he stands beside the desk, so nothing on it hides his hand: drawn after it, not depth-tested against it */
+  dev.object.traverse((o) => {
+    const m = (o as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined
+    if (m && m.map !== undefined && m.alphaTest > 0) {
+      m.depthTest = false
+      o.renderOrder = 5
+    }
+  })
   scene.add(dev.object)
 
   const from = new THREE.Vector3()
