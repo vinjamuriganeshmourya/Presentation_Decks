@@ -65,7 +65,7 @@
     },
     "mwixpcqj55h9u5": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T15",
       "author": "Editor",
       "text": "Now: a dashed grey arrow from “Explicit Allow” straight to the “Denied” box, with no label.\nReplace with: keep the dashed arrow, but add the label “No allow found” on it.\n\n\nNow: last box = “Final Decision”\nChange to: “Allowed ✅”, and label the arrow from Explicit Allow to it “Allow found”",
