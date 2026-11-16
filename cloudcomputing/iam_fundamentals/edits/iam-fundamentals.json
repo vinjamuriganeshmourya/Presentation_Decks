@@ -130,6 +130,14 @@
       "author": "Editor",
       "text": "❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
       "at": 1794814416532
+    },
+    "mwiyedf71kcqsz": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T24",
+      "author": "Editor",
+      "text": "❌ Flow order\nNow: Statement Identified → Policy Corrected → 3 fix options\nChange to: Statement Identified → 3 fix options → “Access Restored ✅”",
+      "at": 1794814813603
     }
   }
 }
