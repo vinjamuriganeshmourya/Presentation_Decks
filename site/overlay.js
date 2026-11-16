@@ -148,6 +148,7 @@
       out[id] = {}
       if (baked[id].status) out[id].status = baked[id].status
       if (baked[id].comment) out[id].comment = baked[id].comment
+      if (baked[id].text) out[id].text = baked[id].text
     }
     ;(rows || [])
       .filter(function (r) { return !isThreadRow(r) })
@@ -267,6 +268,305 @@
     return null
   }
 
+  /* ------------------------------------------------------------ text edits (model: Web-Slides deck-engine EditLayer.tsx)
+
+     SAVED TEXT. Per slide, { [the element's ORIGINAL words]: edited innerHTML | null }, null meaning "the
+     original words". What viewers see is the text a deck saved into its own HTML file (fileTextEdits), with
+     the edits file's text (state.json, or the Worker's newer row for that slide) on top. Viewers hand that to
+     the deck at boot (`__DECK_STATE__.edits`) and the deck's own EditLayer applies it; a change to it
+     reloads the page in place, as a change to the hidden slides does.
+
+     EDIT MODE (TEXT EDIT). The deck gets NO edits, so the words on screen are the deck's originals and the
+     keys come out exactly as the deck's EditLayer makes them. This layer then puts the saved text and the
+     unsaved draft on top, before the first paint of every slide, and, while Text Edit is on, makes every
+     text element of the slide on screen editable. Typing goes into the draft (ui.local[id].text) and Save
+     sends it through the same /api/save commit as Skip / Delete. */
+
+  var FILE_TEXT = SITE.fileTextEdits || (SITE.fileTextEdits === undefined ? SITE.textEdits : null) || {}
+  var hasOwn = function (o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k) }
+  /* a key is the element's words, so it can be anything, "__proto__" included */
+  function put(o, k, v) {
+    Object.defineProperty(o, k, { value: v, enumerable: true, writable: true, configurable: true })
+    return o
+  }
+
+  /** merged state -> { slideId: { key: html } }, the text every viewer sees */
+  function textEditsOf(st) {
+    if (textEditsOf.st === st && textEditsOf.out) return textEditsOf.out
+    var out = Object.create(null)
+    var id, k, m
+    for (id in FILE_TEXT) {
+      if (!hasOwn(FILE_TEXT, id) || !FILE_TEXT[id] || typeof FILE_TEXT[id] !== 'object') continue
+      for (k in FILE_TEXT[id]) if (hasOwn(FILE_TEXT[id], k) && typeof FILE_TEXT[id][k] === 'string') put((out[id] = out[id] || Object.create(null)), k, FILE_TEXT[id][k])
+    }
+    for (id in st || {}) {
+      m = st[id] && st[id].text
+      if (!m || typeof m !== 'object') continue
+      for (k in m) {
+        if (!hasOwn(m, k)) continue
+        if (m[k] === null) { if (out[id]) delete out[id][k] }
+        else if (typeof m[k] === 'string') put((out[id] = out[id] || Object.create(null)), k, m[k])
+      }
+      if (out[id] && !Object.keys(out[id]).length) delete out[id]
+    }
+    textEditsOf.st = st
+    textEditsOf.out = out
+    return out
+  }
+  /** order-independent signature of a text map (a rebuild reorders keys without changing anything) */
+  function textSig(t) {
+    return JSON.stringify(
+      Object.keys(t).sort().map(function (id) {
+        return [id, Object.keys(t[id]).sort().map(function (k) { return [k, t[id][k]] })]
+      }),
+    )
+  }
+
+  /* the edit-mode layer: per element, React's words, the words last put there, the key, the value last applied */
+  var ORIG = new WeakMap()
+  var SHOWN = new WeakMap()
+  var KEY = new WeakMap()
+  var WANT = new WeakMap()
+  var TX = { on: false, wrap: null, id: null, raf: 0, data: null, onEdit: null }
+  var TX_SKIP = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1 }
+
+  function hasOwnText(el) {
+    for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.textContent && n.textContent.trim()) return true
+    return false
+  }
+  /** the slide's editing hosts in document order: the deck's EditLayer walk, so the keys match */
+  function editableElements(root) {
+    var out = []
+    function walk(el) {
+      if (typeof SVGElement !== 'undefined' && el instanceof SVGElement) return
+      if (TX_SKIP[el.tagName]) return
+      if (el.getAttribute('role') === 'dialog' || el.hasAttribute('data-edit-layer')) return
+      if (hasOwnText(el) || ORIG.has(el)) {
+        out.push(el)
+        return
+      }
+      for (var c = el.firstElementChild; c; c = c.nextElementSibling) walk(c)
+    }
+    for (var c = root.firstElementChild; c; c = c.nextElementSibling) walk(c)
+    return out
+  }
+  function sanitise(html) {
+    var t = document.createElement('template')
+    t.innerHTML = html
+    var bad = t.content.querySelectorAll('script,style,iframe,object,embed,link,meta,base')
+    for (var i = 0; i < bad.length; i++) bad[i].remove()
+    var all = t.content.querySelectorAll('*')
+    for (var j = 0; j < all.length; j++) {
+      var attrs = Array.prototype.slice.call(all[j].attributes)
+      for (var a = 0; a < attrs.length; a++) {
+        var nm = attrs[a].name
+        if (/^on/i.test(nm)) all[j].removeAttribute(nm)
+        else if ((nm === 'href' || nm === 'src' || nm === 'xlink:href') && /^\s*javascript:/i.test(attrs[a].value)) all[j].removeAttribute(nm)
+      }
+    }
+    return t.content
+  }
+  function nodesOf(root) {
+    var out = []
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
+    for (var n = w.nextNode(); n; n = w.nextNode()) out.push(n)
+    return out
+  }
+  function sameShape(a, b) {
+    if (a.length !== b.length) return false
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].nodeType !== b[i].nodeType) return false
+      if (a[i].nodeType === 1 && a[i].tagName !== b[i].tagName) return false
+    }
+    return true
+  }
+  /* React still owns the nodes: same shape -> only the text values change, so its references stay valid */
+  function applyHtml(host, html) {
+    var clean = sanitise(html)
+    var live = nodesOf(host)
+    var next = nodesOf(clean)
+    if (sameShape(live, next)) {
+      for (var i = 0; i < live.length; i++) if (live[i].nodeType === 3) live[i].nodeValue = next[i].nodeValue
+      return
+    }
+    host.replaceChildren(clean)
+  }
+  function wordsOf(html) {
+    var t = document.createElement('template')
+    t.innerHTML = html
+    return (t.content.textContent || '').replace(/\s+/g, ' ').trim()
+  }
+  /** each host with its key and original markup; React's new words for an element are its new original */
+  function keyed(root) {
+    var seen = Object.create(null)
+    return editableElements(root).map(function (el) {
+      var now = el.innerHTML
+      var orig = ORIG.get(el)
+      if (orig === undefined || (now !== orig && now !== SHOWN.get(el))) {
+        orig = now
+        ORIG.set(el, orig)
+        SHOWN.delete(el)
+        WANT.delete(el)
+      }
+      var words = wordsOf(orig)
+      var n = (seen[words] || 0) + 1
+      seen[words] = n
+      var key = n > 1 ? words + ' @' + n : words
+      KEY.set(el, key)
+      return { el: el, key: key, orig: orig }
+    })
+  }
+  /** saved text + the unsaved draft for one slide: { key: html | null } (null = original) */
+  function txMap(id) {
+    var d = TX.data || {}
+    var out = Object.create(null)
+    var saved = textEditsOf(d.base())[id]
+    var k
+    if (saved) for (k in saved) put(out, k, saved[k])
+    var l = d.local()
+    l = l && hasOwn(l, id) && l[id] && l[id].text
+    if (l) for (k in l) if (hasOwn(l, k)) put(out, k, l[k])
+    return out
+  }
+  function txSync(root, id, skip) {
+    var map = txMap(id)
+    keyed(root).forEach(function (h) {
+      if (h.el === skip) return
+      var want = map[h.key] != null ? map[h.key] : h.orig
+      var now = h.el.innerHTML
+      if (now === want) {
+        SHOWN.set(h.el, now)
+        WANT.set(h.el, want)
+        return
+      }
+      /* applied already and the browser serialises it differently: never re-apply in a loop */
+      if (WANT.get(h.el) === want && SHOWN.get(h.el) === now) return
+      applyHtml(h.el, want)
+      SHOWN.set(h.el, h.el.innerHTML)
+      WANT.set(h.el, want)
+    })
+  }
+  function txMark(root) {
+    keyed(root).forEach(function (h) {
+      if (h.el.getAttribute('contenteditable') === 'true') return
+      h.el.setAttribute('contenteditable', 'true')
+      h.el.setAttribute('spellcheck', 'false')
+      h.el.setAttribute('data-site-text', '')
+    })
+  }
+  function txUnmark() {
+    var els = document.querySelectorAll('[data-site-text]')
+    for (var i = 0; i < els.length; i++) {
+      els[i].removeAttribute('contenteditable')
+      els[i].removeAttribute('spellcheck')
+      els[i].removeAttribute('data-site-text')
+    }
+  }
+  function txFocused() {
+    var a = document.activeElement
+    return a && a.closest ? a.closest('[data-site-text]') : null
+  }
+  function caretToEnd(el) {
+    var sel = window.getSelection()
+    if (!sel) return
+    var r = document.createRange()
+    r.selectNodeContents(el)
+    r.collapse(false)
+    sel.removeAllRanges()
+    sel.addRange(r)
+  }
+  /** every finite animation in the slide jumps to its end: nothing may still be waiting on an entrance while being clicked */
+  function finishAnimations(root) {
+    if (!document.getAnimations) return
+    document.getAnimations().forEach(function (a) {
+      var target = a.effect && a.effect.target
+      if (!target || !root.contains(target)) return
+      var t = a.effect.getComputedTiming && a.effect.getComputedTiming()
+      if (!t || !isFinite(t.endTime)) return
+      try { a.finish() } catch (e) {}
+    })
+  }
+  /* the slide on screen: the deck's keyed slide wrapper holding its EditLayer marker, not the one leaving (popLayout) */
+  function txWrapper() {
+    var spans = document.querySelectorAll('span[data-edit-layer]')
+    for (var i = spans.length - 1; i >= 0; i--) {
+      var w = spans[i].parentElement
+      if (w && !w.hasAttribute('data-motion-pop-id')) return w
+    }
+    return null
+  }
+  function txRoot(w) {
+    return w.querySelector('section') || w
+  }
+  /* which slide a new wrapper is: the hash (`#/N` or `#/N-id`) is already right when the slide mounts; edit mode shows every slide */
+  function hashSlideId() {
+    var m = /^#\/(\d+)(?:-(.+))?$/.exec(location.hash)
+    var d = deckApi()
+    if (!m) return d && d.all && d.all.length ? d.all[0].id : null
+    if (d && d.all) {
+      var s = d.all[parseInt(m[1], 10) - 1]
+      return s ? s.id : null
+    }
+    return m[2] ? decodeURIComponent(m[2]) : null
+  }
+  /** keep the slide on screen showing saved + draft text; `skipFocused` leaves the element being typed in alone */
+  function txTick(skipFocused) {
+    var w = txWrapper()
+    if (!w) return
+    var fresh = w !== TX.wrap
+    if (fresh) {
+      TX.wrap = w
+      TX.id = hashSlideId()
+    } else if (!TX.id) TX.id = hashSlideId()
+    else {
+      /* self-correct once the deck and the hash agree on another slide */
+      var cid = currentId()
+      if (cid && cid !== TX.id && cid === hashSlideId()) TX.id = cid
+    }
+    if (!TX.id) return
+    var root = txRoot(w)
+    txSync(root, TX.id, skipFocused ? txFocused() : null)
+    if (TX.on) {
+      txMark(root)
+      if (fresh) setTimeout(function () { if (TX.on && TX.wrap === w) finishAnimations(root) }, 120)
+    }
+  }
+  function txStart(data) {
+    TX.data = data
+    new MutationObserver(function () {
+      var w = txWrapper()
+      if (w && w !== TX.wrap) return txTick(true) /* a slide just mounted: before its first paint */
+      if (TX.raf) return
+      TX.raf = requestAnimationFrame(function () {
+        TX.raf = 0
+        txTick(true)
+      })
+    }).observe(document.body, { subtree: true, childList: true, characterData: true })
+    document.addEventListener('input', function (e) {
+      if (!TX.on || !TX.onEdit) return
+      var host = e.target && e.target.closest ? e.target.closest('[data-site-text]') : null
+      if (!host || !TX.wrap || !TX.wrap.contains(host) || !TX.id) return
+      if (!KEY.has(host)) keyed(txRoot(TX.wrap))
+      var key = KEY.get(host)
+      if (key === undefined) return
+      var html = host.innerHTML
+      SHOWN.set(host, html)
+      WANT.set(host, html)
+      TX.onEdit(TX.id, key, ORIG.get(host) === html ? null : html)
+    })
+    /* pasted text arrives as plain text: a slide takes no outside markup */
+    document.addEventListener('paste', function (e) {
+      if (!TX.on || !(e.target && e.target.closest && e.target.closest('[data-site-text]'))) return
+      e.preventDefault()
+      var text = (e.clipboardData && e.clipboardData.getData('text/plain')) || ''
+      document.execCommand('insertText', false, text)
+    })
+    /* Esc leaves the text being edited (the deck's own keys already ignore editable text) */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && e.target && e.target.closest && e.target.closest('[data-site-text]')) e.target.blur()
+    })
+  }
+
   Promise.all([fetchBaked(BOOT_TIMEOUT), fetchLive(BOOT_TIMEOUT)])
     .then(function (res) {
       var baked = res[0]
@@ -279,8 +579,15 @@
       boot.state = mergeState(boot.baked, boot.rows)
       var hidden = hiddenOf(boot.state)
       boot.hiddenSig = hidden.join('\n')
-      window.__DECK_STATE__ = { view: 'student', hidden: EDIT ? [] : hidden, edits: SITE.textEdits || {} }
+      var text = textEditsOf(boot.state)
+      boot.textSig = textSig(text)
+      /* edit mode: the deck shows its original words and the text layer puts saved + draft text on top */
+      window.__DECK_STATE__ = { view: 'student', hidden: EDIT ? [] : hidden, edits: EDIT ? {} : JSON.parse(JSON.stringify(text)) }
       return domReady().then(function () {
+        if (EDIT) {
+          var draft = jget(LS.draft, 'local', {}) || {}
+          txStart({ base: function () { return boot.state }, local: function () { return draft } })
+        }
         startDeck()
         return whenDeck()
       })
@@ -353,7 +660,7 @@
       '<span class="tn-sep" aria-hidden="true"></span>' +
       arrow(prev, 'tn-prev', ICON_L, 'Previous') +
       '<button class="tn-btn tn-cur" aria-haspopup="menu" aria-expanded="false" title="' + esc(NAV.course) + ': all sessions">' +
-      '<span class="tn-cur-t">' + (i >= 0 ? 'Session ' + list[i].session + ' of ' + list.length : esc(NAV.course)) + '</span>' + ICON_D + '</button>' +
+      '<span class="tn-cur-t">' + (i >= 0 ? 'Session ' + list[i].session + ' of ' + (NAV.total || list.length) : esc(NAV.course)) + '</span>' + ICON_D + '</button>' +
       arrow(next, 'tn-next', ICON_R, 'Next') +
       '<div class="tn-menu" role="menu" hidden><div class="tn-h">' + esc(NAV.course) + '</div>' + items + '</div>' +
       '</nav>'
@@ -471,6 +778,7 @@
         ? '    <div class="seg" role="group" aria-label="Slide status">' +
           '      <button data-status="visible">Visible</button><button data-status="skipped">Skip</button><button data-status="deleted">Delete</button>' +
           '    </div>' +
+          '    <button class="ghost wide text-edit" aria-pressed="false" title="Text Edit: click any text on the slide to change it">✎ Text Edit</button>' +
           '    <div class="row"><button class="ghost copy-slide">Copy slide link</button><span class="hint"></span></div>'
         : '') +
       '  </section>' +
@@ -513,6 +821,7 @@
     var threadsEl = $('.threads')
     var composer = $('.composer')
     var saveBtn = $('.save')
+    var textBtn = $('.text-edit')
     var undoBtn = $('.undo')
     var redoBtn = $('.redo')
     var list = $('.list')
@@ -585,49 +894,110 @@
     $('.tab-open').addEventListener('click', function () { setOpen(true) })
     fab.addEventListener('click', function () { setOpen(!ui.open) })
 
-    /* --- edit model (status only; comments publish immediately) --- */
+    /* --- edit model (status and text; comments publish immediately) --- */
+    if (EDIT) {
+      TX.data = { base: function () { return ui.base }, local: function () { return ui.local } }
+      TX.onEdit = setText
+    }
     function eff(id) {
       var l = ui.local[id] || {}
       return { status: l.status !== undefined ? l.status : statusOf(ui.base, id) }
     }
     function prune() {
+      var saved = textEditsOf(ui.base)
       for (var id in ui.local) {
         var l = ui.local[id]
         if (l.status !== undefined && l.status === statusOf(ui.base, id)) delete l.status
         delete l.comment
-        if (l.status === undefined) delete ui.local[id]
+        if (l.text) {
+          /* a draft value equal to what is saved is no change (null = original = nothing saved) */
+          var s = saved[id]
+          for (var k in l.text) {
+            if (!hasOwn(l.text, k)) continue
+            var was = s && hasOwn(s, k) ? s[k] : null
+            if (l.text[k] === was) delete l.text[k]
+          }
+          if (!Object.keys(l.text).length) delete l.text
+        }
+        if (l.status === undefined && !l.text) delete ui.local[id]
       }
     }
+    /* one per changed slide status, one per changed text element */
     function changeCount() {
-      return Object.keys(ui.local).length
+      var n = 0
+      for (var id in ui.local) {
+        var l = ui.local[id]
+        if (l.status !== undefined) n++
+        if (l.text) n += Object.keys(l.text).length
+      }
+      return n
     }
     function persistDraft() {
       if (EDIT) sset(LS.draft, changeCount() ? JSON.stringify(ui.local) : null, 'local')
     }
-    function mutate(fn) {
-      ui.undo.push(JSON.stringify(ui.local))
-      if (ui.undo.length > 200) ui.undo.shift()
+    /* typing into one text element within a second is one undo step, not one per letter (`slot` names it) */
+    var lastStep = { at: 0, slot: '' }
+    function mutate(fn, slot) {
+      var now = Date.now()
+      if (!slot || slot !== lastStep.slot || now - lastStep.at > 1000) {
+        ui.undo.push(JSON.stringify(ui.local))
+        if (ui.undo.length > 200) ui.undo.shift()
+      }
+      lastStep = { at: now, slot: slot || '' }
       ui.redo = []
       fn()
       prune()
       persistDraft()
       render()
     }
+    function setText(id, key, val) {
+      var l = ui.local[id]
+      var cur = l && l.text && hasOwn(l.text, key) ? l.text[key] : undefined
+      if (cur === val) return
+      mutate(function () {
+        var s = (ui.local[id] = ui.local[id] || {})
+        put((s.text = s.text || {}), key, val)
+      }, 'text\u0000' + id + '\u0000' + key)
+    }
+    /* after an undo or redo the slide follows the draft, the text being typed in too */
+    function textFollow() {
+      if (!EDIT) return
+      var host = txFocused()
+      var before = host && host.innerHTML
+      txTick(false)
+      if (host && host.innerHTML !== before) caretToEnd(host)
+    }
     function doUndo() {
       if (!ui.undo.length) return
       ui.redo.push(JSON.stringify(ui.local))
       ui.local = JSON.parse(ui.undo.pop())
+      lastStep = { at: 0, slot: '' }
       prune()
       persistDraft()
       render()
+      textFollow()
     }
     function doRedo() {
       if (!ui.redo.length) return
       ui.undo.push(JSON.stringify(ui.local))
       ui.local = JSON.parse(ui.redo.pop())
+      lastStep = { at: 0, slot: '' }
       prune()
       persistDraft()
       render()
+      textFollow()
+    }
+    /* the whole deck's text right now: saved + draft (the edit-mode download) */
+    function allTextNow() {
+      var out = {}
+      Object.keys(textEditsOf(ui.base)).concat(Object.keys(ui.local)).forEach(function (id) {
+        if (hasOwn(out, id)) return
+        var m = txMap(id)
+        var o = {}
+        for (var k in m) if (typeof m[k] === 'string') put(o, k, m[k])
+        if (Object.keys(o).length) put(out, id, o)
+      })
+      return out
     }
     function viewerNumber(id) {
       var n = 0
@@ -882,6 +1252,7 @@
           saveBtn.title = nc ? 'Commit your changes and publish them to every viewer' : 'No unsaved changes'
         }
         renderList(d, cid)
+        txTick(true)
         syncDeckUi(d, cid, oc, nc)
       }
       mountGit()
@@ -923,6 +1294,7 @@
       undoBtn.addEventListener('click', doUndo)
       redoBtn.addEventListener('click', doRedo)
       saveBtn.addEventListener('click', doSave)
+      textBtn.addEventListener('click', function () { setTextEdit(!TX.on) })
       root.querySelectorAll('.tabs button').forEach(function (b) {
         b.addEventListener('click', function () {
           ui.tab = b.getAttribute('data-tab')
@@ -968,12 +1340,33 @@
         ;(ui.local[id] = ui.local[id] || {}).status = status
       })
     }
+    /* TEXT EDIT, a latch like the deck's marker: while on, every text element of the slide on screen is editable */
+    function setTextEdit(on) {
+      if (!EDIT || TX.on === on) return
+      TX.on = on
+      textBtn.setAttribute('aria-pressed', on ? 'true' : 'false')
+      textBtn.classList.toggle('on', on)
+      textBtn.title = on ? 'Stop text editing' : 'Text Edit: click any text on the slide to change it'
+      if (on) {
+        var w = txWrapper()
+        if (w) finishAnimations(txRoot(w))
+        txTick(true)
+        flash('Text Edit is on: click any text on the slide to change it, then Save.', 'ok')
+      } else {
+        var f = txFocused()
+        if (f) f.blur()
+        txUnmark()
+        flash('Text Edit is off.' + (changeCount() ? ' Your changes are kept until you Save.' : ''), 'ok')
+      }
+      render()
+    }
     var deckUi = { mounted: false, group: null, btn: {}, theme: null }
     function svgIcon(paths) {
       return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>'
     }
     var TB_ICON = {
       comments: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+      text: '<path d="M4 6h11M9.5 6v12"/><path d="M17.5 12.5l2.3 2.3-5.2 5.2H12.3v-2.3z"/>',
       undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
       redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
       save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h7V4"/><path d="M8 20v-6h8v6"/>',
@@ -1039,15 +1432,17 @@
       g.setAttribute('data-site-tb-group', '')
       g.style.display = 'contents' /* the buttons join the toolbar's own flex row, gap and all */
       g.innerHTML =
-        b('comments', 'Comments', '<span data-site-n hidden></span>') + sep +
+        b('comments', 'Comments', '<span data-site-n hidden></span>') +
+        b('text', 'Text Edit: click any text on the slide to change it') + sep +
         b('undo', 'Undo (Ctrl+Z)') + b('redo', 'Redo (Ctrl+Shift+Z)') +
         b('save', 'Save', '<span data-site-lbl></span><span data-site-dot hidden></span>') + sep
-      ;['comments', 'undo', 'redo', 'save'].forEach(function (k) {
+      ;['comments', 'text', 'undo', 'redo', 'save'].forEach(function (k) {
         var el = g.querySelector('[data-site-tb="' + k + '"]')
         deckUi.btn[k] = el
         el.addEventListener('click', function (e) {
           e.stopPropagation()
           if (k === 'comments') openComments()
+          else if (k === 'text') textBtn.click()
           else if (k === 'undo') undoBtn.click()
           else if (k === 'redo') redoBtn.click()
           else saveBtn.click()
@@ -1103,7 +1498,7 @@
         var id = s.id
         var card = c.el
         var x = eff(id).status
-        var dirty = !!(ui.local[id] && ui.local[id].status !== undefined)
+        var dirty = !!ui.local[id] /* a status or text change not yet saved */
         if (card.getAttribute('data-site-id') !== id) card.setAttribute('data-site-id', id)
         if (card.getAttribute('data-site-status') !== x) card.setAttribute('data-site-status', x)
         var pill = c.num.parentNode.querySelector('[data-site-st]')
@@ -1169,6 +1564,13 @@
           B.comments.setAttribute('aria-label', ct)
         }
         B.comments.toggleAttribute('data-on', ui.open && ui.tab === 'comments')
+        B.text.toggleAttribute('data-on', TX.on)
+        var tt = TX.on ? 'Stop text editing' : 'Text Edit: click any text on the slide to change it'
+        if (B.text.title !== tt) {
+          B.text.title = tt
+          B.text.setAttribute('aria-label', tt)
+          B.text.setAttribute('aria-pressed', TX.on ? 'true' : 'false')
+        }
         B.undo.disabled = undoBtn.disabled
         B.redo.disabled = redoBtn.disabled
         var building = !!(ui.saving || ui.pending)
@@ -1319,7 +1721,7 @@
       var job = EDIT
         ? /* what this panel shows, unsaved changes included */
           window.DeckStudent.fromState(
-            { hidden: all.map(function (s) { return s.id }).filter(function (id) { return eff(id).status !== 'visible' }), edits: SITE.textEdits || {} },
+            { hidden: all.map(function (s) { return s.id }).filter(function (id) { return eff(id).status !== 'visible' }), edits: allTextNow() },
             { title: SITE.title }
           )
         : /* what every viewer sees right now, fetched fresh */
@@ -1363,8 +1765,10 @@
           var now = Date.now()
           for (var id in patches) {
             for (var f in patches[id]) {
-              ui.rows.push({ slide: id, field: f, value: patches[id][f], sha: r.sha, updatedAt: now })
-              if (ui.local[id] && ui.local[id][f] === patches[id][f]) delete ui.local[id][f]
+              /* a text row carries the slide's whole saved map (as the Worker's does), this save's keys on top */
+              var value = f === 'text' ? Object.assign({}, (ui.base[id] && ui.base[id].text) || {}, patches[id].text) : patches[id][f]
+              ui.rows.push({ slide: id, field: f, value: value, sha: r.sha, updatedAt: now })
+              if (ui.local[id] && JSON.stringify(ui.local[id][f]) === JSON.stringify(patches[id][f])) delete ui.local[id][f]
             }
           }
           ui.base = mergeState(ui.baked, ui.rows)
@@ -1429,6 +1833,8 @@
         ui.base = mergeState(ui.baked, ui.rows)
         ui.threads = mergeThreads(ui.bakedThreads, ui.rows)
         if (!EDIT && hiddenOf(ui.base).join('\n') !== boot.hiddenSig) return reloadKeepingSlide()
+        /* the deck reads its text once, at boot: new saved text reaches a viewer the same way */
+        if (!EDIT && textSig(textEditsOf(ui.base)) !== boot.textSig) return reloadKeepingSlide()
         prune()
         persistDraft()
         render()
@@ -1502,6 +1908,11 @@
     '[data-site-dot]{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--deck-site-brand);box-shadow:0 0 0 2px #fff}',
     '[data-site-n]{position:absolute;top:1px;right:0;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--deck-site-brand);color:#fff;font-size:9.5px;font-weight:700;line-height:14px;text-align:center}',
     '[data-site-dot][hidden],[data-site-n][hidden]{display:none}',
+    /* Text Edit: every editable text element of the slide on screen (the deck kit EditLayer look) */
+    /* figure labels are often pointer-events:none so a click falls through to the diagram; while editing they take the click */
+    '[data-site-text]{outline:1.5px dashed rgba(45,99,251,.38);outline-offset:3px;border-radius:4px;cursor:text;pointer-events:auto!important}',
+    '[data-site-text]:hover{outline-color:rgba(45,99,251,.85)}',
+    '[data-site-text]:focus{outline:2px solid #2D63FB;outline-offset:3px;background:rgba(45,99,251,.06)}',
     /* grid cards: the state pill in the kit's badge style, and the card dimmed like the kit's own skipped card */
     '[data-site-st]{border-radius:999px;padding:2px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}',
     '[data-site-st][data-st="skipped"]{background:var(--deck-site-warning);color:#0b1020}',
@@ -1659,6 +2070,9 @@
     '.panel.edit .list li{border-bottom-color:var(--d-line)}.panel.edit .list li:hover{background:var(--d-hover)}',
     '.panel.edit .list li.here{background:var(--d-hover);box-shadow:inset 3px 0 0 var(--d-brand)}',
     '.panel.edit .dot{background:var(--d-brand)}',
+    '.panel.edit .text-edit{font-weight:600}',
+    '.panel.edit .text-edit.on:not(.primary):not(.icon):not(.link){background:var(--d-brand);border-color:var(--d-brand);color:#fff}',
+    '.panel.edit .text-edit.on:not(.primary):not(.icon):not(.link):hover{background:var(--d-brand)}',
     '.panel.edit .avatar{background:var(--d-hover);color:var(--d-ink)}',
     '.topnav.under-grid{display:none}',
     /* git commands menu: the look of the course menu (.tn-menu) */

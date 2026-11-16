@@ -16,7 +16,7 @@ Edit service (Cloudflare Worker + D1): https://presentation-decks-live.presentat
 
 1. Put the session folder under its course: `<course>/<session_folder>/dist-single/<name>.html`
    (the single-file build from the deck kit; `deck.config.json` `htmlName` picks the file if there are several).
-2. Optional: `<course>/course.json` lists `sessions` in order (unlisted ones go last, alphabetically);
+2. `<course>/course.json` `sessions` is the course's one order: entry N is session N, written `{ "title": "…", "folder": "<session_folder>" }` (`"folder": null` until that session has a deck; a plain folder name also works). The gallery, the sidebar and the deck page's session menu all follow it. A deck folder the list does not name goes last, and the build prints a warning;
    `<session>/deck.site.json` picks the file(s) explicitly: `{ "decks": [{ "file": "dist-single/x.html", "slug": "x" }] }`.
 3. Commit and push to `main`. The deck appears at `/<course>/<session>/<slug>/` in a minute or two.
 
@@ -26,7 +26,8 @@ Edit service (Cloudflare Worker + D1): https://presentation-decks-live.presentat
 2. The deck's own toolbar gains, just before fullscreen: a **comments** icon (opens the edit panel on its Comments tab), then **Undo**, **Redo** and **Save** (Ctrl+Z / Ctrl+Shift+Z still work). A dot on Save means unsaved changes; while a save is building it reads *Building…*.
 3. In the deck's grid (**Jump to a slide**, `G`), every card shows the slide's state (visible / skipped / deleted, "· unsaved" until saved) and has **Skip / Unskip** and **Delete / Restore**.
 4. The edit panel (closed by default, opened from the comments icon) keeps every control: Download, Visible / Skip / Delete for the current slide, Copy slide link, Undo / Redo / Save, the Comments and Slides tabs. It takes the deck toolbar's look (colours and fonts are read from the deck).
-5. Changes stay in your browser until **Save**, which commits to `<course>/<session>/edits/<slug>.json` and publishes immediately to every viewer. Save reads *Building…* until the live site has been rebuilt with that commit.
+5. **Text Edit** (toolbar, next to comments; also in the panel) is a latch: while it is on, every text element of the slide on screen has a dashed outline and can be edited in place (paste is plain text, Esc leaves the text, Ctrl+Z / Ctrl+Shift+Z undo and redo). Each changed text element counts as one change on Save. Typing the original words back removes the change. The edits are stored in the edits file per slide as `text: { "<the element's original words>": "<edited HTML>" | null }`, the same key the deck kit's own text editor uses, so edits stay on their text when the slide around it changes. `null` puts the original words back, including over an edit the deck saved into its own HTML file.
+6. Changes stay in your browser until **Save**, which commits to `<course>/<session>/edits/<slug>.json` and publishes immediately to every viewer. Save reads *Building…* until the live site has been rebuilt with that commit. Viewers whose page is open reload in place when the saved text changes.
 
 The toolbar and grid controls are placed into the deck's own DOM by `overlay.js` and call exactly what the panel's buttons call; viewer mode (no `?edit=1`) gets none of them.
 Skipped and deleted slides are both hidden from viewers; deleted ones can be restored at any time.
@@ -34,8 +35,10 @@ Skipped and deleted slides are both hidden from viewers; deleted ones can be res
 
 ## Gallery and navigation
 
-- The gallery (`site/gallery.*`) has a sidebar of sessions, search (`/`), and a card per deck. Each card has a slide thumbnail, a slide count, and **Present**, **Edit**, **Download** and **Share** (deck link or a link to slide N).
-- `#<course>/<session>` on the gallery URL scrolls to that session's card and highlights it.
+- The gallery (`site/gallery.*`) opens on a card per course folder (every top-level folder with decks, found by the build). **Open** shows that course's decks (`#<course>`); **All courses** in the heading goes back. Search (`/`) from the folder cards searches every course.
+- A course's page has a sidebar of sessions and a card per deck. Each card has a slide thumbnail, a slide count, and **Present**, **Edit**, **Download** and **Share** (deck link or a link to slide N).
+- A sidebar title is highlighted only when clicked (it scrolls to that session), and stays until another is clicked; scrolling never changes it.
+- `#<course>/<session>` on the gallery URL opens that course and scrolls to that session's card.
 - Every deck page has a bar at the top left: **All decks** (back to the gallery, at this session), previous and next session, and a menu of all the course's sessions. It fades after 3 seconds without activity while presenting and returns on any mouse, touch or key. In edit mode, previous and next stay in edit mode.
 - Thumbnails and slide counts come from `node site/thumbs.mjs` (headless Chrome, run by CI after the build). It captures each deck's session-title slide (else its agenda) as `thumb.jpg` and writes `deck-meta.json`. If it fails, the cards show a designed placeholder and the site still deploys.
 

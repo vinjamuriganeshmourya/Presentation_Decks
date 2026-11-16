@@ -19,7 +19,12 @@
 const DAY = 24 * 60 * 60 * 1000
 const SYNC_EVERY = 20 * 1000
 const STATUSES = new Set(['visible', 'skipped', 'deleted'])
-const FIELDS = new Set(['status', 'comment'])
+const FIELDS = new Set(['status', 'comment', 'text'])
+/* text edits: per slide, { [original words of the element]: edited innerHTML | null (null = back to the original) } */
+const TEXT_MAX_KEYS = 300
+const TEXT_MAX_KEY = 2000
+const TEXT_MAX_HTML = 20000
+const TEXT_BAD = /<\s*\/?\s*(script|style|iframe|object|embed|link|meta|base)\b|<[^>]*\son[a-z]+\s*=|<[^>]*javascript:/i
 const DECK_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/[a-z0-9-]+$/
 const SLIDE_RE = /^[^\s/\\]{1,120}$/
 const SHA_RE = /^[0-9a-f]{40}$/
@@ -238,16 +243,37 @@ function validatePatches(patches) {
       if (!FIELDS.has(field)) throw httpError(400, `bad field ${field}`)
       if (field === 'status' && !STATUSES.has(value)) throw httpError(400, `bad status for ${id}`)
       if (field === 'comment' && (typeof value !== 'string' || value.length > 4000)) throw httpError(400, `bad comment for ${id}`)
+      if (field === 'text') {
+        out.push({ slide: id, field, value: validateText(id, value) })
+        continue
+      }
       out.push({ slide: id, field, value: field === 'comment' ? value.replace(/\r\n/g, '\n') : value })
     }
   }
   return out
 }
 
+/** A slide's text patch: { key: html | null }. Markup is plain inline text; anything active is refused. */
+function validateText(id, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw httpError(400, `bad text for ${id}`)
+  const keys = Object.keys(value)
+  if (!keys.length || keys.length > TEXT_MAX_KEYS) throw httpError(400, `bad text for ${id}`)
+  const out = {}
+  for (const k of keys) {
+    const v = value[k]
+    if (!k || k.length > TEXT_MAX_KEY) throw httpError(400, `bad text key for ${id}`)
+    if (v === null) out[k] = null
+    else if (typeof v === 'string' && v.length <= TEXT_MAX_HTML && !TEXT_BAD.test(v)) out[k] = v
+    else throw httpError(400, `bad text for ${id}`)
+  }
+  return out
+}
+
 function summarize(changes) {
-  const n = { deleted: 0, skipped: 0, visible: 0, comment: 0 }
+  const n = { deleted: 0, skipped: 0, visible: 0, comment: 0, text: 0 }
   for (const c of changes) {
     if (c.field === 'status') n[c.value]++
+    else if (c.field === 'text') n.text++
     else n.comment++
   }
   const parts = []
@@ -255,6 +281,7 @@ function summarize(changes) {
   if (n.skipped) parts.push(`skip ${n.skipped}`)
   if (n.visible) parts.push(`restore ${n.visible}`)
   if (n.comment) parts.push(`comment ${n.comment}`)
+  if (n.text) parts.push(`edit text on ${n.text} slide${n.text === 1 ? '' : 's'}`)
   return parts.join(', ') || 'no-op'
 }
 
@@ -300,13 +327,18 @@ function applyChange(doc, c) {
     return
   }
   const s = (doc.slides[c.slide] ||= {})
-  if (c.field === 'comment' && !c.value.trim()) delete s.comment
+  if (c.field === 'text') {
+    /* merged per element, so two editors on one slide keep each other's words; null is kept (it resets a file-baked edit) */
+    s.text = { ...(s.text || {}), ...c.value }
+    if (!Object.keys(s.text).length) delete s.text
+  } else if (c.field === 'comment' && !c.value.trim()) delete s.comment
   else s[c.field] = c.value
   if (!Object.keys(s).length) delete doc.slides[c.slide]
 }
 
 /** The value a D1 row carries: the FULL merged value from the document, so a viewer never sees half a thread. */
 function rowValue(doc, c) {
+  if (c.field === 'text' && !c.slide.startsWith(THREAD_PREFIX)) return doc.slides?.[c.slide]?.text || {}
   if (!c.slide.startsWith(THREAD_PREFIX)) return c.value
   const t = doc.threads?.[c.slide.slice(THREAD_PREFIX.length)]
   if (c.field === 'root') {

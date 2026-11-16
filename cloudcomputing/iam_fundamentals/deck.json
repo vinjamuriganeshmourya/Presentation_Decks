@@ -1,0 +1,1311 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "IAM Fundamentals",
+    "course": "Cloud Computing",
+    "htmlName": "iam-fundamentals",
+    "previous": {
+      "title": "Cloud Security & Shared Responsibility",
+      "items": [
+        "Security Goals",
+        "Shared Responsibility Model",
+        "Responsibility by Service Model",
+        "Common Misunderstandings",
+        "Defense in Depth"
+      ]
+    },
+    "agenda": [
+      "Identity in the Cloud",
+      "Authentication vs Authorization",
+      "Policy Structure",
+      "Policy Evaluation Logic",
+      "Reading a Denial"
+    ],
+    "next": "IAM Roles & Least Privilege"
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "S-TITLE",
+      "layout": "title"
+    },
+    {
+      "id": "S-RECAP",
+      "layout": "recap",
+      "notes": "RECAP: Session 12 : Cloud Security & Shared Responsibility\n1. Security Goals: Confidentiality, integrity & availability in the cloud\n2. Shared Responsibility Model: Security of the cloud vs security in the cloud\n3. Responsibility by Service Model: Boundary shifts across IaaS, PaaS & SaaS\n4. Common Misunderstandings: Provider vs customer duties; incidents caused by wrong assumptions\n5. Defense in Depth: Layered controls: network, identity, data, application & monitoring"
+    },
+    {
+      "id": "S-AGENDA",
+      "layout": "agenda",
+      "notes": "Agenda for Today's Session\n1. Identity in the Cloud: Root & owner account; users; groups\n2. Authentication vs Authorization: Identity verification vs permission checking; credentials: passwords, access keys & tokens\n3. Policy Structure: Effect, action, resource & condition; identity-based vs resource-based policies\n4. Policy Evaluation Logic: Default deny; explicit allow; explicit deny precedence; combining multiple policies\n5. Reading a Denial: Access-denied messages; audit logs; tracing a denial to its statement"
+    },
+    {
+      "id": "D1",
+      "layout": "breaker",
+      "index": 1
+    },
+    {
+      "id": "T01",
+      "layout": "lead",
+      "kicker": "Identity Landscape",
+      "title": "Cloud Identity Types",
+      "lead": "Every cloud platform uses identities to identify who is making a request and determine what actions they are allowed to perform. Cloud identity is built from three layers: the root account, individual users, and groups",
+      "figure": {
+        "type": "custom",
+        "name": "A_T01",
+        "props": {
+          "steps": 4,
+          "rows": [
+            [
+              "AWS IAM: Identity and Access Management manages identities and controls their permissions",
+              "img:images/aws-iam.svg"
+            ],
+            [
+              "Root or owner account: created automatically when the cloud account signs up",
+              "Crown"
+            ],
+            [
+              "IAM user: a separate identity for one person or application",
+              "User"
+            ],
+            [
+              "Group: a named collection of users sharing one set of permissions",
+              "Users"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 330,
+      "notes": "Open by framing identity as the first question any permission check asks. Name AWS IAM (Identity and Access Management) as the service managing all three layers. Exam angle: distinguishing root account from an IAM user is a frequent interview question."
+    },
+    {
+      "id": "T02",
+      "layout": "points",
+      "kicker": "Root Account",
+      "title": "Full Account Owner",
+      "lead": "The root account is the single identity automatically created when a cloud account is opened; it owns the account and starts with unrestricted access to every resource and the billing page",
+      "points": [
+        {
+          "text": "Signs in with the email used to create the account, not a username",
+          "icon": "Mail"
+        },
+        {
+          "text": "Needed for special tasks such as account closure, changing root credentials, and enabling IAM user billing access",
+          "icon": "KeyRound"
+        },
+        {
+          "text": "AWS recommends enabling multi-factor authentication (MFA) and avoiding daily use",
+          "icon": "ShieldCheck"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "pointsW": 590,
+      "notes": "Stress that root is not meant for daily work; IAM users exist for that. Point out that account closure and enabling IAM access to billing are root-only actions. Exam angle: why locking away root credentials matters is a common interview question."
+    },
+    {
+      "id": "T02-AN",
+      "layout": "analogy",
+      "label": "Analogy: company owner's master key",
+      "kicker": "Root Account",
+      "title": "Full Account Owner",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T02Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T02Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A company owner's master key opens every office and controls all important operations, so it is kept secure and used only when necessary: just as the root account has complete control over AWS resources and should not be used for daily tasks.\n\nStress that root is not meant for daily work; IAM users exist for that. Point out that account closure and enabling IAM access to billing are root-only actions. Exam angle: why locking away root credentials matters is a common interview question."
+    },
+    {
+      "id": "T03",
+      "layout": "points",
+      "kicker": "Users And Groups",
+      "title": "Individual Vs Collective",
+      "lead": "Below the root account, an IAM user is a separate identity given to one person or application, each with its own credentials and permissions",
+      "points": [
+        {
+          "text": "Group: a named bucket of users that share one policy set",
+          "icon": "Users"
+        },
+        {
+          "text": "Adding a user to a group grants every group permission at once",
+          "icon": "UserPlus"
+        },
+        {
+          "text": "Removing a user from a group revokes those permissions instantly",
+          "icon": "UserMinus"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T03",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "notes": "Explain that groups exist so permissions are managed once, not per user. Point to the group box absorbing three users as one unit. Exam angle: why groups scale better than per-user policies is often asked."
+    },
+    {
+      "id": "T04",
+      "layout": "table",
+      "kicker": "Identity Comparison",
+      "title": "Root Users Groups",
+      "lead": "Cloud teams rarely use the root account after initial setup, relying instead on IAM users and groups managed from the IAM console's Users and Groups pages",
+      "table": {
+        "type": "table",
+        "size": 17,
+        "columns": [
+          {
+            "label": "Identity",
+            "icon": "FingerprintPattern",
+            "weight": 0.8
+          },
+          {
+            "label": "Created When",
+            "icon": "CalendarClock",
+            "weight": 0.85
+          },
+          {
+            "label": "Typical Use",
+            "icon": "Briefcase",
+            "weight": 1.25
+          },
+          {
+            "label": "Risk If Compromised",
+            "icon": "TriangleAlert",
+            "weight": 1.25
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Crown",
+            "cells": [
+              "Root account",
+              "At account sign-up",
+              "Initial setup and a few root-only tasks, such as account closure",
+              "Full account takeover"
+            ]
+          },
+          {
+            "icon": "User",
+            "cells": [
+              "IAM user",
+              "Created by an admin",
+              "Daily work for a person or app",
+              "Limited to assigned permissions"
+            ]
+          },
+          {
+            "icon": "Users",
+            "cells": [
+              "Group",
+              "Created by an admin",
+              "Shared permission set for many users",
+              "None directly: a group cannot sign in; members inherit its permissions"
+            ]
+          }
+        ]
+      },
+      "note": {
+        "text": "Knowing who is asking is the first half of access control; the next step checks whether that identity is who it claims to be"
+      },
+      "notes": "Point to the IAM console's Users and Groups tabs as the real screens where these identities are managed. Note root account settings sit under the account name dropdown, not IAM. Exam angle: matching each identity type to its correct use case is commonly tested."
+    },
+    {
+      "id": "T04-B",
+      "layout": "lead",
+      "kicker": "Identity Comparison",
+      "title": "Root Users Groups",
+      "figure": {
+        "type": "custom",
+        "name": "A_T04B",
+        "props": {
+          "steps": 1
+        }
+      },
+      "figW": 1000,
+      "figH": 430,
+      "notes": "Point to the IAM console's Users and Groups tabs as the real screens where these identities are managed. Note root account settings sit under the account name dropdown, not IAM. Exam angle: matching each identity type to its correct use case is commonly tested."
+    },
+    {
+      "id": "D2",
+      "layout": "breaker",
+      "index": 2
+    },
+    {
+      "id": "T05",
+      "layout": "points",
+      "kicker": "Verification vs Permission",
+      "title": "Two Access Checks",
+      "lead": "Every cloud request passes through two separate checks before it runs: one confirms who is asking, the other confirms what that identity may do",
+      "points": [
+        {
+          "text": "Credentials carry the proof: passwords, access keys, tokens",
+          "icon": "KeyRound"
+        },
+        {
+          "text": "Permission failure returns a different error type than an identity failure",
+          "icon": "CircleAlert"
+        },
+        {
+          "text": "Identity and permission checks are performed when accessing protected cloud resources, not just at sign-in",
+          "icon": "ShieldCheck"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T05",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "pointsW": 590,
+      "notes": "Set up the two-step gate before naming either check in depth. Mention this split is exactly what an interviewer tests with 'what is the difference between authentication and authorization'."
+    },
+    {
+      "id": "T06",
+      "layout": "lead",
+      "kicker": "Authentication Explained",
+      "title": "Verifying Identity First",
+      "lead": "Before any action is allowed, the caller's identity must be confirmed. Authentication is this first check: proving the caller truly is the identity it claims to be",
+      "figure": {
+        "type": "custom",
+        "name": "A_T06",
+        "props": {
+          "steps": 4,
+          "rows": [
+            [
+              "Console sign-in needs a username, password and optional MFA code",
+              "img:images/res-iam-mfa-token.svg"
+            ],
+            [
+              "Programmatic calls sign each request with an access key pair",
+              "img:images/res-iam-long-term-security-credential.svg"
+            ],
+            [
+              "Root account authenticates separately from every IAM user",
+              "Crown"
+            ],
+            [
+              "Authentication failure stops the request before authorization runs",
+              "OctagonX"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 330,
+      "notes": "Explain that this is the sign-in step, not the permission step. Point out the root account and IAM user both go through this gate separately, which is a common interview trap."
+    },
+    {
+      "id": "T06-AN",
+      "layout": "analogy",
+      "label": "Analogy: exam hall",
+      "kicker": "Authentication Explained",
+      "title": "Verifying Identity First",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T06Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T06Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: At an exam hall, the invigilator checks the hall ticket and ID card to confirm the student is who they claim to be: just as authentication checks credentials to confirm the caller's identity.\n\nExplain that this is the sign-in step, not the permission step. Point out the root account and IAM user both go through this gate separately, which is a common interview trap."
+    },
+    {
+      "id": "T07",
+      "layout": "lead",
+      "kicker": "Authorization Explained",
+      "title": "Checking Granted Permission",
+      "lead": "Confirming identity does not say what that identity may do. Authorization is the check that follows: whether the now-verified identity holds permission for this action on this resource",
+      "figure": {
+        "type": "custom",
+        "name": "A_T07",
+        "props": {
+          "steps": 4,
+          "rows": [
+            [
+              "Authorization runs only after authentication succeeds",
+              "ListOrdered"
+            ],
+            [
+              "Policies attached to an identity define its permissions",
+              "img:images/res-iam-permissions.svg"
+            ],
+            [
+              "One identity can be allowed here, denied there",
+              "Split"
+            ],
+            [
+              "A valid login with no matching policy still gets denied",
+              "Ban"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 330,
+      "notes": "Stress the sequence: identity first, permission second, never the reverse. Flag that an interviewer often asks for a real example, so mention denying delete while allowing read for the same user."
+    },
+    {
+      "id": "T07-AN",
+      "layout": "analogy",
+      "label": "Analogy: housing society guard",
+      "kicker": "Authorization Explained",
+      "title": "Checking Granted Permission",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T07Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T07Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A housing society guard who already confirmed a visitor's identity still checks the visitor pass for permitted floors: just as authorization checks a verified identity's permissions before allowing a specific action.\n\nStress the sequence: identity first, permission second, never the reverse. Flag that an interviewer often asks for a real example, so mention denying delete while allowing read for the same user."
+    },
+    {
+      "id": "T08",
+      "layout": "table",
+      "kicker": "Credential Types",
+      "title": "Proving Identity",
+      "lead": "Cloud identities present different proof depending on how they connect: a human at the console, or code calling an application programming interface (API)",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Credential",
+            "icon": "KeyRound",
+            "weight": 1
+          },
+          {
+            "label": "Used For",
+            "icon": "MonitorSmartphone",
+            "weight": 1
+          },
+          {
+            "label": "Lifetime",
+            "icon": "Hourglass",
+            "weight": 1.05
+          }
+        ],
+        "rows": [
+          {
+            "icon": "Lock",
+            "cells": [
+              "Password",
+              "Console sign-in by a human user",
+              "Long-lived; MFA adds an extra layer"
+            ]
+          },
+          {
+            "icon": "Key",
+            "cells": [
+              "Access key (ID + secret)",
+              "CLI and SDK programmatic calls",
+              "Long-lived until deactivated, deleted, or rotated"
+            ]
+          },
+          {
+            "icon": "Clock",
+            "cells": [
+              "Token (session)",
+              "Calls made via an assumed role",
+              "Expires automatically within hours"
+            ]
+          }
+        ]
+      },
+      "note": {
+        "text": "Role: an identity with no password or keys of its own; whoever assumes it gets a temporary token"
+      },
+      "notes": "Walk the three rows left to right, naming where each credential is issued. Note that a leaked access key is a common exam and interview question on cloud security."
+    },
+    {
+      "id": "T09",
+      "layout": "points",
+      "kicker": "Credentials In AWS",
+      "title": "Where They Live",
+      "lead": "Each credential type is issued and managed from a specific screen inside Identity and Access Management, the console section that administers cloud identities",
+      "points": [
+        {
+          "text": "AWS Security Token Service (STS) issues tokens for an assumed role, valid for 15 minutes to 12 hours",
+          "icon": "img:images/res-iam-temporary-security-credential.svg"
+        },
+        {
+          "text": "Password policy sets minimum length, rotation and reuse rules",
+          "icon": "RectangleEllipsis"
+        },
+        {
+          "text": "MFA registration links a virtual authenticator, passkey or hardware device to the user",
+          "icon": "img:images/res-iam-mfa-token.svg"
+        },
+        {
+          "text": "Key rotation needs old key deactivated before deletion, not after",
+          "icon": "RefreshCw"
+        }
+      ],
+      "note": {
+        "text": "Every decision made with these credentials is governed by policies"
+      },
+      "figure": {
+        "type": "custom",
+        "name": "A_T09",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 250,
+      "pointsW": 640,
+      "notes": "Name the exact IAM console locations rather than describing them generically. This bridges naturally into how a policy document actually decides allow or deny."
+    },
+    {
+      "id": "D3",
+      "layout": "breaker",
+      "index": 3
+    },
+    {
+      "id": "T10",
+      "layout": "points",
+      "kicker": "IAM Policy Defined",
+      "title": "Rules As Documents",
+      "lead": "An IAM policy is a JavaScript Object Notation (JSON) document that states a rule for cloud access requests",
+      "points": [
+        {
+          "text": "Allow or Deny is the only outcome a statement can declare",
+          "icon": "ToggleRight"
+        },
+        {
+          "text": "The operation controlled is named precisely, such as reading a file",
+          "icon": "FileSearch"
+        },
+        {
+          "text": "The exact item the operation applies to is always identified",
+          "icon": "Crosshair"
+        },
+        {
+          "text": "An extra requirement can narrow when the rule applies",
+          "icon": "Filter"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T10",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 330,
+      "notes": "Introduce the policy document as the written rule AWS checks before any access request. Point out that IAM policies are built in the IAM console's policy editor. Interviewers often ask to name all four elements — stress that Condition is optional."
+    },
+    {
+      "id": "T10-B",
+      "layout": "lead",
+      "kicker": "IAM Policy Defined",
+      "title": "Rules As Documents",
+      "figure": {
+        "type": "custom",
+        "name": "B_T10B",
+        "props": {
+          "steps": 3,
+          "code": "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Sid\": \"AllowReadReports\",\n            \"Effect\": \"Allow\",\n            \"Action\": \"s3:GetObject\",\n            \"Resource\": \"arn:aws:s3:::finance-reports/*\",\n            \"Condition\": {\n                \"IpAddress\": { \"aws:SourceIp\": \"203.0.113.0/24\" }\n            }\n        }\n    ]\n}",
+          "fields": [
+            [
+              "Version: the policy language version, written as 2012-10-17",
+              "Version"
+            ],
+            [
+              "Statement: holds one or more rules",
+              "Statement"
+            ],
+            [
+              "Sid: an optional name for a statement",
+              "Sid"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 440,
+      "notes": "Introduce the policy document as the written rule AWS checks before any access request. Point out that IAM policies are built in the IAM console's policy editor. Interviewers often ask to name all four elements — stress that Condition is optional."
+    },
+    {
+      "id": "T10-AN",
+      "layout": "analogy",
+      "label": "Analogy: train ticket",
+      "kicker": "IAM Policy Defined",
+      "title": "Rules As Documents",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T10Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T10Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A train ticket states exactly what is allowed: travel on one train, in one seat, on one date: just as a policy states the effect, the action, the resource and the condition for a request.\n\nIntroduce the policy document as the written rule AWS checks before any access request. Point out that IAM policies are built in the IAM console's policy editor. Interviewers often ask to name all four elements — stress that Condition is optional."
+    },
+    {
+      "id": "T11",
+      "layout": "lead",
+      "kicker": "Effect And Action",
+      "title": "Outcome And Operation",
+      "lead": "Effect sets the policy's outcome, while Action names the exact operation being controlled; together they state what is being decided before resource and condition narrow it further",
+      "figure": {
+        "type": "custom",
+        "name": "B_T11",
+        "props": {
+          "steps": 2,
+          "rows": [
+            [
+              "Effect",
+              "Allow or Deny",
+              "Allow",
+              "ToggleRight"
+            ],
+            [
+              "Action",
+              "service:operation",
+              "s3:GetObject",
+              "Play"
+            ]
+          ],
+          "head": [
+            "Field",
+            "Format",
+            "Example"
+          ]
+        }
+      },
+      "figW": 1000,
+      "figH": 340,
+      "notes": "Explain that Action always follows service:operation syntax, using S3 GetObject as the example. Mention the IAM visual editor lets an action be picked from a dropdown instead of typed by hand. Exam tip: a wildcard in Action is a common least-privilege anti-pattern."
+    },
+    {
+      "id": "T11-B",
+      "layout": "points",
+      "kicker": "Effect And Action",
+      "title": "Outcome And Operation",
+      "points": [
+        {
+          "text": "Action supports wildcards, e.g. s3:* for all S3 operations",
+          "icon": "Asterisk"
+        },
+        {
+          "text": "A single statement can list several actions together",
+          "icon": "ListPlus"
+        },
+        {
+          "text": "Effect allows only two values, never a partial grant",
+          "icon": "ToggleRight"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T11B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 360,
+      "notes": "Explain that Action always follows service:operation syntax, using S3 GetObject as the example. Mention the IAM visual editor lets an action be picked from a dropdown instead of typed by hand. Exam tip: a wildcard in Action is a common least-privilege anti-pattern."
+    },
+    {
+      "id": "T12",
+      "layout": "points",
+      "kicker": "Resource And Condition",
+      "title": "Target And Constraint",
+      "lead": "Resource pins the action to one specific item, identified by its Amazon Resource Name (ARN), while Condition adds an extra test that must also be true before the effect applies",
+      "points": [
+        {
+          "text": "ARN format: arn:partition:service:region:account-id:resource (some fields can be empty, as in S3 ARNs)",
+          "icon": "Brackets"
+        },
+        {
+          "text": "An S3 object ARN example is arn:aws:s3:::finance-reports/jan.pdf",
+          "icon": "FileText"
+        },
+        {
+          "text": "Condition keys check IP address, time window or MFA status",
+          "icon": "Filter"
+        },
+        {
+          "text": "Resource can use wildcards to cover a group of items",
+          "icon": "Asterisk"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T12",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 300,
+      "pointsW": 640,
+      "notes": "Walk through the ARN example field by field, pointing at the resource segment. Note the Resource and Condition fields both sit in the IAM policy JSON tab, editable directly. A frequent interview question asks to write an ARN for a specific S3 object."
+    },
+    {
+      "id": "T13",
+      "layout": "lead",
+      "kicker": "Two Policy Types",
+      "title": "Where It Attaches",
+      "lead": "Every policy statement is attached somewhere: either to the identity making the request or to the resource receiving it. These are the two most common policy types in AWS",
+      "figure": {
+        "type": "custom",
+        "name": "B_T13",
+        "props": {
+          "steps": 5,
+          "rows": [
+            [
+              "Identity-based: attached to a user, group or role",
+              "User",
+              "identity"
+            ],
+            [
+              "Resource-based: attached directly to the resource, e.g. a bucket",
+              "img:images/res-s3-bucket.svg",
+              "resource"
+            ],
+            [
+              "A resource-based policy has one more element, Principal, which names who gets the access",
+              "UserCheck",
+              "resource"
+            ],
+            [
+              "Resource-based policies can grant access to another AWS account",
+              "Building2",
+              "resource"
+            ],
+            [
+              "Identity-based policies are the default for most access setups",
+              "BadgeCheck",
+              "identity"
+            ]
+          ]
+        }
+      },
+      "figW": 1080,
+      "figH": 360,
+      "notes": "Clarify that identity-based policies travel with the user wherever they go, while resource-based policies stay fixed to that one resource. Point to the bucket policy tab inside the S3 console as a resource-based example. Interviewers test whether a bucket policy or an IAM policy is needed for cross-account sharing."
+    },
+    {
+      "id": "T13-AN",
+      "layout": "analogy",
+      "label": "Analogy: office access",
+      "kicker": "Two Policy Types",
+      "title": "Where It Attaches",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "J_T13Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "J_T13Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: An office employee can carry an access card with assigned permissions, or a restricted room can have an approved visitor list: just as an identity-based policy is attached to a user, while a resource-based policy is attached to the resource.\n\nClarify that identity-based policies travel with the user wherever they go, while resource-based policies stay fixed to that one resource. Point to the bucket policy tab inside the S3 console as a resource-based example. Interviewers test whether a bucket policy or an IAM policy is needed for cross-account sharing."
+    },
+    {
+      "id": "T14",
+      "layout": "lead",
+      "kicker": "Policy Types Compared",
+      "title": "Side By Side",
+      "lead": "Choosing between the two types depends on who owns the access decision: the identity side or the resource side",
+      "figure": {
+        "type": "custom",
+        "name": "B_T14",
+        "props": {
+          "steps": 4,
+          "head": [
+            "Aspect",
+            "Identity-Based",
+            "Resource-Based"
+          ],
+          "rows": [
+            [
+              "Attached to",
+              "User, group or role",
+              "The resource itself, e.g. a bucket",
+              "Paperclip"
+            ],
+            [
+              "Cross-account grant",
+              "Not directly, needs a role",
+              "Supported natively; the other account must also allow it",
+              "Building2"
+            ],
+            [
+              "Found in console",
+              "IAM > Policies",
+              "Resource's own permissions tab",
+              "MonitorCog"
+            ],
+            [
+              "Common example",
+              "Admin user policy",
+              "S3 bucket policy",
+              "FileText"
+            ]
+          ],
+          "note": "AWS evaluates applicable policies together to determine whether a request is allowed or denied"
+        }
+      },
+      "figW": 1080,
+      "figH": 340,
+      "notes": "Use this table to contrast where each policy type lives and how cross-account access differs. Point to the IAM policy list versus an S3 bucket's permissions tab. Mention that the deny-by-default evaluation logic applies identically to both types, which comes next."
+    },
+    {
+      "id": "D4",
+      "layout": "breaker",
+      "index": 4
+    },
+    {
+      "id": "T15",
+      "layout": "points",
+      "kicker": "Evaluation Logic Map",
+      "title": "Four Decision Steps",
+      "lead": "Without a fixed decision path, two conflicting permissions could leave a request's outcome unpredictable; cloud providers resolve this with one strict evaluation order",
+      "points": [
+        {
+          "text": "Combining policies: all attached policies are merged before deciding",
+          "icon": "Combine"
+        },
+        {
+          "text": "Default deny: no access unless a rule allows it",
+          "icon": "Lock"
+        },
+        {
+          "text": "Explicit deny: any deny statement overrides every allow",
+          "icon": "OctagonX"
+        },
+        {
+          "text": "Explicit allow: a statement must grant the action",
+          "icon": "CircleCheck"
+        }
+      ],
+      "note": {
+        "text": "The IAM Policy Simulator helps test how IAM policies affect access decisions without making actual AWS requests"
+      },
+      "figure": {
+        "type": "custom",
+        "name": "C_T15",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 300,
+      "notes": "Walk the flowchart top to bottom before naming each step on its own. Point to the deny branch as the override to remember. Exam angle: evaluation order is a frequent interview question."
+    },
+    {
+      "id": "T16",
+      "layout": "points",
+      "kicker": "Default Deny Baseline",
+      "title": "Nothing Allowed First",
+      "lead": "Before any rule is checked, identity and access management starts from a closed position: a request is rejected unless a policy explicitly permits it",
+      "points": [
+        {
+          "text": "Default deny: the starting state for every request, except those made by the root user",
+          "icon": "Lock"
+        },
+        {
+          "text": "Explicit allow: only an Effect Allow statement passes it",
+          "icon": "LockOpen"
+        },
+        {
+          "text": "Silence is denial: an unmentioned action is never granted by omission",
+          "icon": "VolumeX"
+        }
+      ],
+      "note": {
+        "text": "This default state is visible in the AWS IAM console, where a new user with no attached policy cannot perform any action"
+      },
+      "figure": {
+        "type": "custom",
+        "name": "C_T16",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 300,
+      "pointsW": 590,
+      "notes": "Stress that silence means denial, a common exam trap. Explain in plain words: no rule equals no entry. Ask why default deny is safer than default allow."
+    },
+    {
+      "id": "T16-AN",
+      "layout": "analogy",
+      "label": "Analogy: phone app permissions",
+      "kicker": "Default Deny Baseline",
+      "title": "Nothing Allowed First",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "J_T16Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "J_T16Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A new phone app cannot touch the camera or contacts until the user grants each permission: exactly as IAM blocks every request until an explicit allow statement is matched.\n\nStress that silence means denial, a common exam trap. Explain in plain words: no rule equals no entry. Ask why default deny is safer than default allow."
+    },
+    {
+      "id": "T17",
+      "layout": "points",
+      "kicker": "Deny Overrides Allow",
+      "title": "Precedence Rule",
+      "lead": "An explicit deny in any applicable policy beats every allow, even one written with broader scope, so a safety rule can never be bypassed by accident",
+      "points": [
+        {
+          "text": "Evaluation checks for an explicit deny across all matched policies first",
+          "icon": "ScanSearch"
+        },
+        {
+          "text": "One deny statement blocks the action regardless of how many allows exist",
+          "icon": "OctagonX"
+        },
+        {
+          "text": "An allow from an unrelated policy cannot cancel a matching deny",
+          "icon": "Unlink"
+        },
+        {
+          "text": "Used to lock sensitive actions irrespective of other granted permissions",
+          "icon": "LockKeyhole"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T17",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 330,
+      "notes": "State the one-line rule: deny beats allow, no matter the source. Point to the two boxes collapsing into one denied outcome. Exam angle: this precedence is tested with multi-policy scenarios."
+    },
+    {
+      "id": "T18",
+      "layout": "table",
+      "kicker": "Combined Policy Trace",
+      "title": "Identity Plus Resource",
+      "lead": "Access decisions often combine an identity-based policy attached to a user with a resource-based policy attached to the resource, such as a storage bucket",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Policy",
+            "icon": "FileText",
+            "weight": 0.7
+          },
+          {
+            "label": "Type",
+            "icon": "Tag",
+            "weight": 0.9
+          },
+          {
+            "label": "Statement",
+            "icon": "ScrollText",
+            "weight": 1.9
+          }
+        ],
+        "rows": [
+          {
+            "icon": "User",
+            "cells": [
+              "Policy A",
+              "Identity-based",
+              "Allow s3:GetObject on arn:aws:s3:::reports-bucket/*"
+            ]
+          },
+          {
+            "icon": "img:images/res-s3-bucket.svg",
+            "cells": [
+              "Policy B",
+              "Resource-based",
+              "Deny s3:GetObject when the source IP is outside 203.0.113.0/24"
+            ]
+          }
+        ]
+      },
+      "notes": "Trace the IP check live: allowed by A, trapped by B's condition. Point to the condition clause as the exact cause of denial. Exam angle: combining identity and resource policies is common in cross-account questions."
+    },
+    {
+      "id": "T18-B",
+      "layout": "lead",
+      "kicker": "Combined Policy Trace",
+      "title": "Identity Plus Resource",
+      "lead": "A request from IP 198.51.100.7 is evaluated: Policy A allows it, but the IP is outside Policy B's range, so the deny applies and the request is rejected",
+      "figure": {
+        "type": "custom",
+        "name": "C_T18B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figW": 1100,
+      "figH": 360,
+      "notes": "Trace the IP check live: allowed by A, trapped by B's condition. Point to the condition clause as the exact cause of denial. Exam angle: combining identity and resource policies is common in cross-account questions."
+    },
+    {
+      "id": "T19",
+      "layout": "points",
+      "kicker": "Policies Combine Fully",
+      "title": "Union With Deny Override",
+      "lead": "All identity-based and resource-based policies that apply to a request are evaluated together: allows add up, and an explicit deny overrides them",
+      "points": [
+        {
+          "text": "Allow permissions from several identity-based policies on one user add together",
+          "icon": "Plus"
+        },
+        {
+          "text": "Cross-account sharing needs agreement from both the identity side and the resource side",
+          "icon": "Handshake"
+        },
+        {
+          "text": "Within one account, an allow in either the identity-based or the resource-based policy is enough",
+          "icon": "CircleCheck"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T19",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "pointsW": 590,
+      "notes": "Summarise the merge rule in one line: allows add up, one deny removes. Point to the IAM Policy Simulator as where this logic is checked in the console. The next section traces this logic through a real denial message."
+    },
+    {
+      "id": "D5",
+      "layout": "breaker",
+      "index": 5
+    },
+    {
+      "id": "T20",
+      "layout": "points",
+      "kicker": "Diagnosing Denials",
+      "title": "Three Pieces Evidence",
+      "lead": "A denied request is not a dead end: it leaves three pieces of evidence that together explain why it failed",
+      "points": [
+        {
+          "text": "The denial message: who tried what, on which resource",
+          "icon": "MessageSquareWarning"
+        },
+        {
+          "text": "The audit log: a timestamped record of the call itself",
+          "icon": "img:images/aws-cloudtrail.svg"
+        },
+        {
+          "text": "The policy statement: the exact rule that produced the deny",
+          "icon": "FileText"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T20",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "notes": "Frame this as detective work: each box narrows down the cause. Mention this reasoning is used constantly when debugging IAM in interviews."
+    },
+    {
+      "id": "T21",
+      "layout": "points",
+      "kicker": "Denial Message Anatomy",
+      "title": "What AWS Reports",
+      "lead": "Cloud providers return a structured error when a request is refused, naming the identity, the action and the resource involved: not just the word denied",
+      "points": [
+        {
+          "text": "The denial message may identify the user or role that made the call",
+          "icon": "UserSearch"
+        },
+        {
+          "text": "The specific operation attempted is reported, such as deleting an object",
+          "icon": "Trash2"
+        },
+        {
+          "text": "The exact target object or service is identified in the message",
+          "icon": "Crosshair"
+        },
+        {
+          "text": "A reason hint distinguishes an explicit deny from no matching allow",
+          "icon": "Lightbulb"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T21",
+        "props": {
+          "steps": 4,
+          "sample": "User: arn:aws:iam::123456789012:user/alice is not authorized to perform: s3:DeleteObject on resource: arn:aws:s3:::finance-reports/q1.csv with an explicit deny in an identity-based policy"
+        }
+      },
+      "figH": 330,
+      "notes": "Read a sample denial message aloud and point to each underlined part. Ask: which part tells us WHY, versus just WHAT failed?"
+    },
+    {
+      "id": "T21-AN",
+      "layout": "analogy",
+      "label": "Analogy: failed UPI payment",
+      "kicker": "Denial Message Anatomy",
+      "title": "What AWS Reports",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "K_T21Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "K_T21Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A failed UPI payment shows who paid, how much, to whom and the reason, such as insufficient balance: just as an AWS denial message shows who made the request, the action, the resource and why it was denied.\n\nRead a sample denial message aloud and point to each underlined part. Ask: which part tells us WHY, versus just WHAT failed?"
+    },
+    {
+      "id": "T22",
+      "layout": "points",
+      "kicker": "Audit Trail Logging",
+      "title": "Recording API Calls",
+      "lead": "The denial message disappears once the screen closes, so AWS CloudTrail records management API calls, and data events such as S3 object actions only when a trail logs them",
+      "points": [
+        {
+          "text": "Logs eventName, errorCode and the calling userIdentity per request",
+          "icon": "ScrollText"
+        },
+        {
+          "text": "AccessDenied errorCode isolates failed calls from successful ones",
+          "icon": "Filter"
+        },
+        {
+          "text": "Found under CloudTrail Event History in the AWS console",
+          "icon": "History"
+        },
+        {
+          "text": "Retained for 90 days by default, longer with a configured trail",
+          "icon": "CalendarDays"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T22",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 330,
+      "notes": "Point to errorCode as the field that lets filtering find every denial across thousands of calls. Exam hook: ask what distinguishes a log from the error message shown to the user."
+    },
+    {
+      "id": "T23",
+      "layout": "lead",
+      "kicker": "Tracing A Denial",
+      "title": "From Error To Rule",
+      "lead": "User alice (arn:aws:iam::123456789012:user/alice) calls s3:DeleteObject on finance-reports/q1.csv from IP 203.0.113.5 and receives AccessDenied; the three evidence pieces trace this to one rule",
+      "figure": {
+        "type": "custom",
+        "name": "C_T23",
+        "props": {
+          "steps": 4,
+          "cards": [
+            [
+              "Error Message",
+              "MessageSquareWarning",
+              [
+                "Message shows principal alice, action DeleteObject, resource q1.csv"
+              ]
+            ],
+            [
+              "CloudTrail Event",
+              "img:images/aws-cloudtrail.svg",
+              []
+            ],
+            [
+              "Policy Document",
+              "img:images/res-iam-permissions.svg",
+              [
+                "Policy AllowS3ReadWrite permits DeleteObject on the finance-reports bucket",
+                "Policy DenyWithoutMFA denies the action when the user has signed in without MFA (condition aws:MultiFactorAuthPresent is false)"
+              ]
+            ],
+            [
+              "Sid DenyDeleteWithoutMFA",
+              "OctagonX",
+              [
+                "Statement Sid DenyDeleteWithoutMFA is the one overriding the allow"
+              ]
+            ]
+          ]
+        }
+      },
+      "figW": 1100,
+      "figH": 300,
+      "notes": "Walk the arrows left to right, ending on the one Sid. Note that an explicit deny beats any allow, which is why MFA absence wins here even though another policy allows the action."
+    },
+    {
+      "id": "T23-B",
+      "layout": "table",
+      "kicker": "Tracing A Denial",
+      "title": "From Error To Rule",
+      "table": {
+        "type": "table",
+        "size": 20,
+        "columns": [
+          {
+            "label": "Evidence",
+            "icon": "Search",
+            "weight": 0.8
+          },
+          {
+            "label": "What It Shows",
+            "icon": "Eye",
+            "weight": 1.8
+          }
+        ],
+        "rows": [
+          {
+            "icon": "MessageSquareWarning",
+            "cells": [
+              "Error message",
+              "Who, what action, which resource"
+            ]
+          },
+          {
+            "icon": "img:images/aws-cloudtrail.svg",
+            "cells": [
+              "Audit log",
+              "Confirms the call, its errorCode and source IP (needs a trail that logs S3 data events)"
+            ]
+          },
+          {
+            "icon": "FileText",
+            "cells": [
+              "Policy statement",
+              "The exact Sid causing the deny"
+            ]
+          }
+        ]
+      },
+      "notes": "Walk the arrows left to right, ending on the one Sid. Note that an explicit deny beats any allow, which is why MFA absence wins here even though another policy allows the action."
+    },
+    {
+      "id": "T24",
+      "layout": "points",
+      "kicker": "Closing The Trace",
+      "title": "Evidence To Action",
+      "lead": "A traced denial points at one statement, turning a vague failure into a specific, fixable policy line rather than a guess",
+      "points": [
+        {
+          "text": "Message narrows the search to one principal and action",
+          "icon": "MessageSquareWarning"
+        },
+        {
+          "text": "Audit log confirms the API call was made and records the resulting error",
+          "icon": "img:images/aws-cloudtrail.svg"
+        },
+        {
+          "text": "Fix options: add allow, remove deny, or satisfy its condition",
+          "icon": "Wrench"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T24",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 330,
+      "notes": "Close by stressing that this trace habit is what separates guessing from fixing IAM issues quickly. Common interview question: describe how to debug an AccessDenied error end to end."
+    },
+    {
+      "id": "S-QUIZ",
+      "layout": "quiz"
+    },
+    {
+      "id": "S-TAKEAWAYS",
+      "layout": "takeaways",
+      "notes": "Key Takeaways\n1. Identity in the Cloud: Root & owner account; users; groups\n2. Authentication vs Authorization: Identity verification vs permission checking; credentials: passwords, access keys & tokens\n3. Policy Structure: Effect, action, resource & condition; identity-based vs resource-based policies\n4. Policy Evaluation Logic: Default deny; explicit allow; explicit deny precedence; combining multiple policies\n5. Reading a Denial: Access-denied messages; audit logs; tracing a denial to its statement"
+    },
+    {
+      "id": "S-NEXT",
+      "layout": "next",
+      "title": "IAM Roles & Least Privilege",
+      "size": 62
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}

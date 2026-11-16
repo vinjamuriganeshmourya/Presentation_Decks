@@ -16,6 +16,7 @@
     share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/></svg>',
     git: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5.5" r="2.2"/><circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.7v8.6"/><path d="M18 10.2c0 4.3-5 4.6-10.4 7"/></svg>',
     chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg>',
+    folder: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2h8.4A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>',
   }
 
   function esc(s) {
@@ -87,7 +88,7 @@
       '<span class="play" aria-hidden="true"><span>' + ICON.play + 'Present</span></span>' +
       '</a>' +
       '<div class="card-body">' +
-      '<div class="eyebrow">Session ' + s.number + (c.sessions.length ? ' of ' + c.sessions.length : '') + '</div>' +
+      '<div class="eyebrow">Session ' + s.number + ' of ' + (c.total || c.sessions.length) + '</div>' +
       '<h3><a href="' + esc(url) + '">' + hl(d.title, terms) + '</a></h3>' +
       '<div class="meta"><span class="slides" data-slides="' + esc(d.id) + '">' + (m.slides ? plural(m.slides, 'slide') : '') + '</span><span class="dot">·</span>' +
       '<span class="mono" title="' + esc(c.id + '/' + s.id) + '">' + hl(s.id, terms) + '</span></div>' +
@@ -104,13 +105,52 @@
     )
   }
 
+  /* ------------------------------------------------------------------ views: the root shows one card per course folder; #<course>[/<session>] shows that course's decks */
+  function courseFromHash() {
+    var id = decodeURIComponent(location.hash.slice(1)).split('/')[0]
+    for (var i = 0; i < M.courses.length; i++) if (M.courses[i].id === id) return M.courses[i]
+    return null
+  }
+  function folderCard(c) {
+    var href = '#' + c.id
+    var decks = all.filter(function (x) { return x.c === c })
+    var cover = decks[0] ? deckUrl(decks[0].d) + 'thumb.jpg' + (ver ? '?v=' + ver : '') : ''
+    return (
+      '<article class="card folder" data-course="' + esc(c.id) + '">' +
+      '<a class="thumb" href="' + esc(href) + '" aria-label="Open ' + esc(c.title) + '">' +
+      '<div class="ph" aria-hidden="true"><span class="ph-t">' + esc(c.title) + '</span></div>' +
+      (cover ? '<img src="' + esc(cover) + '" alt="" loading="lazy" decoding="async" onload="this.classList.add(\'ok\')" onerror="this.remove()">' : '') +
+      '<span class="play" aria-hidden="true"><span>' + ICON.folder + 'Open</span></span>' +
+      '</a>' +
+      '<div class="card-body">' +
+      '<div class="eyebrow">Course</div>' +
+      '<h3><a href="' + esc(href) + '">' + esc(c.title) + '</a></h3>' +
+      '<div class="meta"><span>' + plural(decks.length, 'deck') + '</span><span class="dot">·</span><span class="mono">' + esc(c.id) + '</span></div>' +
+      '<div class="actions"><a class="btn primary" href="' + esc(href) + '">' + ICON.folder + 'Open</a></div>' +
+      '</div></article>'
+    )
+  }
+  function renderFolders() {
+    $('gallery').innerHTML =
+      '<section class="course" aria-labelledby="h-courses">' +
+      '<div class="course-head"><div><h1 id="h-courses">All courses</h1></div>' +
+      '<div class="stats"><span class="stat"><b>' + M.courses.length + '</b> ' + (M.courses.length === 1 ? 'course' : 'courses') + '</span></div></div>' +
+      '<div class="grid">' + M.courses.map(folderCard).join('') + '</div></section>'
+    $('empty').hidden = true
+    document.querySelectorAll('#side-nav [data-anchor]').forEach(function (a) { a.classList.remove('dim') })
+  }
+
+  var shownView = null /* '' = the folder cards, else the course id (search across every course: '*') */
   function render() {
     var raw = q.value.trim().toLowerCase()
     var terms = raw.split(/\s+/).filter(Boolean)
     var shown = 0
     var html = ''
     var match = {}
-    M.courses.forEach(function (c) {
+    var only = courseFromHash()
+    shownView = only ? only.id : terms.length ? '*' : ''
+    if (!only && !terms.length) return renderFolders()
+    ;(only ? [only] : M.courses).forEach(function (c) {
       var items = all.filter(function (x) {
         if (x.c !== c) return false
         var hay = [c.title, c.id, x.s.id, 'session ' + x.s.number, x.d.title, x.d.slug].join(' ').toLowerCase()
@@ -147,7 +187,6 @@
     })
     fillCounts()
     fillActivity()
-    spy()
   }
 
   /* slide counts arrive after the first paint */
@@ -196,34 +235,23 @@
     })
     .catch(function () {})
 
-  /* ------------------------------------------------------------------ scroll spy: the session in view is lit in the sidebar */
-  var io = null
-  var spyLock = 0 /* after a jump, the jumped-to session stays lit until the scroll settles */
+  /* ------------------------------------------------------------------ sidebar highlight: ONLY the title last clicked (scrolling never changes it, nothing is lit on load) */
   function light(id) {
     document.querySelectorAll('#side-nav [data-anchor]').forEach(function (a) {
       a.classList.toggle('on', a.getAttribute('data-anchor') === id)
     })
   }
-  function spy() {
-    if (io) io.disconnect()
-    if (!('IntersectionObserver' in window)) return
-    var visible = {}
-    io = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting })
-        var first = null
-        document.querySelectorAll('.card[id]').forEach(function (el) {
-          if (!first && visible[el.id]) first = el.id
-        })
-        if (!first || Date.now() < spyLock) return
-        light(first)
-      },
-      { rootMargin: '-80px 0px -35% 0px' },
-    )
-    document.querySelectorAll('.card[id]').forEach(function (el) { io.observe(el) })
-  }
+  $('side-nav').addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-anchor]')
+    if (!a) return
+    e.preventDefault()
+    var id = a.getAttribute('data-anchor')
+    light(id)
+    if (decodeURIComponent(location.hash.slice(1)) !== id) history.pushState(null, '', '#' + id)
+    route(true)
+  })
 
-  /* ------------------------------------------------------------------ deep links: #course/session scrolls to and lights the card */
+  /* ------------------------------------------------------------------ deep links: #course/session scrolls to the card */
   function goHash(smooth) {
     var id = decodeURIComponent(location.hash.slice(1))
     if (!id) return
@@ -231,13 +259,23 @@
     if (!el) return
     el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: el.classList.contains('card') ? 'center' : 'start' })
     if (el.classList.contains('card')) {
-      light(id)
-      spyLock = Date.now() + 1500
       el.classList.add('flash')
       setTimeout(function () { el.classList.remove('flash') }, 1800)
     }
   }
-  window.addEventListener('hashchange', function () { goHash(true) })
+  /* a hash that opens another view (folder cards <-> a course) renders it first, from the top */
+  function route(smooth) {
+    var c = courseFromHash()
+    var want = c ? c.id : q.value.trim() ? '*' : ''
+    if (want !== shownView) {
+      closeShare()
+      closeGit()
+      render()
+      window.scrollTo(0, 0)
+    }
+    goHash(smooth)
+  }
+  window.addEventListener('hashchange', function () { route(true) })
 
   /* ------------------------------------------------------------------ toast, copy */
   function toast(msg) {
@@ -372,7 +410,7 @@
     closeShare()
     closeGit()
     render()
-    try { history.replaceState(null, '', q.value ? '?q=' + encodeURIComponent(q.value) : location.pathname) } catch (e) {}
+    try { history.replaceState(null, '', (q.value ? '?q=' + encodeURIComponent(q.value) : location.pathname) + location.hash) } catch (e) {}
   })
   $('clear-q').addEventListener('click', function () {
     q.value = ''

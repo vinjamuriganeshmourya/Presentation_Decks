@@ -6,10 +6,13 @@
  *
  * Layout it understands (course > session > deck):
  *
- *   <course>/course.json                      optional: { title, sessions: [ordered session folders] }
+ *   <course>/course.json                      optional: { title, sessions: [...] }, the course's ONE order: entry N
+ *                                             is session N, either { title, folder } (folder null: no deck yet)
+ *                                             or just the session folder name
  *   <course>/<session>/dist-single/*.html     the built, self-contained deck(s)
  *   <course>/<session>/deck.site.json         optional: { decks: [{ file, slug?, title? }] }
- *   <course>/<session>/edits/<slug>.json      the deck's edit source data (written by Save)
+ *   <course>/<session>/edits/<slug>.json      the deck's edit source data (written by Save): per slide
+ *                                             status, comment, and text ({ original words: html | null })
  *
  * Each deck's HTML is copied unchanged except for two things: a small loader
  * (`site-assets/overlay.js`) is put at the top of <head>, and the deck's own
@@ -91,6 +94,16 @@ function sessionDecks(sessionDir) {
 }
 
 /** Every course > session > deck in the repo. */
+/** course.json `sessions` -> [{ title, folder }], position = session number. A plain string is a folder. */
+function courseOrder(courseCfg) {
+  const list = Array.isArray(courseCfg.sessions) ? courseCfg.sessions : []
+  return list.map((e) => {
+    if (typeof e === 'string') return { title: null, folder: e || null }
+    if (!e || typeof e !== 'object') return { title: null, folder: null }
+    return { title: typeof e.title === 'string' ? e.title : null, folder: typeof e.folder === 'string' && e.folder ? e.folder : null }
+  })
+}
+
 function discover() {
   const courses = []
   for (const c of fs.readdirSync(ROOT).sort()) {
@@ -98,7 +111,12 @@ function discover() {
     const courseDir = path.join(ROOT, c)
     if (!isDir(courseDir)) continue
     const courseCfg = readJson(path.join(courseDir, 'course.json')) || {}
-    const order = Array.isArray(courseCfg.sessions) ? courseCfg.sessions : []
+    const order = courseOrder(courseCfg)
+    /* a folder listed twice keeps its first place */
+    const numberOf = new Map()
+    order.forEach((e, i) => {
+      if (e.folder && !numberOf.has(e.folder)) numberOf.set(e.folder, i + 1)
+    })
     const sessions = []
     for (const s of fs.readdirSync(courseDir)) {
       if (s.startsWith('.')) continue
@@ -108,12 +126,18 @@ function discover() {
       if (decks.length) sessions.push({ folder: s, dir: sessionDir, decks })
     }
     if (!sessions.length) continue
-    const rank = (s) => {
-      const i = order.indexOf(s.folder)
-      return i >= 0 ? i : order.length
-    }
+    const rank = (s) => numberOf.get(s.folder) ?? Infinity
     sessions.sort((a, b) => rank(a) - rank(b) || a.folder.localeCompare(b.folder))
-    courses.push({ folder: c, title: courseCfg.title || titleCase(c), sessions })
+    /* numbered by the list; a deck the list does not name goes last, after the list's numbers */
+    let extra = order.length
+    for (const s of sessions) {
+      s.number = numberOf.get(s.folder) ?? ++extra
+      if (!numberOf.has(s.folder)) console.warn(`order  ${c}/${s.folder} is not in ${c}/course.json sessions: shown last, as session ${s.number}`)
+    }
+    const have = new Set(sessions.map((s) => s.folder))
+    const missing = order.map((e, i) => ({ ...e, n: i + 1 })).filter((e) => !e.folder || !have.has(e.folder))
+    if (missing.length) console.log(`order  ${c}: ${missing.length} listed session(s) have no deck yet: ${missing.map((e) => e.n).join(', ')}`)
+    courses.push({ folder: c, title: courseCfg.title || titleCase(c), sessions, total: extra })
   }
   return courses
 }
@@ -149,7 +173,34 @@ function readThreads(p) {
   return out
 }
 
-/** The deck's edit source: { slides: { [id]: { status?, comment? } } } */
+/** A slide's text edits: { [original words]: edited innerHTML | null } (null puts the original words back). */
+function textOf(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
+  const out = {}
+  for (const [k, h] of Object.entries(v)) if (k && (typeof h === 'string' || h === null)) out[k] = h
+  return Object.keys(out).length ? out : null
+}
+
+/** The deck's text as viewers see it: the edits a deck saved into its own file, then the edits file's text on top. */
+function mergeText(fileEdits, slides) {
+  const out = {}
+  for (const [id, m] of Object.entries(fileEdits || {})) {
+    if (!m || typeof m !== 'object') continue
+    for (const [k, h] of Object.entries(m)) if (typeof h === 'string') (out[id] ??= {})[k] = h
+  }
+  for (const [id, v] of Object.entries(slides)) {
+    if (!v.text) continue
+    for (const [k, h] of Object.entries(v.text)) {
+      if (h === null) {
+        if (out[id]) delete out[id][k]
+      } else (out[id] ??= {})[k] = h
+    }
+    if (out[id] && !Object.keys(out[id]).length) delete out[id]
+  }
+  return out
+}
+
+/** The deck's edit source: { slides: { [id]: { status?, comment?, text? } } } */
 function readEdits(p) {
   const raw = readJson(p, {}) || {}
   const slides = {}
@@ -158,6 +209,8 @@ function readEdits(p) {
     const o = {}
     if (STATUSES.has(v.status)) o.status = v.status
     if (typeof v.comment === 'string' && v.comment.trim()) o.comment = v.comment
+    const text = textOf(v.text)
+    if (text) o.text = text
     if (Object.keys(o).length) slides[id] = o
   }
   return slides
@@ -174,6 +227,7 @@ function bakedSlides(fileState, edits) {
   for (const [id, v] of Object.entries(edits)) {
     if (v.status) set(id, 'status', v.status)
     if (v.comment) set(id, 'comment', v.comment)
+    if (v.text) set(id, 'text', v.text)
   }
   return out
 }
@@ -236,10 +290,10 @@ function build() {
   const manifest = { sha: SHA, builtAt: BUILT_AT, siteBase: CONFIG.siteBase, siteUrl: CONFIG.siteUrl, workerUrl: CONFIG.workerUrl, git: CONFIG.git || null, courses: [] }
   const seen = new Set()
   for (const course of courses) {
-    const mc = { id: course.folder, title: course.title, sessions: [] }
+    const mc = { id: course.folder, title: course.title, total: course.total, sessions: [] }
     const pages = [] /* written once the whole course is known: every page carries the course's deck list */
     course.sessions.forEach((session, si) => {
-      const ms = { id: session.folder, number: si + 1, title: null, decks: [] }
+      const ms = { id: session.folder, number: session.number, title: null, decks: [] }
       for (const d of session.decks) {
         const id = `${course.folder}/${session.folder}/${d.slug}`
         if (seen.has(id)) throw new Error(`duplicate deck id ${id}`)
@@ -259,7 +313,7 @@ function build() {
           title,
           course: course.title,
           session: session.folder,
-          sessionNumber: si + 1,
+          sessionNumber: session.number,
           editsPath: editsRel,
           worker: CONFIG.workerUrl,
           git: CONFIG.git || null,
@@ -268,7 +322,9 @@ function build() {
           builtAt: BUILT_AT,
           slides,
           threads,
-          textEdits: fileState?.edits || {},
+          /* the deck's own file-saved text edits; the overlay lays the edits file's (and the Worker's) text on top */
+          fileTextEdits: fileState?.edits || {},
+          textEdits: mergeText(fileState?.edits, slides),
         }
         const outDir = path.join(OUT, course.folder, session.folder, d.slug)
         fs.mkdirSync(outDir, { recursive: true })
@@ -292,6 +348,7 @@ function build() {
         home: CONFIG.siteBase,
         homeAnchor: boot.id.split('/').slice(0, 2).join('/'),
         course: course.title,
+        total: course.total,
         decks: navDecks,
       }
       /* everything between the markers is the site layer; student.js cuts it out again for the download */

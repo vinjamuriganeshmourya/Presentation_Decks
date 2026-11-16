@@ -69,6 +69,35 @@
     return out.sort()
   }
 
+  /**
+   * The deck's text as viewers see it (keep in step with overlay.js textEditsOf): the edits the deck saved
+   * into its own file, then each slide's saved text (baked, or the Worker's newer row) on top; null = original.
+   */
+  function textFrom(site, baked, rows) {
+    var out = {}
+    var file = (site && site.fileTextEdits) || {}
+    var id, k
+    for (id in file) {
+      if (!file[id] || typeof file[id] !== 'object') continue
+      for (k in file[id]) if (typeof file[id][k] === 'string') (out[id] = out[id] || {})[k] = file[id][k]
+    }
+    var text = {}
+    baked = baked || {}
+    for (id in baked) if (baked[id] && baked[id].text) text[id] = baked[id].text
+    ;(rows || [])
+      .filter(function (r) { return r && r.field === 'text' && String(r.slide).indexOf(THREAD) !== 0 })
+      .sort(function (x, y) { return (x.updatedAt || 0) - (y.updatedAt || 0) })
+      .forEach(function (r) { text[r.slide] = r.value || {} })
+    for (id in text) {
+      for (k in text[id]) {
+        if (text[id][k] === null) { if (out[id]) delete out[id][k] }
+        else if (typeof text[id][k] === 'string') (out[id] = out[id] || {})[k] = text[id][k]
+      }
+      if (out[id] && !Object.keys(out[id]).length) delete out[id]
+    }
+    return out
+  }
+
   /** the built page + the finalised state -> the student file (presenter.ts studentHtml) */
   function studentHtml(html, state) {
     var json = JSON.stringify({ view: 'student', hidden: state.hidden || [], edits: state.edits || {} })
@@ -147,7 +176,7 @@
         var baked = res[0] && res[0].slides ? res[0].slides : site.slides || {}
         var rows = res[1] && res[1].rows ? res[1].rows : []
         var hidden = hiddenFrom(baked, rows)
-        var html = studentHtml(pristine(page), { hidden: hidden, edits: site.textEdits || {} })
+        var html = studentHtml(pristine(page), { hidden: hidden, edits: site.fileTextEdits ? textFrom(site, baked, rows) : site.textEdits || {} })
         var name = fileName(site.title)
         save(html, name)
         return { name: name, bytes: html.length, hidden: hidden.length, live: !!res[1] }
@@ -160,6 +189,7 @@
     siteOf: siteOf,
     pristine: pristine,
     hiddenFrom: hiddenFrom,
+    textFrom: textFrom,
     studentHtml: studentHtml,
     fileName: fileName,
     save: save,

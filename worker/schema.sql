@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS pending (
   deck       TEXT    NOT NULL,
   slide      TEXT    NOT NULL,
-  field      TEXT    NOT NULL,   -- 'status' | 'comment'
+  field      TEXT    NOT NULL,   -- 'status' | 'comment' | 'text' (value: the slide's full { words: html | null } map)
   value      TEXT    NOT NULL,   -- JSON-encoded value
   sha        TEXT    NOT NULL,   -- commit that carries this value into the repo
   editor     TEXT,
