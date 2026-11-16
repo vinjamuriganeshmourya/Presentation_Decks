@@ -105,7 +105,7 @@
     },
     "mwixzee05c5vsd": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T20",
       "author": "Editor",
       "text": "3rd point chagne it to\n\nNow: “the exact rule that produced the deny”\nChange to: “the exact rule that produced the deny, or the missing allow”",
