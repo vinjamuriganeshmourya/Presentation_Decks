@@ -130,7 +130,7 @@
     },
     "mwiy5v0w8l02xd": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T22",
       "author": "Editor",
       "text": "❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
