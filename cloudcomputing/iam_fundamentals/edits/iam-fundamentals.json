@@ -119,8 +119,9 @@
       "resolved": false,
       "slide": "T23",
       "author": "Editor",
-      "text": "in visla change it\n\n❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
-      "at": 1794814398962
+      "text": "CloudTrail Event box\nNow: only the logo + “CloudTrail Event”, with no content\nChange to: add the bullet “Shows source IP 203.0.113.5, time of call, and mfaAuthenticated: false”",
+      "at": 1794814398962,
+      "edited": 1794814532753
     },
     "mwiy5v0w8l02xd": {
       "replies": {},
