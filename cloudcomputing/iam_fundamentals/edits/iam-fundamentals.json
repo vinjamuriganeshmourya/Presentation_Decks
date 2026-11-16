@@ -113,6 +113,14 @@
       "author": "Editor",
       "text": "glitches please check",
       "at": 1794814234846
+    },
+    "mwiy5hgunue9pl": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T23",
+      "author": "Editor",
+      "text": "in visla change it\n\n❌ Event list (middle column)\nNow: DeleteObject / GetObject / PutObject / DeleteObject\nChange to: DeleteBucket / CreateUser / PutBucketPolicy / DeleteBucket\n❌ JSON eventName\nNow: eventName: \"DeleteObject\"\nChange to: eventName: \"DeleteBucket\"",
+      "at": 1794814398962
     }
   }
 }
