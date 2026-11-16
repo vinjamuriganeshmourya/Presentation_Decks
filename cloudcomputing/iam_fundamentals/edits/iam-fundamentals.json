@@ -81,6 +81,14 @@
       "author": "Editor",
       "text": "Policy B line\nNow: 203.0.113.0/24\nChange to: Deny s3:GetObject if IP not in 203.0.113.0/24",
       "at": 1794813940416
+    },
+    "mwixxdccbvdaq7": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T19",
+      "author": "Editor",
+      "text": "skip it",
+      "at": 1794814022746
     }
   }
 }
