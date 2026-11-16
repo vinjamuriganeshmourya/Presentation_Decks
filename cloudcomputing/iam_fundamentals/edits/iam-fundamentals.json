@@ -121,7 +121,7 @@
     },
     "mwiy5hgunue9pl": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T23",
       "author": "Editor",
       "text": "CloudTrail Event box\nNow: only the logo + “CloudTrail Event”, with no content\nChange to: add the bullet “Shows source IP 203.0.113.5, time of call, and mfaAuthenticated: false”",
