@@ -1,6 +1,5 @@
 import type React from 'react'
 import type { DeckMeta, SlideDef } from '@/deck/types'
-import type { SectionBreakerProps } from '@/slides/types'
 import { BrandSlide, NextSessionSlide, SectionBreakerSlide, ThankYouSlide, WelcomeSlide } from '@/slides'
 import { AgendaColumns, QuizCard } from './figures/variants'
 import { Takeaways } from './figures/closing'
@@ -17,13 +16,12 @@ import { VPC_CSS, VpcToSubnets2 } from './figures/net/vpc'
 import { SUBNETS_CSS } from './figures/net/subnets'
 import { ROUTING_CSS } from './figures/net/routing'
 import { SECURITY_CSS, NetworkAcl2 } from './figures/net/security'
-import { LAB_CSS, ExploreSecurity2 } from './figures/net/lab'
+import { LAB_CSS } from './figures/net/lab'
 import { Boundary1, SchoolAnalogy, Pieces, FourBlocks, Planes } from './figures/net/overview'
 import { WhatIsVpc, FourParts, SocietyAnalogy, DefaultCustom, DefaultCustom2, Providers, VpcToSubnets } from './figures/net/vpc'
 import { SubnetsOverview, SubnetsOverview2, CidrSizing, CidrSizing2, WorkedSplit, SplitTotals, PublicPrivate, ZonePlacement, ZonePlacement2 } from './figures/net/subnets'
 import { FourPieces, FourPieces2, RouteTables, RouteTables2, PostalAnalogy, InternetGateway, NatGateway, NatGateway2, TicketAnalogy, Peering, Peering2, SiteToSiteVpn, PhoneLineAnalogy, RoutingCompared, RoutingNotPermission } from './figures/net/routing'
 import { TwoFilters, DoorCheckpointAnalogy, SecurityGroup, SecurityGroup2, SecurityGroup3, SecurityGroupStacking, NetworkAcl, AclWholeSubnet, GroupsVsAcls, LeastPrivilege, LeastPrivilege2 } from './figures/net/security'
-import { LabSteps1, LabSteps2, VpcCreated, PublicSubnetCreated, PrivateSubnetCreated, IgwAttached, RouteTablesTable, PublicRtCreated, PrivateRtCreated, ExploreSecurity } from './figures/net/lab'
 
 /**
  * CLOUD COMPUTING · "Cloud Networking & VPC" (session 5)
@@ -101,13 +99,6 @@ installEntrances()
 
 const S = AGENDA.map((a) => a.title)
 const breaker = (i: number): SlideDef => ({ id: `D${i + 1}`, section: S[i], label: 'Section divider', transition: 'zoom', element: <SectionBreakerSlide index={i + 1} title={S[i]} lesson={SESSION} /> })
-/**
- * D-LAB (plan decision 7): the practical's divider, the same frame as the five
- * section breakers, rendered through this wrapper so `Deck` does not count it
- * as a sixth section-bar segment (the bar is one segment per agenda point; the
- * lab belongs to section 5, where the TR puts it).
- */
-const LabBreaker = (p: SectionBreakerProps) => <SectionBreakerSlide {...p} />
 const slide = (id: string, section: string, label: string, El: (p: { lesson: string }) => React.ReactElement): SlideDef => ({ id, section, label, element: <El lesson={SESSION} /> })
 
 export const netDeck: SlideDef[] = [
@@ -152,6 +143,9 @@ export const netDeck: SlideDef[] = [
   slide('T11-1', S[2], 'Two zones', ZonePlacement),
   slide('T11-1b', S[2], 'One zone goes down', ZonePlacement2),
 
+  /* a quiz after sections 1 to 3 (user, 2026-11-17: "add a quiz slide before slide 32"), the closing quiz's frame */
+  { id: 'S-QUIZ-1', section: S[2], label: 'Quiz Time', transition: 'zoom', element: <QuizCard lesson={SESSION} title="Quiz Time" /> },
+
   /* ── 4 · ROUTING & GATEWAYS ──────────────────────────────────────────── */
   breaker(3),
   slide('T13-1', S[3], 'The route tables', FourPieces),
@@ -186,25 +180,11 @@ export const netDeck: SlideDef[] = [
   slide('T23-1', S[4], 'Least privilege, both layers', LeastPrivilege),
   slide('T23-1b', S[4], 'Least privilege, the rules', LeastPrivilege2),
 
-  /* ── PRACTICAL HANDS-ON (inside section 5, where the TR puts it) ─────── */
-  { id: 'D-LAB', section: S[4], label: 'Practical divider', transition: 'zoom', element: <LabBreaker kicker="Practical Hands-On" title="Building a Cloud Network with AWS VPC" lesson={SESSION} /> },
-  slide('T24-1', S[4], 'The lab, steps 1 to 3', LabSteps1),
-  slide('T24-2', S[4], 'The lab, steps 4 to 6', LabSteps2),
-  slide('T25-1', S[4], 'The VPC, created', VpcCreated),
-  slide('T26-1', S[4], 'The public subnet, created', PublicSubnetCreated),
-  slide('T26-2', S[4], 'The private subnet, created', PrivateSubnetCreated),
-  slide('T27-1', S[4], 'The gateway, attached', IgwAttached),
-  slide('T28-1', S[4], 'Two route tables, one difference', RouteTablesTable),
-  slide('T28-2', S[4], 'Creating the public route table', PublicRtCreated),
-  slide('T28-3', S[4], 'Creating the private route table', PrivateRtCreated),
-  slide('T29-1', S[4], 'Security group and network ACL', ExploreSecurity),
-  slide('T29-1b', S[4], 'Network ACL: inspect without changing', ExploreSecurity2),
-
   /* ── CLOSING ─────────────────────────────────────────────────────────── */
   /* quiz1, the title card with the question cube (user, 2026-10-30: "replace the quiz slide with the Quizslide 1 version") */
   { id: 'S-QUIZ', section: 'Closing', label: 'Quiz Time', transition: 'zoom', element: <QuizCard lesson={SESSION} title="Quiz Time" /> },
   { id: 'S-TAKEAWAYS', section: 'Closing', label: 'Key Takeaways', element: <Takeaways id="S-TAKEAWAYS" lesson={SESSION} items={AGENDA.map(({ title }) => ({ title }))} /> },
-  { id: 'S-NEXT', section: 'Closing', label: 'Next session', transition: 'zoom', element: <NextSessionSlide title="Load Balancing & CDN" lesson={SESSION} /> },
+  { id: 'S-NEXT', section: 'Closing', label: 'Next session', transition: 'zoom', element: <NextSessionSlide title="Building a Cloud Network with AWS VPC" lesson={SESSION} /> },
   { id: 'S-THANKS', section: 'Closing', label: 'Thank You', transition: 'zoom', element: <ThankYouSlide title="Thank You" lesson={SESSION} /> },
   { id: 'S-BEST', section: 'Closing', label: 'All the Best', transition: 'zoom', element: <ThankYouSlide title="All the Best" lesson={SESSION} /> },
 ]

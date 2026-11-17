@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none" role="img" aria-label="A sealed container">
+  <!--
+    A shipping container, drawn to sit beside the Docker mark on a divider:
+    same weight, same white-on-brand treatment, same optical size. Deliberately
+    generic — the concept is containerization, and the tool that implements it
+    is introduced two sections later, so this must not look like any vendor's
+    logo.
+  -->
+  <!-- body -->
+  <rect x="16" y="34" width="168" height="96" rx="10" fill="#FFFFFF" fill-opacity="0.16"/>
+  <rect x="16" y="34" width="168" height="96" rx="10" stroke="#FFFFFF" stroke-width="7"/>
+  <!-- corrugation -->
+  <g stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.9">
+    <path d="M56 56v52"/>
+    <path d="M84 56v52"/>
+    <path d="M116 56v52"/>
+    <path d="M144 56v52"/>
+  </g>
+  <!-- lid, sitting slightly proud so the box reads as sealed rather than open -->
+  <rect x="8" y="16" width="184" height="22" rx="9" fill="#FFFFFF"/>
+  <!-- feet -->
+  <g stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+    <path d="M40 130v10"/>
+    <path d="M160 130v10"/>
+  </g>
+</svg>

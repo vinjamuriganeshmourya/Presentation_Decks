@@ -11,7 +11,7 @@ The session deck for Cloud Networking & VPC. Read this before editing it. The ki
   shortening, summarising, reordering, correcting, nothing added), in the TR's order. The spec's strings are the
   TR's apart from its documented edits (spaced dash to colon/comma, final full stop dropped, `Vpc` to `VPC`,
   three typos, one split sentence).
-- **Deck file:** `src/decks/netDeck.tsx`, 77 slides (78 until 2026-11-05, when `T15-1c` merged into `T15-1`) (the title frame `S-TITLE` added as slide 2, course R9): the spec's 60 cards, the 2026-10-30 split halves
+- **Deck file:** `src/decks/netDeck.tsx`, 66 slides since the 2026-11-17 split (decision 12; 77 before it) (78 until 2026-11-05, when `T15-1c` merged into `T15-1`) (the title frame `S-TITLE` added as slide 2, course R9): the spec's 60 cards, the 2026-10-30 split halves
   (`T04-1b`, `T07-1b`, `T08-1b`, `T11-1b`, `T13-1b`, `T14-1b`, `T16-1b`, `T17-1b`, `T20-1b`, `T20-1c`, `T23-1b`), the
   2026-11-04 splits `T15-1c`, then `T01-1b`, `T06-1b`, `T21-1b`, `T29-1b` (FS review), then `T02-1b` (5.md); no feedback slide (rule 41 retired). Slide ids are the spec card ids (`T01-1` …), stamped as `data-spec`. Port 5275
   (`npx vite --port 5275 --strictPort`).
@@ -128,3 +128,10 @@ The session deck for Cloud Networking & VPC. Read this before editing it. The ki
     - Harness after the round: video-safe CLEAN, box-overflow NO OVERFLOW, controls-clear CLEAR, mixed-align 0, no
       line-final punctuation on any slide.
 
+12. **Split (user, 2026-11-17; slide numbers there are the 77-slide deck).** Slides 1 to 60 stay here under the
+    same session name; slides 61 to 77, from `D-LAB` ("Practical Hands-On" · "Building a Cloud Network with AWS
+    VPC") on, became their own session, `../practical_hands_on_building_a_cloud_network_with_aws_vpc` (named after that breaker),
+    with Welcome, title, recap, Thank You and All the Best only. This deck keeps every standard frame; the lab
+    slides and `LabBreaker` are gone from `netDeck.tsx` (the `lab*.tsx` figure files stay on disk, `LAB_CSS` still
+    loaded). Added `S-QUIZ-1` (the closing quiz's `QuizCard`) before slide 32, `D4`. `S-NEXT` now names Building a
+    Cloud Network with AWS VPC, the next session in `course.json`. 66 slides.

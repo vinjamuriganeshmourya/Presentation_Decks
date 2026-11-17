@@ -7,6 +7,7 @@
     { "title": "Containers vs Virtual Machines", "folder": "containers_vs_virtual_machines" },
     { "title": "Setting Up Your AWS", "folder": "setting_up_your_aws_account" },
     { "title": "Cloud Networking & VPC", "folder": "cloud_networking_and_vpc" },
+    { "title": "Building a Cloud Network with AWS VPC", "folder": "practical_hands_on_building_a_cloud_network_with_aws_vpc" },
     { "title": "Load Balancing & CDN", "folder": "load_balancing_and_cdn" },
     { "title": "Block, File & Object Storage", "folder": "block_file_and_object_storage" },
     { "title": "Storage Tiering, Backup & DR", "folder": null },

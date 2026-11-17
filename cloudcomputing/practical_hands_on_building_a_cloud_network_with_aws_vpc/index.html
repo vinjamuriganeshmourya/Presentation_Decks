@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/assets/logo-nxtwave.png" />
+    <!-- `viewport-fit=cover`: the page runs under the notch and the home indicator
+         and the control bar keeps clear of them with the safe-area insets, which
+         are zero without it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Filled from deck.config.json by the `deck-title` plugin in vite.config.ts.
+         This file is kit, so it must not name a session. -->
+    <title>%DECK_TITLE%</title>
+    <!-- THE UPDATED TEMPLATE'S FONT SHEET (user, 2026-10-12; the base template
+         since 2026-10-14; content rule 34): Sora SemiBold for session and section
+         titles and hero words; DM Sans Medium / SemiBold for every other word;
+         Fira Code for code; Ubuntu Mono for code-window title bars. Poppins,
+         Inter and JetBrains Mono are gone. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@600&family=DM+Sans:ital,wght@0,500;0,600;1,500&family=Fira+Code:wght@400;500;600&family=Ubuntu+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
