@@ -9,6 +9,7 @@
     { "title": "Cloud Networking & VPC", "folder": "cloud_networking_and_vpc" },
     { "title": "Building a Cloud Network with AWS VPC", "folder": "practical_hands_on_building_a_cloud_network_with_aws_vpc" },
     { "title": "Load Balancing & CDN", "folder": "load_balancing_and_cdn" },
+    { "title": "Building a Load-Balanced Web Tier", "folder": "practical_hands_on_building_a_load_balanced_web_tier" },
     { "title": "Block, File & Object Storage", "folder": "block_file_and_object_storage" },
     { "title": "Storage Tiering, Backup & DR", "folder": null },
     { "title": "Elastic Compute Instances", "folder": "elastic_compute_instances" },

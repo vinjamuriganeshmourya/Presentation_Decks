@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- custom database icon (Session 6 S41, 2026-11-06): same construction as custom-server.svg and the AWS service icons; deck teal -->
+<svg width="80px" height="80px" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="80" height="80" fill="#0E9285"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <ellipse cx="40" cy="22" rx="19" ry="6.5"/>
+    <path d="M21 22 V58 C21 61.6 29.5 64.5 40 64.5 C50.5 64.5 59 61.6 59 58 V22"/>
+    <path d="M21 34 C21 37.6 29.5 40.5 40 40.5 C50.5 40.5 59 37.6 59 34"/>
+    <path d="M21 46 C21 49.6 29.5 52.5 40 52.5 C50.5 52.5 59 49.6 59 46"/>
+  </g>
+  <g fill="#FFFFFF"><circle cx="51" cy="44" r="1.8"/><circle cx="51" cy="56" r="1.8"/></g>
+</svg>
