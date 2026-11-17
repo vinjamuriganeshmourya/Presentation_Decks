@@ -1,0 +1,1306 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Cloud Threats & Attacks",
+  "course": "Cloud Computing",
+  "htmlName": "cloud-threats-and-attacks",
+  "previous": {
+   "title": "Encryption & Key Management",
+   "items": [
+    "Data States",
+    "Cryptography Essentials",
+    "Encryption in Transit",
+    "Encryption at Rest",
+    "Key Management"
+   ]
+  },
+  "agenda": [
+   "Denial of Service",
+   "Data Breaches",
+   "Misconfiguration",
+   "Insider & Supply-Chain Threats",
+   "AI-Specific Threats"
+  ],
+  "next": "Security Practices & Compliance"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 15 : Encryption & Key Management\n1. Data States: At rest; in transit; in use\n2. Cryptography Essentials: Symmetric vs asymmetric encryption; hashing vs encryption\n3. Encryption in Transit: TLS handshake; certificates & trust chains; enforcing TLS on endpoints\n4. Encryption at Rest: Volume, bucket & database encryption; client-side vs server-side encryption\n5. Key Management: Key Management Service (KMS); provider- vs customer-managed keys; envelope encryption; rotation, HSM & BYOK"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Denial of Service: DoS vs DDoS; volumetric, protocol & application-layer attacks; mitigation: rate limiting, scrubbing & CDN absorption\n2. Data Breaches: Exposed credentials; insecure APIs; breach cost & business impact\n3. Misconfiguration: Public storage buckets; permissive security groups; default credentials\n4. Insider & Supply-Chain Threats: Malicious & accidental insiders; compromised dependencies & images; phishing, leaked keys & token theft\n5. AI-Specific Threats: Prompt injection; sensitive information disclosure; vector & embedding weaknesses; unbounded consumption as cost-based DoS"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "DoS DDoS Landscape",
+   "title": "Attack Layers Mapped",
+   "lead": "Denial of Service (DoS) attacks target availability, overwhelming a system's capacity to serve legitimate requests; Distributed Denial of Service (DDoS) does the same from many sources at once",
+   "points": [
+    {
+     "text": "Volumetric attacks (Layer 3 (network) and Layer 4 (transport)) flood network bandwidth with traffic",
+     "icon": "i3d:wave"
+    },
+    {
+     "text": "Protocol attacks (Layer 3 (network) and Layer 4 (transport)) exhaust connection-handling state on servers",
+     "icon": "i3d:conntable"
+    },
+    {
+     "text": "Application-layer attacks (Layer 7 (application)) exhaust compute with legitimate-looking requests",
+     "icon": "i3d:cpu"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 610,
+   "notes": "Stress that availability, not data theft, is the goal here. Give the everyday framing: a shop that cannot open its shutter is still a shop, just unreachable. Interviewers often ask which OSI layer each attack type targets: point to this pyramid."
+  },
+  {
+   "id": "T01-B",
+   "layout": "lead",
+   "kicker": "DoS DDoS Landscape",
+   "title": "Attack Layers Mapped",
+   "lead": "Distinguishing factor between DoS and DDoS: source count",
+   "figure": {
+    "type": "custom",
+    "name": "A_T01B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1080,
+   "figH": 380,
+   "notes": "Stress that availability, not data theft, is the goal here. Give the everyday framing: a shop that cannot open its shutter is still a shop, just unreachable. Interviewers often ask which OSI layer each attack type targets: point to this pyramid."
+  },
+  {
+   "id": "T02",
+   "layout": "points",
+   "kicker": "Why DDoS Scales",
+   "title": "Botnets And Amplification",
+   "lead": "A botnet is a network of compromised devices an attacker commands remotely to send traffic simultaneously, turning one attacker into a distributed flood",
+   "points": [
+    {
+     "text": "Command-and-control server issues attack instructions to bots",
+     "icon": "i3d:megaphone"
+    },
+    {
+     "text": "Reflection attacks spoof the victim's address toward open servers",
+     "icon": "i3d:mask"
+    },
+    {
+     "text": "Amplification: a small request triggers a far larger reply",
+     "icon": "i3d:bolt"
+    },
+    {
+     "text": "Multi-terabit floods now originate from compromised IoT devices",
+     "icon": "i3d:camera"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Explain command-and-control as the botnet's remote-control channel, and amplification as asking a small question that gets a huge answer sent to the victim. A common interview question is why amplification attacks use spoofed source addresses."
+  },
+  {
+   "id": "T02-AN",
+   "layout": "analogy",
+   "label": "Analogy: crowded building entrance",
+   "kicker": "Why DDoS Scales",
+   "title": "Botnets And Amplification",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T02Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T02Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A single person blocking a building's entrance by repeatedly entering and exiting is like a DoS attack. If thousands of people, controlled by one organiser, crowd the same entrance at once, it is like a DDoS attack.\n\nExplain command-and-control as the botnet's remote-control channel, and amplification as asking a small question that gets a huge answer sent to the victim. A common interview question is why amplification attacks use spoofed source addresses."
+  },
+  {
+   "id": "T03",
+   "layout": "table",
+   "kicker": "DoS Vs DDoS",
+   "title": "Key Differences Compared",
+   "lead": "Both attacks aim to make a service unavailable; they differ in how many systems send the attack traffic, which changes how hard the attack is to block and trace",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Aspect",
+      "icon": "i3d:checklist",
+      "weight": 0.8
+     },
+     {
+      "label": "DoS",
+      "icon": "i3d:user",
+      "weight": 1.1
+     },
+     {
+      "label": "DDoS",
+      "icon": "i3d:users",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:pin",
+      "cells": [
+       "Source",
+       "One system, one location",
+       "Many systems, many locations"
+      ]
+     },
+     {
+      "icon": "i3d:wave",
+      "cells": [
+       "Traffic volume",
+       "Limited by one machine",
+       "Massive, combined from all sources"
+      ]
+     },
+     {
+      "icon": "i3d:laptop",
+      "cells": [
+       "Devices used",
+       "A single device or tool",
+       "Many compromised devices (a botnet)"
+      ]
+     },
+     {
+      "icon": "i3d:ban",
+      "cells": [
+       "Blocking",
+       "Easier: block the one source",
+       "Hard: too many sources to block one by one"
+      ]
+     },
+     {
+      "icon": "i3d:search",
+      "cells": [
+       "Tracing the attacker",
+       "Easier",
+       "Very difficult"
+      ]
+     }
+    ],
+    "highlight": [
+     0
+    ]
+   },
+   "notes": "Read the Source row first and show how each row below is a result of it: more sources mean more traffic, harder blocking and harder tracing. Do not re-explain botnets here. A common interview question is why blocking one IP address stops a DoS attack but not a DDoS attack."
+  },
+  {
+   "id": "T04",
+   "layout": "points",
+   "kicker": "Volumetric Mechanics",
+   "title": "Bandwidth Exhaustion",
+   "lead": "Volumetric attacks exhaust the bandwidth path into a service, measured in bits per second rather than requests per second",
+   "points": [
+    {
+     "text": "UDP flood: packets arrive faster than the link absorbs",
+     "icon": "i3d:wave"
+    },
+    {
+     "text": "DNS and NTP amplification: spoofed queries return oversized replies",
+     "icon": "i3d:bolt"
+    },
+    {
+     "text": "Upstream link saturates before the application ever responds",
+     "icon": "i3d:gauge"
+    },
+    {
+     "text": "Defence must sit upstream of the application, not inside it",
+     "icon": "i3d:shield"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Point out that at this layer the application code is innocent: the pipe itself is full. Mention this is why volumetric floods are reported in Gbps or Tbps, not requests per second, a detail interviewers probe."
+  },
+  {
+   "id": "T05",
+   "layout": "points",
+   "kicker": "State And Compute Drain",
+   "title": "Protocol Vs App Layer",
+   "lead": "Protocol attacks exhaust the connection state that servers and firewalls track per session, familiar from the SYN flood abusing the TCP handshake; application-layer attacks instead exhaust compute by mimicking real traffic",
+   "points": [
+    {
+     "text": "Protocol · SYN flood: many connection requests are sent and never completed, so the server's connection table fills up",
+     "icon": "i3d:conntable"
+    },
+    {
+     "text": "Protocol · malformed packets: oversized or invalid headers crash parsers",
+     "icon": "i3d:alert"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T05",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 330,
+   "pointsW": 600,
+   "notes": "Build on the handshake mechanics already known: here the point is the half-open connections fill a finite table, a resource limit, not a bandwidth one. Ask: why can a 1 Mbps Slowloris attack still take a server down?"
+  },
+  {
+   "id": "T05-B",
+   "layout": "points",
+   "kicker": "State And Compute Drain",
+   "title": "Protocol Vs App Layer",
+   "points": [
+    {
+     "text": "Application · HTTP flood: repeated valid-looking page requests drain compute",
+     "icon": "i3d:webpage"
+    },
+    {
+     "text": "Application · Slowloris: many slow, incomplete requests hold connections open",
+     "icon": "i3d:hourglass"
+    },
+    {
+     "text": "Application-layer attacks are hardest to detect: traffic volume looks normal",
+     "icon": "i3d:eye"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T05B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "Build on the handshake mechanics already known: here the point is the half-open connections fill a finite table, a resource limit, not a bandwidth one. Ask: why can a 1 Mbps Slowloris attack still take a server down?"
+  },
+  {
+   "id": "T06",
+   "layout": "table",
+   "kicker": "Mitigation Mechanisms",
+   "title": "Rate Limit To Scrub",
+   "lead": "Mitigation is matched to the attack layer: extra capacity absorbs volume, inspection filters protocol abuse, and request logic throttles application traffic",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Mechanism",
+      "icon": "i3d:wrench",
+      "weight": 0.8
+     },
+     {
+      "label": "How It Works",
+      "icon": "i3d:gear",
+      "weight": 1.5
+     },
+     {
+      "label": "Best Against",
+      "icon": "i3d:target",
+      "weight": 1.0
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:gauge",
+      "cells": [
+       "Rate limiting",
+       "Caps requests per client within a time window at the edge",
+       "Application-layer floods"
+      ]
+     },
+     {
+      "icon": "i3d:filter",
+      "cells": [
+       "Scrubbing",
+       "Redirects traffic to a cleaning facility; forwards only clean traffic",
+       "Volumetric & protocol floods"
+      ]
+     },
+     {
+      "icon": "i3d:globe",
+      "cells": [
+       "CDN absorption",
+       "Distributed edge nodes absorb traffic close to its source",
+       "Volumetric floods"
+      ]
+     }
+    ]
+   },
+   "notes": "Walk through the table row by row rather than re-explaining the attacks. Note that scrubbing moves the fight away from the origin entirely, while rate limiting works right at the application door. A typical exam question pairs each attack layer with its best-matched defence."
+  },
+  {
+   "id": "T06-B",
+   "layout": "lead",
+   "kicker": "Mitigation Mechanisms",
+   "title": "Rate Limit To Scrub",
+   "figure": {
+    "type": "custom",
+    "name": "A_T06B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1080,
+   "figH": 420,
+   "notes": "Walk through the table row by row rather than re-explaining the attacks. Note that scrubbing moves the fight away from the origin entirely, while rate limiting works right at the application door. A typical exam question pairs each attack layer with its best-matched defence."
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Mitigation In AWS",
+   "title": "Shield WAF CloudFront",
+   "lead": "AWS Shield inspects edge traffic for volumetric and protocol floods, while AWS WAF enforces rate-based rules against application-layer abuse",
+   "points": [
+    {
+     "text": "AWS Shield Standard: automatic Layer 3/4 protection, always on",
+     "icon": "img:images/aws-shield.svg",
+     "at": 1
+    },
+    {
+     "text": "AWS Shield Advanced: paid tier adding application-layer protection",
+     "icon": "img:images/aws-shield.svg",
+     "at": 2
+    },
+    {
+     "text": "24/7 response team support and DDoS cost protection",
+     "icon": "i3d:users",
+     "at": 2
+    },
+    {
+     "text": "AWS WAF: rate-based rules throttle requests per source IP",
+     "icon": "img:images/aws-waf.svg",
+     "at": 3
+    },
+    {
+     "text": "Amazon CloudFront: edge locations absorb volumetric traffic before origin",
+     "icon": "img:images/aws-cloudfront.svg",
+     "at": 4
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T07",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Point to where each service sits: Shield at the network edge, WAF in front of the application, CloudFront distributing load globally. Interviewers like asking the difference between Shield Standard and Shield Advanced."
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2
+  },
+  {
+   "id": "T08",
+   "layout": "points",
+   "kicker": "Data Breach Landscape",
+   "title": "Causes And Impact",
+   "lead": "A data breach exposes sensitive data to a party never meant to see it: in a shared cloud service, one breach can touch many customers at once",
+   "points": [
+    {
+     "text": "Exposed credentials: weak, reused or hardcoded login secrets",
+     "icon": "i3d:key"
+    },
+    {
+     "text": "Insecure APIs: weakly protected interfaces attackers query directly",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "Breach cost & impact: financial, legal and reputational fallout",
+     "icon": "i3d:receipt"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T08",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Set up the three angles before going deep on each. Mention that credential leaks and API flaws are consistently the top two breach causes in industry incident reports, which is a common interview question."
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "Exposed Credentials",
+   "title": "How Logins Leak",
+   "lead": "A credential leaks when it is written down, shared or guessed outside its intended use, letting an attacker log in as a legitimate user",
+   "points": [
+    {
+     "text": "Hardcoded secrets: access keys committed into source code or images",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "Reused passwords: one leaked password unlocks multiple accounts",
+     "icon": "i3d:password"
+    },
+    {
+     "text": "Missing MFA: without Multi-Factor Authentication (MFA), a stolen password alone unlocks the account",
+     "icon": "i3d:unlock"
+    },
+    {
+     "text": "Public exposure: keys posted on forums, repositories or logs",
+     "icon": "i3d:globe"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T09",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 560,
+   "note": {
+    "text": "AWS Secrets Manager stores and rotates such keys instead of hardcoding them, and GuardDuty flags anomalous use of a stolen one"
+   },
+   "notes": "Point out that a committed access key in a public repository is the single most repeated real-world breach story. Ask: why does rotating a key limit the damage even after it leaks?"
+  },
+  {
+   "id": "T10",
+   "layout": "points",
+   "kicker": "Insecure APIs",
+   "title": "Where Attacks Enter",
+   "lead": "Cloud services expose nearly everything through an application programming interface (API), so a weakly protected API gives an attacker a direct path to the data behind it",
+   "points": [
+    {
+     "text": "Broken authentication: endpoint skips or weakly checks caller identity",
+     "icon": "i3d:user-x"
+    },
+    {
+     "text": "Excessive data exposure: response returns more fields than needed",
+     "icon": "i3d:list"
+    },
+    {
+     "text": "No rate limiting: endpoint allows unlimited automated requests",
+     "icon": "i3d:gauge"
+    },
+    {
+     "text": "Missing input validation: malformed requests reach backend logic",
+     "icon": "i3d:alert"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T10",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "note": {
+    "text": "Amazon API Gateway supports authentication, throttling and request validation, while AWS WAF filters malicious requests"
+   },
+   "notes": "Explain each weakness as a gap the gateway is meant to close, not a flaw in the API concept itself. Exam hook: these four map directly to the widely-cited OWASP API Security risk list."
+  },
+  {
+   "id": "T11",
+   "layout": "table",
+   "kicker": "Breach Cost Impact",
+   "title": "Financial And Legal Fallout",
+   "lead": "Beyond the technical fix, a breach carries a cost measured in money, law and trust, which is why breach prevention is budgeted at leadership level",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Cost Category",
+      "icon": "i3d:tag",
+      "weight": 1.0
+     },
+     {
+      "label": "Driver",
+      "icon": "i3d:chart",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:search",
+      "cells": [
+       "Detection & containment",
+       "Forensics and incident response hours"
+      ]
+     },
+     {
+      "icon": "i3d:gavel",
+      "cells": [
+       "Legal & regulatory",
+       "GDPR fines up to 4% global revenue"
+      ]
+     },
+     {
+      "icon": "i3d:mail",
+      "cells": [
+       "Notification",
+       "Mandatory customer and regulator disclosure"
+      ]
+     },
+     {
+      "icon": "i3d:users",
+      "cells": [
+       "Business impact",
+       "Customer churn and reputational damage"
+      ]
+     }
+    ]
+   },
+   "note": {
+    "text": "Breach cost rises the longer detection takes, so AWS Security Hub and CloudTrail support continuous security monitoring and investigation over periodic review"
+   },
+   "notes": "Walk through the table left to right as the breach timeline unfolds. Mention the GDPR fine figure as a concrete, commonly-asked compliance number in interviews."
+  },
+  {
+   "id": "T11-B",
+   "layout": "lead",
+   "kicker": "Breach Cost Impact",
+   "title": "Financial And Legal Fallout",
+   "figure": {
+    "type": "custom",
+    "name": "B_T11B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1080,
+   "figH": 420,
+   "notes": "Walk through the table left to right as the breach timeline unfolds. Mention the GDPR fine figure as a concrete, commonly-asked compliance number in interviews."
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3
+  },
+  {
+   "id": "T12",
+   "layout": "points",
+   "kicker": "Misconfiguration Landscape",
+   "title": "Three Common Mistakes",
+   "lead": "Most publicised cloud breaches trace back not to broken encryption but to a setting left wrong. Misconfiguration is an incorrectly set security control that unintentionally exposes a resource",
+   "points": [
+    {
+     "text": "Public storage buckets: data readable by anyone on the internet",
+     "icon": "i3d:bucket"
+    },
+    {
+     "text": "Permissive security groups: firewall rules opened wider than needed",
+     "icon": "i3d:gate"
+    },
+    {
+     "text": "Default credentials: factory passwords or keys never changed",
+     "icon": "i3d:key"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T12",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Open by stating most publicised cloud breaches are misconfiguration, not a broken cipher. Ask: why does a correctly encrypted bucket still leak data if its access is public? Point to the three categories as this section's roadmap."
+  },
+  {
+   "id": "T13",
+   "layout": "points",
+   "kicker": "Public Storage Buckets",
+   "title": "Accidental Open Access",
+   "lead": "A storage bucket turns public when its access policy lets anyone, not only the account owner, read or list its objects: usually through a broad bucket policy, not a deliberate decision",
+   "points": [
+    {
+     "text": "Root cause: a bucket policy that allows any principal (`\"Principal\": \"*\"`)",
+     "icon": "i3d:policy",
+     "at": 1
+    },
+    {
+     "text": "Or an ACL that grants read to 'Everyone (public access)'",
+     "icon": "i3d:users",
+     "at": 1
+    },
+    {
+     "text": "Enabler: Amazon S3 Block Public Access, on by default for new buckets, is turned off for the bucket and the account",
+     "icon": "i3d:toggle",
+     "at": 2
+    },
+    {
+     "text": "Consequence: object listing and direct download without any login",
+     "icon": "i3d:object",
+     "at": 3
+    },
+    {
+     "text": "Scale: automated scanners find exposed buckets within minutes of creation",
+     "icon": "i3d:radar",
+     "at": 4
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T13",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 600,
+   "notes": "Explain the exposure is usually a policy or checkbox mistake, not malice. Point to the Amazon S3 console's Block Public Access setting as where this is caught. Mention this is the single most common cloud data-breach cause reported."
+  },
+  {
+   "id": "T13-AN",
+   "layout": "analogy",
+   "label": "Analogy: shop door left unlocked",
+   "kicker": "Public Storage Buckets",
+   "title": "Accidental Open Access",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T13Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T13Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A shop owner accidentally leaves the front door unlocked, allowing anyone to walk in and take products. This is like a public S3 bucket exposing stored data to anyone on the internet.\n\nExplain the exposure is usually a policy or checkbox mistake, not malice. Point to the Amazon S3 console's Block Public Access setting as where this is caught. Mention this is the single most common cloud data-breach cause reported."
+  },
+  {
+   "id": "T14",
+   "layout": "table",
+   "kicker": "Groups And Credentials",
+   "title": "Two More Misconfigurations",
+   "lead": "A security group turns permissive when an inbound rule allows traffic from every address on sensitive ports; a default credential is any vendor-shipped password or key never rotated",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Misconfiguration",
+      "icon": "i3d:alert",
+      "weight": 0.9
+     },
+     {
+      "label": "Typical Mistake",
+      "icon": "i3d:cross",
+      "weight": 1.0
+     },
+     {
+      "label": "Where Checked",
+      "icon": "i3d:search",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:gate",
+      "cells": [
+       "Permissive security group",
+       "SSH or database port open to [[`0.0.0.0/0`]]",
+       "EC2 Security Groups console, inbound rules"
+      ]
+     },
+     {
+      "icon": "i3d:key",
+      "cells": [
+       "Default credentials",
+       "Factory password or sample key [[left active]]",
+       "Application, database or device admin login; IAM credential report for IAM credentials"
+      ]
+     }
+    ]
+   },
+   "note": {
+    "text": "All three mistakes are caught by continuous automated checks, such as AWS Config and Trusted Advisor, not a one-time manual review"
+   },
+   "notes": "Point out 0.0.0.0/0 means every IP address on the internet, so a database port opened to it is reachable by anyone. Reference the IAM credential report as where administrators audit unrotated or default keys. A common interview question: how to spot an open SSH rule: check inbound rules for 0.0.0.0/0 on port 22."
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4
+  },
+  {
+   "id": "T16",
+   "layout": "points",
+   "kicker": "Insider Supply Threats",
+   "title": "Threat Landscape Map",
+   "lead": "Not every breach comes from outside; attackers also enter through trusted people and trusted software components already inside the environment",
+   "points": [
+    {
+     "text": "Insider threats: people with legitimate access misusing it",
+     "icon": "i3d:user"
+    },
+    {
+     "text": "Supply-chain threats: compromise riding in via trusted software",
+     "icon": "i3d:package"
+    },
+    {
+     "text": "Credential threats: phishing, leaked keys and stolen tokens",
+     "icon": "i3d:key"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T16",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Frame this as the trust-based half of cloud risk, distinct from the earlier misconfiguration takeaway. Ask: why can a trusted user bypass a firewall entirely?"
+  },
+  {
+   "id": "T17",
+   "layout": "points",
+   "kicker": "Insider Threats",
+   "title": "Malicious vs Accidental",
+   "lead": "An insider threat is harm caused by someone who already holds authorized access, done either on purpose or by mistake",
+   "points": [
+    {
+     "text": "Malicious insider: deliberately steals or sabotages data for gain",
+     "icon": "i3d:user-x"
+    },
+    {
+     "text": "Accidental insider: misconfigures or exposes data by mistake",
+     "icon": "i3d:unlock"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T17",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 330,
+   "pointsW": 500,
+   "notes": "Stress that both types pass every perimeter control because access was already granted legitimately. Mention CloudTrail logs every API call an insider makes. Interview hook: why is an accidental insider often costlier to catch than a malicious one?"
+  },
+  {
+   "id": "T17-B",
+   "layout": "points",
+   "kicker": "Insider Threats",
+   "title": "Malicious vs Accidental",
+   "points": [
+    {
+     "text": "Detection relies on behaviour patterns, not perimeter defences",
+     "icon": "i3d:eye"
+    },
+    {
+     "text": "AWS CloudTrail: a record of the API calls and console actions made in the account",
+     "icon": "img:images/aws-cloudtrail.svg"
+    },
+    {
+     "text": "Amazon GuardDuty: a service that flags unusual account activity",
+     "icon": "img:images/aws-guardduty.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T17B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "Stress that both types pass every perimeter control because access was already granted legitimately. Mention CloudTrail logs every API call an insider makes. Interview hook: why is an accidental insider often costlier to catch than a malicious one?"
+  },
+  {
+   "id": "T17-AN",
+   "layout": "analogy",
+   "label": "Analogy: trusted employee with the stockroom key",
+   "kicker": "Insider Threats",
+   "title": "Malicious vs Accidental",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T17Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T17Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A shop hands its most trusted employee the stockroom's master key; that employee can either steal stock deliberately or accidentally leave the shutter open overnight: just as an insider threat comes from someone whose legitimate access is misused, on purpose or by mistake.\n\nStress that both types pass every perimeter control because access was already granted legitimately. Mention CloudTrail logs every API call an insider makes. Interview hook: why is an accidental insider often costlier to catch than a malicious one?"
+  },
+  {
+   "id": "T18",
+   "layout": "points",
+   "kicker": "Supply Chain Risk",
+   "title": "Dependencies and Images",
+   "lead": "Applications rarely start from scratch; they pull in open-source libraries and container base images whose integrity is assumed, not verified, which is itself an attack surface",
+   "points": [
+    {
+     "text": "Compromised dependency: a malicious update pulled in automatically",
+     "icon": "i3d:package"
+    },
+    {
+     "text": "Compromised image: a tampered base image from a public registry",
+     "icon": "i3d:container"
+    },
+    {
+     "text": "Typosquatting: a lookalike package name installed by mistake",
+     "icon": "i3d:tag"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T18",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Point out this attacks the build pipeline, not the running system directly. Explain pinning as locking an exact version instead of 'latest'. Exam hook: ask why automatic dependency updates increase this risk."
+  },
+  {
+   "id": "T18-B",
+   "layout": "points",
+   "kicker": "Supply Chain Risk",
+   "title": "Dependencies and Images",
+   "points": [
+    {
+     "text": "Image scanning: Amazon ECR identifies known vulnerabilities in container images",
+     "icon": "img:images/aws-ecr.svg"
+    },
+    {
+     "text": "Dependency pinning: locking an exact version instead of 'latest'",
+     "icon": "i3d:pin"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T18B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 500,
+   "notes": "Point out this attacks the build pipeline, not the running system directly. Explain pinning as locking an exact version instead of 'latest'. Exam hook: ask why automatic dependency updates increase this risk."
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "Credential Attack Paths",
+   "title": "Phishing Keys Tokens",
+   "lead": "Many cloud breaches begin not with a technical exploit but with a stolen credential that walks straight past every other control",
+   "points": [
+    {
+     "text": "Phishing: a fake login page harvests a user's password",
+     "icon": "i3d:webpage"
+    },
+    {
+     "text": "Leaked keys: access keys accidentally committed to public repositories",
+     "icon": "i3d:key"
+    },
+    {
+     "text": "Token theft: a stolen session or API token reused by an attacker",
+     "icon": "i3d:token"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T19",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Connect this back to the key-management session: rotation and scoped permissions blunt a leaked key's damage. Point at how a token differs from a password: it needs no further login. Interview hook: why does key rotation limit the blast radius of a leak?"
+  },
+  {
+   "id": "T19-B",
+   "layout": "points",
+   "kicker": "Credential Attack Paths",
+   "title": "Phishing Keys Tokens",
+   "points": [
+    {
+     "text": "AWS Secrets Manager: a vault that stores and rotates credentials",
+     "icon": "img:images/aws-secrets-manager.svg"
+    },
+    {
+     "text": "IAM Access Analyzer: a tool that flags overly broad permissions",
+     "icon": "img:images/res-iam-access-analyzer.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T19B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 330,
+   "pointsW": 500,
+   "note": {
+    "text": "Trust-based attacks confirm why least-privilege access and key rotation matter more than any single perimeter defence"
+   },
+   "notes": "Connect this back to the key-management session: rotation and scoped permissions blunt a leaked key's damage. Point at how a token differs from a password: it needs no further login. Interview hook: why does key rotation limit the blast radius of a leak?"
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "AI Threats Landscape",
+   "title": "Four New Risks",
+   "lead": "AI-powered applications add a new attack surface beyond the network and storage threats, because the model and its data store can themselves be tricked, probed or overloaded",
+   "points": [
+    {
+     "text": "Prompt injection: malicious input hijacks the model's instructions",
+     "icon": "i3d:chat"
+    },
+    {
+     "text": "Sensitive information disclosure: model leaks training or context data",
+     "icon": "i3d:eye"
+    },
+    {
+     "text": "Vector and embedding weaknesses: the retrieval store itself is attacked",
+     "icon": "i3d:vector"
+    },
+    {
+     "text": "Unbounded consumption: unmetered requests become a billing-based denial of service",
+     "icon": "i3d:meter"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T20",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Set the map before going into each risk one at a time. Point out that these sit on top of the infrastructure already secured, not in place of it. Exam hook: expect a one-line definition question for each of the four."
+  },
+  {
+   "id": "T21",
+   "layout": "lead",
+   "kicker": "Prompt Injection",
+   "title": "Hijacking Instructions",
+   "lead": "A large language model (LLM), the AI system behind chatbots and assistants, reads its instructions and the data it is given as one stream of text, so it cannot reliably tell trusted commands apart from untrusted data. Prompt injection hides a malicious instruction inside that text so the model obeys it instead of its intended task",
+   "figure": {
+    "type": "custom",
+    "name": "D_T21",
+    "props": {
+     "steps": 3,
+     "rows": [
+      [
+       "Direct injection: attacker types the malicious instruction into the chat box",
+       "Keyboard"
+      ],
+      [
+       "Indirect injection: attacker never touches the chat, text is pre-planted elsewhere",
+       "FileText"
+      ],
+      [
+       "Goal: override system instructions or leak hidden data",
+       "Target"
+      ]
+     ]
+    }
+   },
+   "figW": 1080,
+   "figH": 310,
+   "notes": "Distinguish direct from indirect by who typed the malicious text. Say an email summary tool reading a poisoned attachment is the classic indirect case. Exam hook: ask which type does not need the attacker to touch the chat box."
+  },
+  {
+   "id": "T21-AN",
+   "layout": "analogy",
+   "label": "Analogy: hidden message in a document",
+   "kicker": "Prompt Injection",
+   "title": "Hijacking Instructions",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T21Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T21Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: An employee receives an official task from a manager, but a hidden message inside a document tells them to ignore the manager's instructions and share confidential files. Following that hidden message is like prompt injection.\n\nDistinguish direct from indirect by who typed the malicious text. Say an email summary tool reading a poisoned attachment is the classic indirect case. Exam hook: ask which type does not need the attacker to touch the chat box."
+  },
+  {
+   "id": "T22",
+   "layout": "points",
+   "kicker": "Sensitive Info Disclosure",
+   "title": "Model Leaks Data",
+   "lead": "A model trained on large datasets, or given private context inside a prompt, can be coaxed into repeating that private data back in its answer, exposing information no user was meant to see",
+   "points": [
+    {
+     "text": "Training data leakage: model memorises and repeats snippets of training text",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Context leakage: poor session isolation exposes one user's private context to another user",
+     "icon": "i3d:users"
+    },
+    {
+     "text": "Over-permissioned retrieval: model fetches documents the caller should not access",
+     "icon": "i3d:lock"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T22",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Separate the three sources: training memory, session mix-up, over-broad retrieval permission. Say this is why output review matters even for a trusted model. Exam hook: ask which case is a permissions bug rather than a model flaw."
+  },
+  {
+   "id": "T22-AN",
+   "layout": "analogy",
+   "label": "Analogy: receptionist hands over the wrong file",
+   "kicker": "Sensitive Info Disclosure",
+   "title": "Model Leaks Data",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T22Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T22Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A receptionist accidentally gives one visitor another visitor's confidential file because the files were not properly separated. This is like sensitive information disclosure when an AI system exposes private data to the wrong user.\n\nSeparate the three sources: training memory, session mix-up, over-broad retrieval permission. Say this is why output review matters even for a trusted model. Exam hook: ask which case is a permissions bug rather than a model flaw."
+  },
+  {
+   "id": "T23",
+   "layout": "points",
+   "kicker": "Vector Store Risks",
+   "title": "Embedding Weaknesses",
+   "lead": "Many AI applications store documents as embeddings, numeric vectors that capture meaning, inside a vector database used to fetch relevant context for an answer; attackers can target this store directly, without ever touching the model",
+   "points": [
+    {
+     "text": "Embedding inversion: reconstructing original text from its stored vector",
+     "icon": "i3d:vector"
+    },
+    {
+     "text": "Data poisoning: inserting crafted documents to bias future retrievals",
+     "icon": "i3d:bug"
+    },
+    {
+     "text": "Unauthorized retrieval: querying the vector store to pull restricted content",
+     "icon": "i3d:lock"
+    },
+    {
+     "text": "Weak access control: vector database lacks the source data's permissions",
+     "icon": "i3d:unlock"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T23",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Stress that the vector store is a separate attack surface from the model itself. Say poisoning changes future answers while inversion exposes past documents. Exam hook: ask why the vector database needs the same access policy as its source files."
+  },
+  {
+   "id": "T24",
+   "layout": "points",
+   "kicker": "Unbounded Consumption",
+   "title": "Cost-Based DoS",
+   "lead": "Unlike a network flood that exhausts bandwidth, an AI service can be exhausted by legitimate-looking requests that each consume expensive compute, turning the provider's own billing meter into the attack's damage",
+   "points": [
+    {
+     "text": "Flood of large or repeated prompts spikes compute and token costs",
+     "icon": "i3d:chart"
+    },
+    {
+     "text": "No limit on output length lets one request consume disproportionate resources",
+     "icon": "i3d:coin"
+    },
+    {
+     "text": "Model denial of service: ties up capacity other users need",
+     "icon": "i3d:hourglass"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T24",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Point out that the resource exhausted here is a billing meter, not a network link, unlike a volumetric flood. Say a single unbounded prompt can cost as much as thousands of normal ones. Exam hook: ask how this differs from a volumetric attack."
+  },
+  {
+   "id": "T24-AN",
+   "layout": "analogy",
+   "label": "Analogy: tap left running",
+   "kicker": "Unbounded Consumption",
+   "title": "Cost-Based DoS",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T24Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T24Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: Like a tap left running on a per-litre water bill: just as unmetered AI requests keep draining paid compute until the bill itself becomes the damage.\n\nPoint out that the resource exhausted here is a billing meter, not a network link, unlike a volumetric flood. Say a single unbounded prompt can cost as much as thousands of normal ones. Exam hook: ask how this differs from a volumetric attack."
+  },
+  {
+   "id": "T25",
+   "layout": "points",
+   "kicker": "Defending AI Workloads",
+   "title": "Controls And Tools",
+   "lead": "Each AI-specific threat is countered by a control placed around the model or its data store, applied through guardrail and access-management features on managed AI platforms such as Amazon Bedrock",
+   "points": [
+    {
+     "text": "Guardrails: filter and block injected or unsafe prompts before generation",
+     "icon": "img:images/aws-bedrock.svg"
+    },
+    {
+     "text": "Output filtering: scan responses for disclosed secrets before returning them",
+     "icon": "i3d:scan"
+    },
+    {
+     "text": "Vector store access control: apply the same identity policy as source data",
+     "icon": "i3d:database"
+    },
+    {
+     "text": "Rate limiting and quotas: cap tokens and requests per caller",
+     "icon": "i3d:gauge"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T25",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Point to the guardrail stage as the AWS location where prompt filtering actually runs. Say each bullet maps back to one of the four risks just taught, in the same order. Exam hook: ask which control stops a cost-based attack specifically."
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz",
+   "notes": "Quiz on Cloud Threats & Attacks. Q1. Which security goal does a denial of service attack target? Answer: Availability. Q2. What is the distinguishing factor between DoS and DDoS? Answer: Source count. Q3. Why are volumetric floods reported in Gbps or Tbps? Answer: They exhaust the bandwidth path, measured in bits per second rather than requests per second. Q4. Which AWS service throttles requests per source IP with rate-based rules? Answer: AWS WAF. Q5. What does \"Principal\": \"*\" in a bucket policy allow? Answer: Any principal, so anyone can read or list the bucket's objects. Q6. What does 0.0.0.0/0 in an inbound rule mean? Answer: Every IP address on the internet. Q7. Which prompt injection type does not need the attacker to touch the chat box? Answer: Indirect injection. Q8. Which control stops a cost-based attack on an AI service? Answer: Rate limiting and quotas."
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Denial of Service: DoS vs DDoS; volumetric, protocol & application-layer attacks; mitigation: rate limiting, scrubbing & CDN absorption\n2. Data Breaches: Exposed credentials; insecure APIs; breach cost & business impact\n3. Misconfiguration: Public storage buckets; permissive security groups; default credentials\n4. Insider & Supply-Chain Threats: Malicious & accidental insiders; compromised dependencies & images; phishing, leaked keys & token theft\n5. AI-Specific Threats: Prompt injection; sensitive information disclosure; vector & embedding weaknesses; unbounded consumption as cost-based DoS"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Security Practices & Compliance"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}

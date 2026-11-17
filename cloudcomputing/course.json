@@ -17,7 +17,7 @@
     { "title": "IAM Fundamentals", "folder": "iam_fundamentals" },
     { "title": "IAM & Least Privilege", "folder": null },
     { "title": "Encryption & Key Management", "folder": null },
-    { "title": "Cloud Threats & Attacks", "folder": null },
+    { "title": "Cloud Threats & Attacks", "folder": "cloud_threats_and_attacks" },
     { "title": "Security Practices & Compliance", "folder": null },
     { "title": "Cloud-Native Applications", "folder": null },
     { "title": "Building with Containers", "folder": null },
