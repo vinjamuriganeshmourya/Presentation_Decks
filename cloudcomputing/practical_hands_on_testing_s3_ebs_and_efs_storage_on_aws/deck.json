@@ -1,0 +1,1063 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "Testing S3, EBS and EFS Storage on AWS",
+    "course": "Cloud Computing",
+    "htmlName": "testing-s3-ebs-and-efs-storage-on-aws",
+    "labDeck": true
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "D-LAB",
+      "layout": "breaker",
+      "index": 6,
+      "lab": true,
+      "kicker": "Practical Hands-On",
+      "title": "Testing S3, EBS and EFS Storage on AWS"
+    },
+    {
+      "id": "P01",
+      "layout": "lead",
+      "kicker": "Lab Overview",
+      "title": "What Gets Tested",
+      "lead": "This practical builds one example of each storage type: an S3 bucket for objects, an EBS volume on one instance for block storage, and an EFS file system shared between two instances for file storage",
+      "figW": 1000,
+      "figH": 300,
+      "figure": {
+        "type": "diagram",
+        "w": 1000,
+        "h": 300,
+        "boxes": [
+          {
+            "id": "lo",
+            "label": "Object Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-s3.svg",
+            "x": 14,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          },
+          {
+            "id": "lb",
+            "label": "Block Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-ebs.svg",
+            "x": 350,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          },
+          {
+            "id": "lf",
+            "label": "File Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-efs.svg",
+            "x": 686,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          }
+        ],
+        "nodes": [
+          {
+            "id": "bkt",
+            "x": 104,
+            "y": 150,
+            "icon": "img:images/aws-s3-bucket.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "S3 Bucket"
+          },
+          {
+            "id": "obj",
+            "x": 226,
+            "y": 150,
+            "icon": "img:images/aws-s3-object.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Object",
+            "loop": "lift"
+          },
+          {
+            "id": "i1",
+            "x": 440,
+            "y": 150,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 1"
+          },
+          {
+            "id": "vol",
+            "x": 562,
+            "y": 150,
+            "icon": "img:images/aws-ebs-volume.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EBS Volume"
+          },
+          {
+            "id": "e1",
+            "x": 750,
+            "y": 108,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 1"
+          },
+          {
+            "id": "e2",
+            "x": 922,
+            "y": 108,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 2"
+          },
+          {
+            "id": "efs",
+            "x": 836,
+            "y": 214,
+            "icon": "img:images/aws-efs-file-system.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EFS File System",
+            "loop": "pulse"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "obj",
+            "to": "bkt"
+          },
+          {
+            "from": "i1",
+            "to": "vol",
+            "two": true
+          },
+          {
+            "from": "e1",
+            "to": "efs",
+            "two": true
+          },
+          {
+            "from": "e2",
+            "to": "efs",
+            "two": true
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "obj",
+              "bkt"
+            ],
+            "dur": 2.4
+          },
+          {
+            "path": [
+              "e1",
+              "efs",
+              "e2"
+            ],
+            "dur": 3.6
+          }
+        ],
+        "steps": [
+          [
+            "lo",
+            "bkt",
+            "obj",
+            "obj>bkt",
+            "packet:0"
+          ],
+          [
+            "lb",
+            "i1",
+            "vol",
+            "i1>vol"
+          ],
+          [
+            "lf",
+            "e1",
+            "e2",
+            "efs",
+            "e1>efs",
+            "e2>efs",
+            "packet:1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "P01-B",
+      "layout": "custom",
+      "component": "L_Steps",
+      "label": "What Gets Tested",
+      "props": {
+        "id": "P01-B",
+        "kicker": "Lab Overview",
+        "title": "What Gets Tested",
+        "steps": [
+          {
+            "text": "Store an object in S3 and confirm it downloads with the same content",
+            "icon": "Upload"
+          },
+          {
+            "text": "Attach an EBS volume to one instance, format and mount it, then store a file on it",
+            "icon": "HardDrive"
+          },
+          {
+            "text": "Create a shared EFS file system reachable from two separate instances",
+            "icon": "FolderOpen"
+          },
+          {
+            "text": "Write a file on one instance, read it from the other",
+            "icon": "ArrowLeftRight"
+          },
+          {
+            "text": "Compare all three services on performance, sharing, scale and cost",
+            "icon": "Scale"
+          }
+        ]
+      }
+    },
+    {
+      "id": "P02",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "S3 Upload Completion Summary",
+      "props": {
+        "id": "P02",
+        "kicker": "S3 Upload Verified",
+        "title": "Properties Confirm Object",
+        "step": "S3 Upload Completion Summary",
+        "icon": "Upload",
+        "image": "images/s3-upload-full.png",
+        "rings": [
+          [
+            1250,
+            600,
+            440,
+            110
+          ],
+          [
+            2450,
+            600,
+            320,
+            110
+          ],
+          [
+            50,
+            600,
+            610,
+            100
+          ]
+        ],
+        "caption": "The upload summary confirms one file succeeded, with zero failures, uploaded to the bucket destination shown in the S3 URI\nThis is the moment the object becomes available by its key",
+        "maxW": 760
+      }
+    },
+    {
+      "id": "P02-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "S3 Object Properties",
+      "props": {
+        "id": "P02-B",
+        "kicker": "S3 Upload Verified",
+        "title": "Properties Confirm Object",
+        "step": "S3 Object Properties For `session7-object.txt`",
+        "icon": "FileText",
+        "image": "images/s3-properties.png",
+        "rings": [
+          [
+            70,
+            1200,
+            380,
+            94
+          ],
+          [
+            70,
+            898,
+            140,
+            98
+          ],
+          [
+            70,
+            1050,
+            120,
+            96
+          ],
+          [
+            70,
+            598,
+            640,
+            94
+          ],
+          [
+            1558,
+            448,
+            1040,
+            100
+          ]
+        ],
+        "caption": "The Properties tab lists the object key, its size, type, region and the S3 URI used to address it, confirming the object and its metadata are stored and retrievable",
+        "maxW": 760
+      }
+    },
+    {
+      "id": "P03-A",
+      "layout": "lead",
+      "kicker": "EBS Configuration",
+      "title": "Volume Matches AZ",
+      "lead": "An EBS volume and the instance it attaches to must sit in the same Availability Zone, since a volume cannot attach across zones\nThis pairing is checked before creation, not after",
+      "figW": 1000,
+      "figH": 336,
+      "figure": {
+        "type": "diagram",
+        "w": 1000,
+        "h": 336,
+        "boxes": [
+          {
+            "id": "za",
+            "label": "Availability Zone `ap-south-1a`",
+            "kind": "zone",
+            "icon": "MapPin",
+            "labelAt": "bottom",
+            "x": 10,
+            "y": 6,
+            "w": 470,
+            "h": 280
+          },
+          {
+            "id": "zb",
+            "label": "Availability Zone `ap-south-1b`",
+            "kind": "zone",
+            "icon": "MapPin",
+            "labelAt": "bottom",
+            "x": 520,
+            "y": 6,
+            "w": 470,
+            "h": 280
+          }
+        ],
+        "nodes": [
+          {
+            "id": "ec2",
+            "x": 130,
+            "y": 132,
+            "icon": "img:images/aws-ec2-instance.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EC2 Instance"
+          },
+          {
+            "id": "vola",
+            "x": 360,
+            "y": 132,
+            "icon": "img:images/aws-ebs-volume.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EBS Volume"
+          },
+          {
+            "id": "volb",
+            "x": 755,
+            "y": 132,
+            "icon": "img:images/aws-ebs-volume.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EBS Volume"
+          }
+        ],
+        "chips": [
+          {
+            "id": "same",
+            "x": 245,
+            "y": 214,
+            "text": "Same Availability Zone",
+            "icon": "CircleCheck",
+            "tone": "good"
+          },
+          {
+            "id": "check",
+            "x": 500,
+            "y": 312,
+            "text": "Checked Before Creation, Not After",
+            "icon": "ClipboardCheck",
+            "tone": "brand"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "vola",
+            "to": "ec2",
+            "tone": "good",
+            "label": "Attaches"
+          },
+          {
+            "id": "across",
+            "from": "volb",
+            "to": "ec2",
+            "blocked": true,
+            "via": [
+              [
+                755,
+                52
+              ],
+              [
+                130,
+                52
+              ]
+            ],
+            "label": "Cannot Attach Across Zones",
+            "labelPos": "above"
+          }
+        ],
+        "packets": [
+          {
+            "path": [
+              "vola",
+              "ec2"
+            ],
+            "tone": "good",
+            "dur": 2.6
+          }
+        ],
+        "steps": [
+          {
+            "show": [
+              "ec2",
+              "vola",
+              "vola>ec2",
+              "same",
+              "packet:0"
+            ],
+            "lit": [
+              "vola",
+              "same"
+            ]
+          },
+          {
+            "show": [
+              "volb",
+              "across"
+            ],
+            "lit": [
+              "volb"
+            ]
+          },
+          {
+            "show": [
+              "check"
+            ],
+            "lit": [
+              "check"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "P03",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "EBS Volume Settings Before Creation",
+      "props": {
+        "id": "P03",
+        "kicker": "EBS Configuration",
+        "title": "Volume Matches AZ",
+        "step": "EBS Volume Settings Before Creation",
+        "icon": "HardDrive",
+        "image": "images/ebs-settings.png",
+        "rings": [
+          [
+            24,
+            164,
+            1770,
+            80
+          ],
+          [
+            24,
+            354,
+            248,
+            82
+          ],
+          [
+            24,
+            1072,
+            1770,
+            82
+          ]
+        ],
+        "caption": "The volume settings show a gp3 volume sized 2 GiB created in the same Availability Zone as the instance, matching the rule that a volume and its instance must share a zone",
+        "maxW": 760
+      }
+    },
+    {
+      "id": "P03-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Attach Volume Dialog With Instance Selected",
+      "props": {
+        "id": "P03-B",
+        "kicker": "EBS Configuration",
+        "title": "Volume Matches AZ",
+        "step": "Attach Volume Dialog With Instance Selected",
+        "icon": "Link",
+        "image": "images/ebs-attach.png",
+        "rings": [
+          [
+            56,
+            494,
+            390,
+            104
+          ],
+          [
+            64,
+            706,
+            1180,
+            116
+          ]
+        ],
+        "caption": "The attach dialog pairs the volume ID with the running instance, both shown in the same Availability Zone, which is the precondition for a successful attachment",
+        "maxW": 760
+      }
+    },
+    {
+      "id": "P04",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "lsblk Output",
+      "props": {
+        "id": "P04",
+        "kicker": "Disk Identified",
+        "title": "Format And Persist",
+        "step": "`lsblk` Output Listing Root And Data Disks",
+        "icon": "Terminal",
+        "image": "images/lsblk.png",
+        "rings": [
+          [
+            4,
+            94,
+            850,
+            40
+          ],
+          [
+            4,
+            266,
+            844,
+            40
+          ]
+        ],
+        "caption": "The `lsblk` output lists the root disk `nvme0n1` with its boot partitions alongside the separate 2 GiB disk `nvme1n1`, which has no partitions yet and is the empty volume to format; device names can differ from what the console showed",
+        "maxW": 700,
+        "lead": "Formatting a disk erases anything already on it, so the newly attached empty disk must be identified by its size before any format command runs, and the root disk is never touched"
+      }
+    },
+    {
+      "id": "P04-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "EBS Volume Formatted, Mounted, File Written",
+      "props": {
+        "id": "P04-B",
+        "kicker": "Disk Identified",
+        "title": "Format And Persist",
+        "step": "EBS Volume Formatted, Mounted, File Written",
+        "icon": "Terminal",
+        "image": "images/ebs-format.png",
+        "rings": [
+          [
+            4,
+            676,
+            1112,
+            84
+          ],
+          [
+            4,
+            848,
+            860,
+            88
+          ]
+        ],
+        "caption": "Disk formatted, mounted, and a file written and read back from the EBS volume",
+        "maxW": 760
+      }
+    },
+    {
+      "id": "P05",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "EFS File System General Settings",
+      "props": {
+        "id": "P05",
+        "kicker": "EFS Creation",
+        "title": "Mount Target Ready",
+        "step": "EFS File System General Settings",
+        "icon": "FolderOpen",
+        "image": "images/efs-general.png",
+        "rings": [
+          [
+            88,
+            584,
+            340,
+            236
+          ],
+          [
+            1578,
+            592,
+            290,
+            96
+          ]
+        ],
+        "caption": "The file system details confirm it was created with General Purpose performance and Elastic throughput and shows an available state; this file system ID is what both instances must mount using the identical value",
+        "maxW": 780,
+        "lead": "Before mounting, the file system ID, the DNS name, the mount target's state and the security group rule allowing network file system traffic are all verified on both instances"
+      }
+    },
+    {
+      "id": "P05-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "EFS Mount Target Network Configuration",
+      "props": {
+        "id": "P05-B",
+        "kicker": "EFS Creation",
+        "title": "Mount Target Ready",
+        "step": "EFS Mount Target Network Configuration",
+        "icon": "Network",
+        "image": "images/efs-network.png",
+        "rings": [
+          [
+            90,
+            246,
+            2600,
+            116
+          ],
+          [
+            90,
+            612,
+            316,
+            80
+          ],
+          [
+            1938,
+            712,
+            316,
+            216
+          ]
+        ],
+        "caption": "The network access section shows the mount target placed in the same VPC and Availability Zone as the instances, with a security group permitting NFS traffic from the instances",
+        "maxW": 780
+      }
+    },
+    {
+      "id": "P06",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Instance 1 Terminal Showing EFS Mount And Shared File",
+      "props": {
+        "id": "P06",
+        "kicker": "Sharing And Cleanup",
+        "title": "Verify Then Remove",
+        "step": "Instance 1 Terminal Showing EFS Mount And Shared File",
+        "icon": "Terminal",
+        "image": "images/efs-instance-1.png",
+        "rings": [
+          [
+            4,
+            18,
+            1200,
+            132
+          ],
+          [
+            4,
+            592,
+            1220,
+            128
+          ]
+        ],
+        "caption": "First `df` shows the root disk, not EFS: the file lands locally\nAfter `mount -t efs`, the second `df` confirms EFS, and the file is recreated correctly\nA common mistake, worth narrating live",
+        "maxW": 780
+      }
+    },
+    {
+      "id": "P06-B",
+      "layout": "custom",
+      "component": "L_Shot",
+      "label": "Instance 2 Terminal Reading The File From Instance 1",
+      "props": {
+        "id": "P06-B",
+        "kicker": "Sharing And Cleanup",
+        "title": "Verify Then Remove",
+        "step": "Instance 2 Terminal Reading The File From Instance 1",
+        "icon": "Terminal",
+        "image": "images/efs-instance-2.png",
+        "rings": [
+          [
+            4,
+            110,
+            1212,
+            84
+          ],
+          [
+            4,
+            544,
+            1284,
+            88
+          ]
+        ],
+        "caption": "The same mount point on the second instance lists and reads the file created on Instance 1, proving both instances share one file system rather than two separate disks",
+        "maxW": 700
+      }
+    },
+    {
+      "id": "P06-C",
+      "layout": "points",
+      "kicker": "Sharing And Cleanup",
+      "title": "Verify Then Remove",
+      "lead": "When a file written on one instance is missing on the other, the mount listing on both instances usually reveals the cause",
+      "points": [
+        {
+          "text": "A disk-usage check confirms whether a shared file system is actually mounted there",
+          "icon": "HardDrive"
+        },
+        {
+          "text": "A missing shared mount means the instance is still using its own local disk",
+          "icon": "CircleAlert"
+        },
+        {
+          "text": "A name-resolution check confirms the file system address is reachable before mounting",
+          "icon": "Search"
+        }
+      ],
+      "pointsW": 540,
+      "figH": 340,
+      "figure": {
+        "type": "diagram",
+        "w": 546,
+        "h": 340,
+        "nodes": [
+          {
+            "id": "i1",
+            "x": 86,
+            "y": 96,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 1",
+            "labelPos": "above"
+          },
+          {
+            "id": "i2",
+            "x": 460,
+            "y": 96,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 2",
+            "labelPos": "above"
+          },
+          {
+            "id": "efs",
+            "x": 273,
+            "y": 214,
+            "icon": "img:images/aws-efs-file-system.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EFS File System",
+            "loop": "pulse"
+          },
+          {
+            "id": "loc",
+            "x": 460,
+            "y": 290,
+            "icon": "lib:data-storage",
+            "shape": "bare",
+            "size": 56,
+            "label": "Own Local Disk"
+          }
+        ],
+        "chips": [
+          {
+            "id": "du",
+            "x": 273,
+            "y": 40,
+            "text": "Disk-Usage Check",
+            "icon": "HardDrive",
+            "tone": "brand"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "i2",
+            "to": "loc",
+            "dashed": true,
+            "tone": "bad",
+            "label": "Missing Shared Mount",
+            "labelPos": "on"
+          },
+          {
+            "from": "i1",
+            "to": "efs",
+            "label": "Name-Resolution Check",
+            "labelPos": "on"
+          },
+          {
+            "from": "i2",
+            "to": "efs"
+          }
+        ],
+        "steps": [
+          {
+            "show": [
+              "du"
+            ],
+            "lit": [
+              "i1",
+              "i2"
+            ]
+          },
+          [
+            "i2>loc",
+            "loc"
+          ],
+          {
+            "show": [
+              "i1>efs",
+              "i2>efs"
+            ],
+            "lit": [
+              "efs"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "P06-C2",
+      "layout": "lead",
+      "kicker": "Sharing And Cleanup",
+      "title": "Verify Then Remove",
+      "label": "Finished Lab",
+      "lead": "The finished lab leaves one S3 object, one file on the EBS volume of Instance 1, and one EFS file visible from both instances",
+      "figW": 1000,
+      "figH": 300,
+      "figure": {
+        "type": "diagram",
+        "w": 1000,
+        "h": 300,
+        "boxes": [
+          {
+            "id": "lo",
+            "label": "Object Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-s3.svg",
+            "x": 14,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          },
+          {
+            "id": "lb",
+            "label": "Block Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-ebs.svg",
+            "x": 350,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          },
+          {
+            "id": "lf",
+            "label": "File Storage",
+            "kind": "zone",
+            "icon": "img:images/aws-efs.svg",
+            "x": 686,
+            "y": 16,
+            "w": 300,
+            "h": 268
+          }
+        ],
+        "nodes": [
+          {
+            "id": "bkt",
+            "x": 164,
+            "y": 128,
+            "icon": "img:images/aws-s3-bucket-with-objects.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "S3 Bucket"
+          },
+          {
+            "id": "i1",
+            "x": 440,
+            "y": 128,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 1"
+          },
+          {
+            "id": "vol",
+            "x": 562,
+            "y": 128,
+            "icon": "img:images/aws-ebs-volume.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EBS Volume"
+          },
+          {
+            "id": "e1",
+            "x": 750,
+            "y": 84,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 1"
+          },
+          {
+            "id": "e2",
+            "x": 922,
+            "y": 84,
+            "icon": "img:images/aws-ec2.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "Instance 2"
+          },
+          {
+            "id": "efs",
+            "x": 836,
+            "y": 176,
+            "icon": "img:images/aws-efs-file-system.svg",
+            "shape": "tile",
+            "size": 60,
+            "label": "EFS File System",
+            "loop": "pulse"
+          }
+        ],
+        "chips": [
+          {
+            "id": "c1",
+            "x": 164,
+            "y": 236,
+            "text": "One S3 Object",
+            "icon": "CircleCheck",
+            "tone": "good"
+          },
+          {
+            "id": "c2",
+            "x": 500,
+            "y": 236,
+            "text": "One File",
+            "icon": "CircleCheck",
+            "tone": "good"
+          },
+          {
+            "id": "c3",
+            "x": 836,
+            "y": 258,
+            "text": "Visible From Both Instances",
+            "icon": "CircleCheck",
+            "tone": "good"
+          }
+        ],
+        "arrows": [
+          {
+            "from": "i1",
+            "to": "vol",
+            "two": true
+          },
+          {
+            "from": "e1",
+            "to": "efs",
+            "two": true
+          },
+          {
+            "from": "e2",
+            "to": "efs",
+            "two": true
+          }
+        ],
+        "steps": [
+          [
+            "lo",
+            "bkt",
+            "c1"
+          ],
+          [
+            "lb",
+            "i1",
+            "vol",
+            "i1>vol",
+            "c2"
+          ],
+          [
+            "lf",
+            "e1",
+            "e2",
+            "efs",
+            "e1>efs",
+            "e2>efs",
+            "c3"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "P06-D",
+      "layout": "custom",
+      "component": "L_Steps",
+      "label": "Cleanup Order",
+      "props": {
+        "id": "P06-D",
+        "kicker": "Sharing And Cleanup",
+        "title": "Verify Then Remove",
+        "lead": "Removing lab resources afterward follows a safe order so nothing shared or still in use is deleted by mistake",
+        "steps": [
+          {
+            "text": "Record the object name, volume ID and file system ID before removing anything",
+            "icon": "ClipboardList"
+          },
+          {
+            "text": "Unmount the EBS volume on Instance 1 and the EFS file system on both instances before detaching or deleting them",
+            "icon": "Unplug"
+          },
+          {
+            "text": "Delete only the extra EBS volume and file system created for this lab",
+            "icon": "Trash2"
+          },
+          {
+            "text": "Terminate only the two instances created for this lab, since termination cannot be undone",
+            "icon": "Power"
+          },
+          {
+            "text": "Empty and delete only the bucket created for this lab",
+            "icon": "PackageX"
+          },
+          {
+            "text": "Leave any shared networking from an earlier session untouched",
+            "icon": "Network"
+          }
+        ]
+      }
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}

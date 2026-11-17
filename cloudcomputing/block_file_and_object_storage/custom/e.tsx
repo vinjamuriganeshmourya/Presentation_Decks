@@ -1,10 +1,8 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { colors } from '@/design/tokens'
 import { BOX_W, Card, Num, STILL, useBuild } from '@/decks/figures/scene'
 import { StepLabel } from '@/decks/figures/net/frames'
 import { Icon, Rich } from '@/engine/icon'
-import { MOTION, motionHeld } from '@/motion/tokens'
-import { useInstant } from '@/motion/instant'
 import { dims } from 'virtual:deck'
 
 /**
@@ -51,8 +49,7 @@ type ShotProps = {
 }
 
 function L_Shot({ id, kicker, title, lead, leadSide, step, icon, image, rings = [], caption, maxW = 760, below, lesson }: ShotProps) {
-  const lit = useBuild(rings.length + 1, MOTION.build, MOTION.buildLead)
-  const held = motionHeld(useInstant())
+  const lit = useBuild(rings.length + 1)
   const shown = STILL ? rings.length : lit
   const [nw, nh] = (dims as Record<string, [number, number]>)[image] ?? [1600, 900]
   /* the frame's body starts at y 221 (ZONE.band.top), or at 162 under a header lead (~33 px a line + its gap), and
@@ -82,7 +79,7 @@ function L_Shot({ id, kicker, title, lead, leadSide, step, icon, image, rings = 
                 key={i}
                 aria-hidden
                 className="pointer-events-none absolute rounded-[6px]"
-                style={{ left: x * k - 4, top: y * k - 4, width: rw * k + 8, height: rh * k + 8, boxShadow: `0 0 0 3px ${colors.accent}`, opacity: i < shown ? 1 : 0, transform: i < shown ? 'none' : 'scale(1.06)', transition: held ? 'none' : `opacity ${MOTION.ring}ms ${MOTION.ease}, transform ${MOTION.ring}ms ${MOTION.ease}` }}
+                style={{ left: x * k - 4, top: y * k - 4, width: rw * k + 8, height: rh * k + 8, boxShadow: `0 0 0 3px ${colors.accent}`, opacity: i < shown ? 1 : 0, transition: 'opacity 320ms cubic-bezier(0.22,1,0.36,1)' }}
               />
             ))}
           </div>
@@ -151,16 +148,130 @@ function L_Steps({ id, kicker, title, lead, steps, lesson }: { id: string; kicke
   )
 }
 
+/* ================================================================== L_Table */
+
+/**
+ * L_Table (2026-11-17): the comparison tables of T03, T14-B, T21 and T21-B, drawn as the reference build draws
+ * them, for this deck only (the shared engine's table is left as it is). Each cell stretches to its row's height,
+ * so a cell's text sits at the top; `headIcon` sizes the column icons and grows the header tile and padding to fit.
+ * Rows arrive one per press; the arriving row is tinted and swept once, then only `highlight` rows stay marked.
+ */
+type TCol = { label: string; icon?: string; weight?: number }
+type TRow = { icon?: string; cells: string[] }
+type TSpec = { size?: number; headIcon?: number; highlight?: number[]; highlightCols?: number[]; columns: TCol[]; rows: TRow[] }
+const T_EASE = 'cubic-bezier(0.22,1,0.36,1)'
+
+function RefTable({ t }: { t: TSpec }) {
+  const { columns, rows } = t
+  const size = t.size ?? 16
+  const hi = t.highlight ?? []
+  const hc = t.highlightCols ?? []
+  const head = t.headIcon ?? 16
+  const shown = useBuild(rows.length + 1, 560)
+  const [fresh, setFresh] = useState(-1)
+  useEffect(() => {
+    if (STILL || shown <= 0) return setFresh(-1)
+    setFresh(shown - 1)
+    const id = window.setTimeout(() => setFresh(-1), 1100)
+    return () => window.clearTimeout(id)
+  }, [shown])
+  const grid = columns.map((c) => `${c.weight ?? 1}fr`).join(' ')
+  const pad = 'px-4 py-3'
+  const B = colors.brand
+  const headPad = Math.max(4, (28 + 24 - (head + 12)) / 2)
+  return (
+    <div
+      className="overflow-hidden rounded-card border border-line"
+      style={{
+        background: 'radial-gradient(120% 90% at 10% 0%, #FFFFFF 0%, #FFFFFF 52%, #F6F9FE 100%)',
+        boxShadow: [`0 10px 28px -16px ${B}66`, `0 2px 6px -4px ${colors.brandDeep}1f`, 'inset 0 1px 0 0 #FFFFFF'].join(', '),
+      }}
+    >
+      <div
+        className="grid items-center gap-x-2"
+        style={{
+          gridTemplateColumns: grid,
+          background: ['radial-gradient(120% 140% at 12% 0%, #FFFFFFb3 0%, #FFFFFF00 64%)', `linear-gradient(135deg, ${B}0a 0%, ${B}14 100%)`].join(', '),
+          boxShadow: `inset 0 -1px 0 0 ${B}29`,
+        }}
+      >
+        {columns.map((c, i) => (
+          <div
+            key={i}
+            className={`${pad} flex items-center gap-2 self-stretch font-heading font-bold`}
+            style={{ color: B, fontSize: size, ...(head > 16 ? { paddingTop: headPad, paddingBottom: headPad } : {}), background: hc.includes(i) ? `${B}24` : undefined, boxShadow: hc.includes(i) ? `inset 0 3px 0 0 ${B}` : undefined }}
+          >
+            {c.icon && (
+              <span aria-hidden className="grid shrink-0 place-items-center [&>svg]:h-[16px] [&>svg]:w-[16px]" style={{ width: head + 12, height: head + 12, borderRadius: head > 16 ? 10 : 8, background: colors.white, boxShadow: `inset 0 0 0 1.5px ${B}40` }}>
+                <Icon name={c.icon} size={head} />
+              </span>
+            )}
+            <span>{c.label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="block">
+        {rows.map((row, r) => {
+          const on = r < shown
+          const isFresh = on && r === fresh
+          return (
+            <div
+              key={r}
+              className="relative grid items-center gap-x-2 overflow-hidden border-t border-line"
+              style={{
+                gridTemplateColumns: grid,
+                background: hi.includes(r) ? 'linear-gradient(135deg, #FFF4E6 0%, #FFE6CC 100%)' : isFresh ? `linear-gradient(135deg, ${B}0c 0%, ${B}1c 100%)` : r % 2 ? '#FBFDFF' : undefined,
+                boxShadow: isFresh || hi.includes(r) ? `inset 4px 0 0 0 ${colors.accent}` : undefined,
+                opacity: on ? 1 : 0,
+                transform: on ? 'none' : 'translateX(-18px)',
+                transition: `opacity 300ms ${T_EASE}, transform 340ms ${T_EASE}, background 420ms ${T_EASE}, box-shadow 420ms ${T_EASE}`,
+              }}
+            >
+              {isFresh && <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-[30%] cvx-sheen" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0) 100%)' }} />}
+              {row.cells.map((cell, c) => (
+                <div
+                  key={c}
+                  className={`${pad} self-stretch leading-snug ${c === 0 || hc.includes(c) ? 'font-semibold' : ''}`}
+                  style={{ fontSize: size, color: c === 0 ? colors.ink : hc.includes(c) ? colors.brandDark : colors.body, background: hc.includes(c) ? `${B}12` : undefined, display: hc.includes(c) ? 'flex' : undefined, alignItems: 'center' }}
+                >
+                  {c === 0 && row.icon ? (
+                    <span className="flex items-center gap-2.5">
+                      <span aria-hidden className="grid h-[32px] w-[32px] shrink-0 place-items-center rounded-[9px] [&>svg]:h-[18px] [&>svg]:w-[18px]" style={{ background: isFresh ? colors.brand : colors.surface2, color: isFresh ? colors.white : colors.brand, transition: `all 420ms ${T_EASE}` }}>
+                        <Icon name={row.icon} size={18} />
+                      </span>
+                      <span className="min-w-0">
+                        <Rich text={cell} />
+                      </span>
+                    </span>
+                  ) : (
+                    <Rich text={cell} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function L_Table({ id, kicker, title, lead, table, lesson }: { id: string; kicker: string; title: string; lead?: string; table: TSpec; lesson: string }) {
+  return (
+    <Card id={id} kicker={kicker} title={title} lead={lead ? <Rich text={lead} /> : undefined} lesson={lesson}>
+      <div style={{ width: BOX_W }}>
+        <RefTable t={table} />
+      </div>
+    </Card>
+  )
+}
+
 export const figures: Record<string, (p: Record<string, unknown>) => ReactNode> = {}
 
 export const slides = {
   L_Shot: L_Shot as unknown as (p: Record<string, unknown>) => ReactNode,
   L_Steps: L_Steps as unknown as (p: Record<string, unknown>) => ReactNode,
+  L_Table: L_Table as unknown as (p: Record<string, unknown>) => ReactNode,
 }
 
-/* Review round 3 (user, 2026-11-06): "No decorative or looping motion" on the slides that round named. The engine
-   Arrow's marching dash (`mo-dash`) is the only loop left on them (the stage-to-stage arrow of the analogies, the
-   arrows of T07-B and T19); it is held still on those slides only, the dashes stay drawn. */
-const NO_LOOP = ['T01-AN', 'T07-AN', 'T12-AN', 'T17-AN', 'T18-AN', 'T07-B', 'T19']
-export const css = `.l-shot img { image-rendering: auto; } .l-nw code { white-space: nowrap; }
-section:has(${NO_LOOP.map((id) => `[data-spec="${id}"]`).join(', ')}) .mo { animation: none !important; }`
+export const css = `.l-shot img { image-rendering: auto; } .l-nw code { white-space: nowrap; }`
