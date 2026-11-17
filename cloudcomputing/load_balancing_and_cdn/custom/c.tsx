@@ -333,7 +333,8 @@ function HeadedText({ text }: { text: string }) {
   )
 }
 
-function HealthCardsSlide({ id, kicker, title, lead, points, lesson }: { id: string; kicker: string; title: string; lead: string; points: { text: string; icon: string }[]; lesson: string }) {
+/* `first`: the strip's bracket the first card acts out (T14 split 2026-11-17: T14 holds cards 1-2, T14-B cards 3-4 with first=2) */
+function HealthCardsSlide({ id, kicker, title, lead, points, lesson, first = 0 }: { id: string; kicker: string; title: string; lead: string; points: { text: string; icon: string }[]; lesson: string; first?: number }) {
   const n = points.length
   const step = useBuild(n + 1)
   const ease = 'all 420ms cubic-bezier(0.22,1,0.36,1)'
@@ -343,7 +344,7 @@ function HealthCardsSlide({ id, kicker, title, lead, points, lesson }: { id: str
     <Card id={id} kicker={kicker} title={title} lead={lead} lesson={lesson}>
       <div className="flex flex-col" style={{ width: BOX_W, gap: 16 }}>
         <Stage w={BOX_W} h={STRIP_H} active={false}>
-          <CheckStrip step={step} />
+          <CheckStrip step={first + step} />
         </Stage>
         <div className="flex" style={{ gap }}>
           {points.map((p, i) => {

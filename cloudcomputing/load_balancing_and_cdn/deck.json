@@ -729,30 +729,6 @@
       "notes": "Stress that exposure is separate from layer, not a variant of it. Use public reception versus staff-only corridor as the everyday phrasing. Exam hook: ask why making a database-facing balancer internal-only is good security practice."
     },
     {
-      "id": "T06-AN",
-      "section": "Load Balancer Types",
-      "label": "Analogy: reception desk and staff corridors",
-      "layout": "analogy",
-      "kicker": "Internal Vs Internet-Facing",
-      "title": "Who Can Reach It",
-      "h": 390,
-      "everyday": {
-        "type": "custom",
-        "name": "F_T06Everyday",
-        "props": {
-          "steps": 2
-        }
-      },
-      "concept": {
-        "type": "custom",
-        "name": "F_T06Concept",
-        "props": {
-          "steps": 2
-        }
-      },
-      "notes": "TR analogy: An office building has a public reception desk anyone off the street can walk into, and separate staff-only corridors reachable only by employees already inside — just as an internet-facing balancer accepts any public visitor while an internal balancer accepts only traffic that already originates inside the VPC.\n\n\"Stress that exposure is separate from layer, not a variant of it. Use public reception versus staff-only corridor as the everyday phrasing. Exam hook: ask why making a database-facing balancer internal-only is good security practice.\""
-    },
-    {
       "id": "T07",
       "layout": "lead",
       "kicker": "Choosing Balancer Type",
@@ -1214,10 +1190,6 @@
       "notes": "Tie both axes together with one concrete architecture to make the choice practical. Point to the EC2 console's load balancer creation screen as where this setting lives. Note that an algorithm still decides which server gets each request once traffic reaches the right balancer."
     },
     {
-      "id": "S-QUIZ1",
-      "layout": "quiz"
-    },
-    {
       "id": "D3",
       "layout": "breaker",
       "index": 3
@@ -1521,6 +1493,10 @@
       "notes": "TR analogy: In an exam, each student’s hall is decided by their roll number (for example, the last digit decides the hall), so the same student always goes to the same hall. In the same way, IP hash uses the client’s IP address to always route that client to the same backend server.\n\n\"Introduce the session-affinity problem before naming IP hash. Flag the reshuffle risk when targets change, since interviewers often ask about it. Mention Network Load Balancer's flow hashing as the transport-layer equivalent.\""
     },
     {
+      "id": "S-QUIZ1",
+      "layout": "quiz"
+    },
+    {
       "id": "D4",
       "layout": "breaker",
       "index": 4
@@ -1569,7 +1545,22 @@
           {
             "text": "Timeout: longest time the backend is given to reply before a miss",
             "icon": "Timer"
-          },
+          }
+        ]
+      },
+      "notes": "Stress that a server can be powered on yet still fail a health check if the application crashes while the OS keeps running. Use 'repeated vitals check' before naming the thresholds. Interview hook: ask what happens if the interval is too long or too short, since that trades detection speed against false alarms."
+    },
+    {
+      "id": "T14-B",
+      "layout": "custom",
+      "component": "C_HealthCards",
+      "label": "How Checks Work",
+      "props": {
+        "id": "T14-B",
+        "kicker": "Health Check Design",
+        "title": "How Checks Work",
+        "lead": "A health check works like a repeated vitals check: the load balancer sends a test request and reads the reply, confirming the application is actually responding, not just running",
+        "points": [
           {
             "text": "Healthy threshold: consecutive passes needed before traffic resumes to a backend",
             "icon": "CircleCheck"
@@ -1578,33 +1569,10 @@
             "text": "Unhealthy threshold: consecutive failures needed before traffic stops to a backend",
             "icon": "CircleX"
           }
-        ]
+        ],
+        "first": 2
       },
       "notes": "Stress that a server can be powered on yet still fail a health check if the application crashes while the OS keeps running. Use 'repeated vitals check' before naming the thresholds. Interview hook: ask what happens if the interval is too long or too short, since that trades detection speed against false alarms."
-    },
-    {
-      "id": "T14-AN",
-      "section": "Health Checks & Sessions",
-      "label": "Analogy: a repeated vitals check",
-      "layout": "analogy",
-      "kicker": "Health Check Design",
-      "title": "How Checks Work",
-      "h": 390,
-      "everyday": {
-        "type": "custom",
-        "name": "F_T14Everyday",
-        "props": {
-          "steps": 3
-        }
-      },
-      "concept": {
-        "type": "custom",
-        "name": "F_T14Concept",
-        "props": {
-          "steps": 3
-        }
-      },
-      "notes": "TR analogy: A doctor does not assume a patient is fine just because they are breathing; a short, repeated vitals check confirms the body is actually functioning — just as a health check confirms the server is actually serving requests correctly, not merely running.\n\nStress that a server can be powered on yet still fail a health check if the application crashes while the OS keeps running. Use 'repeated vitals check' before naming the thresholds. Interview hook: ask what happens if the interval is too long or too short, since that trades detection speed against false alarms."
     },
     {
       "id": "T15",
@@ -2462,30 +2430,6 @@
       }
     },
     {
-      "id": "T20-AN",
-      "section": "DNS & Content Delivery",
-      "label": "Analogy: a neighbourhood shop",
-      "layout": "analogy",
-      "kicker": "CDN Edge Caching",
-      "title": "Content Near Users",
-      "h": 390,
-      "everyday": {
-        "type": "custom",
-        "name": "F_T20Everyday",
-        "props": {
-          "steps": 3
-        }
-      },
-      "concept": {
-        "type": "custom",
-        "name": "F_T20Concept",
-        "props": {
-          "steps": 3
-        }
-      },
-      "notes": "TR analogy: “A neighbourhood shop stocks popular items so customers need not travel to a distant factory every time — just as an edge location holds popular content and only the first request travels to the origin.”\n\n“Define cache hit and miss here, since the next slide builds on both. Name CloudFront as the AWS CDN. A common interview question is why a CDN helps even when the app runs in one region: distance and origin offload.”"
-    },
-    {
       "id": "T21",
       "layout": "points",
       "kicker": "Origin Pull Mechanism",
@@ -2622,23 +2566,6 @@
             ]
           }
         ]
-      }
-    },
-    {
-      "id": "T23-B",
-      "layout": "lead",
-      "kicker": "DNS Vs Load Balancer",
-      "title": "Two Routing Layers",
-      "notes": "Use the table to fix the layer and speed difference; this is a common interview question. DNS failover is slower due to TTL caching, while a load balancer reacts within its health-check interval. Both layers are usually combined, not chosen between.",
-      "figW": 1000,
-      "figH": 316,
-      "lead": "DNS first sends a user to a healthy region, and a load balancer inside that region spreads requests across healthy servers.\nThe two layers complement rather than replace each other",
-      "figure": {
-        "type": "custom",
-        "name": "D_TwoLayers",
-        "props": {
-          "steps": 2
-        }
       }
     },
     {
@@ -3285,327 +3212,6 @@
       "note": {
         "text": "Status shows Unused: “Target is in the stopped state,” not Unhealthy; Unhealthy is reserved for a running instance that fails its health check path",
         "tone": "info"
-      }
-    },
-    {
-      "id": "P04",
-      "layout": "custom",
-      "component": "E_TableNote",
-      "label": "Wrap-Up Checklist",
-      "props": {
-        "id": "P04",
-        "kicker": "Result And Cleanup",
-        "title": "Wrap-Up Checklist",
-        "lead": "The finished setup is a single load balancer domain name that reaches two interchangeable web servers, each able to fail and recover without any manual rerouting of traffic",
-        "table": {
-          "size": 16,
-          "columns": [
-            {
-              "label": "Component",
-              "icon": "Boxes",
-              "weight": 1
-            },
-            {
-              "label": "Expected Result",
-              "icon": "CircleCheck",
-              "weight": 2.6
-            }
-          ],
-          "rows": [
-            {
-              "icon": "Network",
-              "cells": [
-                "VPC",
-                "`s5-cloud-network-vpc`"
-              ]
-            },
-            {
-              "icon": "LayoutGrid",
-              "cells": [
-                "Public subnets",
-                "`s5-public-subnet` and `s6-public-subnet-2` in different zones"
-              ]
-            },
-            {
-              "icon": "Shield",
-              "cells": [
-                "Security groups",
-                "`s6-alb-sg` open to `0.0.0.0/0`; `s6-web-sg` open only to `s6-alb-sg`"
-              ]
-            },
-            {
-              "icon": "Server",
-              "cells": [
-                "EC2 instances",
-                "`s6-web-1` and `s6-web-2`, both running"
-              ]
-            },
-            {
-              "icon": "Target",
-              "cells": [
-                "Target group",
-                "`s6-web-tg`, both instances Healthy"
-              ]
-            },
-            {
-              "icon": "Split",
-              "cells": [
-                "Load balancer",
-                "`s6-demo-alb`, listener forwards to `s6-web-tg`"
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "P04-B",
-      "layout": "custom",
-      "component": "E_LeadNote",
-      "label": "Wrap-Up Checklist",
-      "props": {
-        "id": "P04-B",
-        "kicker": "Result And Cleanup",
-        "title": "Wrap-Up Checklist",
-        "lead": "This classroom setup enables public addresses on both backend servers to keep access simple; in a production deployment, servers sitting behind an internet-facing load balancer are usually placed in private subnets instead, since the load balancer is the only component that needs to be publicly reachable",
-        "figure": {
-          "type": "diagram",
-          "w": 1100,
-          "h": 280,
-          "boxes": [
-            {
-              "id": "cl",
-              "label": "Classroom Setup",
-              "icon": "GraduationCap",
-              "kind": "plain",
-              "x": 8,
-              "y": 4,
-              "w": 530,
-              "h": 272
-            },
-            {
-              "id": "clpub",
-              "label": "Public Subnet",
-              "kind": "public",
-              "labelAt": "bottom",
-              "x": 130,
-              "y": 50,
-              "w": 394,
-              "h": 214
-            },
-            {
-              "id": "pr",
-              "label": "Production Deployment",
-              "icon": "Building2",
-              "kind": "plain",
-              "x": 562,
-              "y": 4,
-              "w": 530,
-              "h": 272
-            },
-            {
-              "id": "prpub",
-              "label": "Public Subnet",
-              "kind": "public",
-              "labelAt": "bottom",
-              "x": 684,
-              "y": 50,
-              "w": 176,
-              "h": 214
-            },
-            {
-              "id": "prpri",
-              "label": "Private Subnet",
-              "kind": "private",
-              "labelAt": "bottom",
-              "x": 876,
-              "y": 50,
-              "w": 202,
-              "h": 214
-            }
-          ],
-          "nodes": [
-            {
-              "id": "clu",
-              "x": 66,
-              "y": 170,
-              "icon": "lib:student-laptop",
-              "shape": "bare",
-              "size": 66,
-              "label": "Users",
-              "loop": "lift"
-            },
-            {
-              "id": "cllb",
-              "x": 218,
-              "y": 128,
-              "icon": "img:images/aws-elb.svg",
-              "size": 54,
-              "label": "Load Balancer",
-              "loop": "pulse"
-            },
-            {
-              "id": "cls1",
-              "x": 348,
-              "y": 92,
-              "icon": "lib:server-stack",
-              "shape": "bare",
-              "size": 48
-            },
-            {
-              "id": "cls2",
-              "x": 348,
-              "y": 176,
-              "icon": "lib:server-stack",
-              "shape": "bare",
-              "size": 48
-            },
-            {
-              "id": "pru",
-              "x": 620,
-              "y": 170,
-              "icon": "lib:student-laptop",
-              "shape": "bare",
-              "size": 66,
-              "label": "Users",
-              "loop": "lift"
-            },
-            {
-              "id": "prlb",
-              "x": 772,
-              "y": 128,
-              "icon": "img:images/aws-elb.svg",
-              "size": 54,
-              "label": "Load Balancer",
-              "loop": "pulse"
-            },
-            {
-              "id": "prs1",
-              "x": 977,
-              "y": 92,
-              "icon": "lib:server-stack",
-              "shape": "bare",
-              "size": 48
-            },
-            {
-              "id": "prs2",
-              "x": 977,
-              "y": 176,
-              "icon": "lib:server-stack",
-              "shape": "bare",
-              "size": 48
-            }
-          ],
-          "chips": [
-            {
-              "id": "clc1",
-              "x": 448,
-              "y": 92,
-              "text": "Public Address",
-              "icon": "Globe",
-              "tone": "good"
-            },
-            {
-              "id": "clc2",
-              "x": 448,
-              "y": 176,
-              "text": "Public Address",
-              "icon": "Globe",
-              "tone": "good"
-            }
-          ],
-          "arrows": [
-            {
-              "from": "clu",
-              "to": "cllb"
-            },
-            {
-              "from": "cllb",
-              "to": "cls1"
-            },
-            {
-              "from": "cllb",
-              "to": "cls2"
-            },
-            {
-              "from": "pru",
-              "to": "prlb"
-            },
-            {
-              "from": "prlb",
-              "to": "prs1"
-            },
-            {
-              "from": "prlb",
-              "to": "prs2"
-            }
-          ],
-          "packets": [
-            {
-              "path": [
-                "clu",
-                "cllb",
-                "cls1"
-              ]
-            },
-            {
-              "path": [
-                "clu",
-                "cllb",
-                "cls2"
-              ]
-            },
-            {
-              "path": [
-                "pru",
-                "prlb",
-                "prs1"
-              ]
-            },
-            {
-              "path": [
-                "pru",
-                "prlb",
-                "prs2"
-              ]
-            }
-          ],
-          "steps": [
-            [
-              "cl",
-              "clu",
-              "clpub",
-              "cllb",
-              "cls1",
-              "cls2",
-              "clc1",
-              "clc2",
-              "clu>cllb",
-              "cllb>cls1",
-              "cllb>cls2",
-              "packet:0",
-              "packet:1"
-            ],
-            [
-              "pr",
-              "pru",
-              "prpub",
-              "prpri",
-              "prlb",
-              "prs1",
-              "prs2",
-              "pru>prlb",
-              "prlb>prs1",
-              "prlb>prs2",
-              "packet:2",
-              "packet:3"
-            ]
-          ]
-        },
-        "flip": [
-          "clu",
-          "pru"
-        ]
       }
     },
     {
