@@ -1,6 +1,9 @@
 {
   "deck": "cloudcomputing/load_balancing_and_cdn/load-balancing-and-cdn",
   "slides": {
+    "S-QUIZ1": {
+      "status": "deleted"
+    },
     "T01": {
       "status": "visible"
     }
