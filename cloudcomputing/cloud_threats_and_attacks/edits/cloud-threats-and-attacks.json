@@ -89,6 +89,14 @@
       "author": "Pallavi",
       "text": "Top “Insider” label (with warning badge) → “Malicious Insider”\nBottom “Insider” label → “Accidental Insider”",
       "at": 1794997370387
+    },
+    "mwlz9lek6a31yr": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T20",
+      "author": "Pallavi",
+      "text": "Swap the positions of two boxes in the diagram:\n\n2nd box (Model) → put Vector DB here\n3rd box (Vector DB) → put Model here\n\nMove the labels above them too:\n\n2nd top label (Consumption) → Embedding\n3rd top label (Embedding) → Consumption",
+      "at": 1794997669060
     }
   }
 }
