@@ -68,7 +68,7 @@
     },
     "mwlyvpn96cxgpq": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T13",
       "author": "Pallavi",
       "text": "Above the two toggles (Bucket and Account) → a small heading: “S3 Block Public Access: OFF”",
