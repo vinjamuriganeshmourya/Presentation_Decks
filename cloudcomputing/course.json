@@ -18,7 +18,7 @@
     { "title": "Cloud Provider Comparison", "folder": "cloud_provider_comparison" },
     { "title": "Cloud Security & Shared Responsibility", "folder": "cloud_security_and_shared_responsibility" },
     { "title": "IAM Fundamentals", "folder": "iam_fundamentals" },
-    { "title": "IAM & Least Privilege", "folder": null },
+    { "title": "IAM & Least Privilege", "folder": "iam_roles_and_least_privilege" },
     { "title": "Encryption & Key Management", "folder": null },
     { "title": "Cloud Threats & Attacks", "folder": "cloud_threats_and_attacks" },
     { "title": "Security Practices & Compliance", "folder": null },

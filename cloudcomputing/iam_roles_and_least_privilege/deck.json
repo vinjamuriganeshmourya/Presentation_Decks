@@ -1,0 +1,1464 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "IAM Roles & Least Privilege",
+  "course": "Cloud Computing",
+  "htmlName": "iam-roles-and-least-privilege",
+  "previous": {
+   "title": "IAM Fundamentals",
+   "items": [
+    "Identity in the Cloud",
+    "Authentication vs Authorization",
+    "Policy Structure",
+    "Policy Evaluation Logic",
+    "Reading a Denial"
+   ]
+  },
+  "agenda": [
+   "Roles & Temporary Credentials",
+   "Principle of Least Privilege",
+   "Federation & Single Sign-On",
+   "Service & Machine Identity",
+   "Identity for AI Agents"
+  ],
+  "next": "Encryption & Key Management"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 13 : IAM Fundamentals\n1. Identity in the Cloud: Root & owner account; users; groups\n2. Authentication vs Authorization: Identity verification vs permission checking; credentials: passwords, access keys & tokens\n3. Policy Structure: Effect, action, resource & condition; identity-based vs resource-based policies\n4. Policy Evaluation Logic: Default deny; explicit allow; explicit deny precedence; combining multiple policies\n5. Reading a Denial: Access-denied messages; audit logs; tracing a denial to its statement"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Roles & Temporary Credentials: Assuming a role; session tokens; temporary vs long-lived credentials\n2. Principle of Least Privilege: Scoping actions & resources; wildcards & their risks; permission boundaries; iterative tightening\n3. Federation & Single Sign-On: Identity providers; SAML & OIDC; multi-factor authentication (MFA)\n4. Service & Machine Identity: Instance & workload identities; avoiding embedded keys; non-human identity at scale\n5. Identity for AI Agents: Scoped, short-lived & revocable credentials; excessive agency as a failure mode"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "Roles Vs Users",
+   "title": "Temporary Identity Map",
+   "lead": "IAM users hold permissions and credentials permanently. A role is a different identity type, assumed only for the duration a task needs, then given up",
+   "points": [
+    {
+     "text": "Assuming a role: how a caller temporarily becomes that identity",
+     "icon": "img:images/res-iam-role.svg"
+    },
+    {
+     "text": "Temporary credential set: access key, secret key, session token",
+     "icon": "i3d:key"
+    },
+    {
+     "text": "Expiry window: credentials stop working after a fixed duration",
+     "icon": "i3d:clock"
+    },
+    {
+     "text": "Trust policy: controls who is allowed to assume the role",
+     "icon": "i3d:policy"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Position roles as the identity type used instead of permanent keys, distinct from users and groups. Point out that a role has no login of its own. Exam hook: roles are the standard answer to 'how do I avoid storing permanent keys'."
+  },
+  {
+   "id": "T02",
+   "layout": "points",
+   "kicker": "Defining A Role",
+   "title": "Borrowed Permissions",
+   "lead": "A role is a set of permissions that any trusted caller can borrow for a while, rather than an identity someone logs into directly. Formally, it is an IAM identity with a permission policy and a trust policy, but no password or permanent keys",
+   "points": [
+    {
+     "text": "Trust policy names which account, service or user may assume it",
+     "icon": "i3d:policy"
+    },
+    {
+     "text": "Permission policy defines what the role can do once assumed",
+     "icon": "i3d:checklist"
+    },
+    {
+     "text": "Usable by people, applications, or other AWS services alike",
+     "icon": "i3d:users"
+    },
+    {
+     "text": "Exists independently of any single employee or application",
+     "icon": "i3d:building"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Say the gate-pass line slowly, it is the anchor for the whole section. Point to the trust policy as the gatekeeper, visible on a role's Trust relationships tab in the IAM console. Interviewers often ask why roles beat embedding keys: this slide is the answer."
+  },
+  {
+   "id": "T02-AN",
+   "layout": "analogy",
+   "label": "Analogy: library card",
+   "kicker": "Defining A Role",
+   "title": "Borrowed Permissions",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T02Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T02Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: Borrowing a library book using a library card. You can use the book for a limited period and must return it afterward, just as a role provides temporary permissions that expire after the session.\n\nSay the gate-pass line slowly, it is the anchor for the whole section. Point to the trust policy as the gatekeeper, visible on a role's Trust relationships tab in the IAM console. Interviewers often ask why roles beat embedding keys: this slide is the answer."
+  },
+  {
+   "id": "T03",
+   "layout": "points",
+   "kicker": "Assuming A Role",
+   "title": "AssumeRole Flow",
+   "lead": "Assuming a role is a request, not a login: a caller already holding some identity asks AWS Security Token Service (STS) to hand over the role's permissions for a limited time",
+   "points": [
+    {
+     "text": "Caller invokes `sts:AssumeRole`, naming the target role's ARN",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "STS checks the role's trust policy allows that caller",
+     "icon": "img:images/res-iam-aws-sts.svg"
+    },
+    {
+     "text": "Caller also needs its own permission to call AssumeRole",
+     "icon": "i3d:checklist"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T03",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Stress that trusting an account does not auto-grant every identity in it the right to assume; the caller still needs AssumeRole permission. This is exactly what a role's Trust relationships tab in the IAM console shows. Exam hook: trust policy versus permission policy is a frequent interview trap."
+  },
+  {
+   "id": "T03-B",
+   "layout": "points",
+   "kicker": "Assuming A Role",
+   "title": "AssumeRole Flow",
+   "points": [
+    {
+     "text": "The caller uses the temporary credentials to make requests with the assumed role's permissions",
+     "icon": "i3d:key"
+    },
+    {
+     "text": "STS returns a fresh, time-limited credential set for the role",
+     "icon": "img:images/res-iam-temporary-security-credential.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T03B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "Stress that trusting an account does not auto-grant every identity in it the right to assume; the caller still needs AssumeRole permission. This is exactly what a role's Trust relationships tab in the IAM console shows. Exam hook: trust policy versus permission policy is a frequent interview trap."
+  },
+  {
+   "id": "T04",
+   "layout": "points",
+   "kicker": "Temporary Credentials",
+   "title": "Token And Expiry",
+   "lead": "A successful assume-role call returns three values together, not just a key pair, because the session token is what marks the credentials as temporary rather than permanent",
+   "points": [
+    {
+     "text": "Access key ID and secret access key: sign each request's authentication",
+     "icon": "i3d:key",
+     "at": 1
+    },
+    {
+     "text": "Session token: must accompany every call, proves temporary origin",
+     "icon": "i3d:token",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 330,
+   "pointsW": 580,
+   "notes": "Clarify the session token is not optional: omitting it makes the request fail even with a valid key pair. Likely exam question: name the three parts of a temporary credential set."
+  },
+  {
+   "id": "T04-B",
+   "layout": "points",
+   "kicker": "Temporary Credentials",
+   "title": "Token And Expiry",
+   "points": [
+    {
+     "text": "Role maximum session duration: configurable from 1 to 12 hours",
+     "icon": "i3d:hourglass",
+     "at": 1
+    },
+    {
+     "text": "The requested session duration cannot exceed this limit",
+     "icon": "i3d:ban",
+     "at": 1
+    },
+    {
+     "text": "After expiry, the caller must assume the role again for new credentials",
+     "icon": "i3d:clock",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04",
+    "props": {
+     "steps": 2,
+     "from": 2
+    }
+   },
+   "figH": 330,
+   "pointsW": 580,
+   "notes": "Point out the duration setting is configured on the role itself."
+  },
+  {
+   "id": "T05",
+   "layout": "table",
+   "kicker": "Temporary Vs Long-Lived",
+   "title": "Credential Comparison",
+   "lead": "Long-lived access keys, created for a user, stay valid until someone deletes them; temporary credentials from a role expire on their own, which changes the risk a leaked credential carries",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Aspect",
+      "icon": "i3d:checklist",
+      "weight": 0.7
+     },
+     {
+      "label": "Temporary (Role)",
+      "icon": "img:images/res-iam-temporary-security-credential.svg",
+      "weight": 1.2
+     },
+     {
+      "label": "Long-Lived (User Keys)",
+      "icon": "img:images/res-iam-long-term-security-credential.svg",
+      "weight": 1.2
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:hourglass",
+      "cells": [
+       "Lifetime",
+       "15 minutes to 12 hours, then expires",
+       "Valid until manually revoked"
+      ]
+     },
+     {
+      "icon": "i3d:version",
+      "cells": [
+       "Rotation",
+       "Automatic on every assumption",
+       "Manual, often forgotten"
+      ]
+     },
+     {
+      "icon": "i3d:alert",
+      "cells": [
+       "Leak exposure",
+       "Limited to remaining session time",
+       "Open-ended until noticed"
+      ]
+     },
+     {
+      "icon": "i3d:users",
+      "cells": [
+       "Typical holder",
+       "Applications, services, federated users",
+       "Individual IAM users"
+      ]
+     }
+    ]
+   },
+   "notes": "Use the table to make the exposure-window argument concrete rather than abstract. Point at the leak-exposure row as the practical reason cloud security teams push roles over keys. This comparison is a near-guaranteed interview question."
+  },
+  {
+   "id": "T05-B",
+   "layout": "lead",
+   "kicker": "Temporary Vs Long-Lived",
+   "title": "Credential Comparison",
+   "figure": {
+    "type": "custom",
+    "name": "A_T05B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1080,
+   "figH": 420,
+   "notes": "Use the table to make the exposure-window argument concrete rather than abstract. Point at the leak-exposure row as the practical reason cloud security teams push roles over keys. This comparison is a near-guaranteed interview question."
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "Least Privilege Facets",
+   "title": "Four Tightening Levers",
+   "lead": "A policy written to get a job done quickly often grants far more than the job needs; least privilege is the discipline of trimming that grant down to exactly what is required",
+   "points": [
+    {
+     "text": "Scoping: naming the exact actions and resources allowed",
+     "icon": "i3d:target"
+    },
+    {
+     "text": "Wildcards: the asterisk symbol and the risk it hides",
+     "icon": "i3d:asterisk"
+    },
+    {
+     "text": "Permission boundaries: a hard ceiling on an identity's access",
+     "icon": "i3d:shield"
+    },
+    {
+     "text": "Iterative tightening: narrowing a grant as real usage is observed",
+     "icon": "i3d:filter"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T06",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Frame this as the discipline behind every policy written in the IAM console. State the four levers by name before going into each one. Flag that interviewers often ask how to tighten an over-permissioned role: these four levers are the answer."
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Scoping Actions Resources",
+   "title": "Narrow The Grant",
+   "lead": "The Action and Resource fields of a policy statement are where scope is actually narrowed, turning a broad grant into one that matches only the task at hand",
+   "points": [
+    {
+     "text": "Action field names one API call, not an entire service",
+     "icon": "i3d:bolt"
+    },
+    {
+     "text": "Resource field names one ARN, not every resource",
+     "icon": "i3d:target"
+    },
+    {
+     "text": "Separate statements per service keep each grant narrow",
+     "icon": "i3d:list"
+    },
+    {
+     "text": "Narrower scope shrinks the blast radius of a leaked credential",
+     "icon": "i3d:shield"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 520,
+   "notes": "Point out that Action and Resource fields are used deliberately here to narrow access, not merely to describe it. Ask: why scope Resource even when Action is already specific? Mention the IAM policy editor as where this scoping is actually written."
+  },
+  {
+   "id": "T08",
+   "layout": "points",
+   "kicker": "Wildcards And Risk",
+   "title": "The Asterisk Danger",
+   "lead": "A wildcard, written as the asterisk (*), tells AWS to match every possible value in a field instead of one. Placed in Action or Resource, it grants far more access than a single task needs",
+   "points": [
+    {
+     "text": "Action as asterisk can grant every AWS API action",
+     "icon": "i3d:asterisk"
+    },
+    {
+     "text": "Resource as asterisk matches every object, not a chosen ARN",
+     "icon": "i3d:object"
+    },
+    {
+     "text": "Action and Resource both as asterisk grant full control of the whole AWS account",
+     "icon": "i3d:crown"
+    },
+    {
+     "text": "A compromised credential then exposes every resource the wildcard covers",
+     "icon": "i3d:unlock"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T08",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Say plainly that the asterisk is convenient but dangerous precisely because it never expires or narrows on its own. Point to the circled asterisks in the snippet while explaining the blast radius. A favourite interview probe: what is wrong with Resource colon asterisk on an S3 policy?"
+  },
+  {
+   "id": "T08-AN",
+   "layout": "analogy",
+   "label": "Analogy: building-wide access card",
+   "kicker": "Wildcards And Risk",
+   "title": "The Asterisk Danger",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T08Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T08Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A building-wide access card that opens every room when only one room's access was needed: just as a wildcard can grant access far beyond what a task requires.\n\nSay plainly that the asterisk is convenient but dangerous precisely because it never expires or narrows on its own. Point to the circled asterisks in the snippet while explaining the blast radius. A favourite interview probe: what is wrong with Resource colon asterisk on an S3 policy?"
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "Permission Boundaries",
+   "title": "A Hard Ceiling",
+   "lead": "A permission boundary sets a hard ceiling on what an identity's own policies can ever grant, however generously those policies are written. It is itself a managed policy, evaluated alongside the identity policy",
+   "points": [
+    {
+     "text": "Boundary itself grants no permissions on its own",
+     "icon": "i3d:ban"
+    },
+    {
+     "text": "Boundary only limits permissions granted elsewhere",
+     "icon": "i3d:filter"
+    },
+    {
+     "text": "Often applied so a team lead cannot escalate their own role",
+     "icon": "i3d:user-x"
+    },
+    {
+     "text": "Attached per user or role, not inside a policy document",
+     "icon": "i3d:link"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T09",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Stress that a boundary cannot add access, only subtract from what the identity policy already allows. Point to the overlap region in the diagram as the effective permission. This distinction between granting and capping is a common interview trap."
+  },
+  {
+   "id": "T09-AN",
+   "layout": "analogy",
+   "label": "Analogy: floor access card",
+   "kicker": "Permission Boundaries",
+   "title": "A Hard Ceiling",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T09Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T09Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A building access card allows an employee to enter only approved floors, even if their department's rules allow access to more floors: just as a permission boundary limits the maximum permissions an identity can receive.\n\nStress that a boundary cannot add access, only subtract from what the identity policy already allows. Point to the overlap region in the diagram as the effective permission. This distinction between granting and capping is a common interview trap."
+  },
+  {
+   "id": "T10",
+   "layout": "table",
+   "kicker": "Iterative Tightening Traced",
+   "title": "Narrowing A Grant",
+   "lead": "Iterative tightening starts an identity wide enough to work, then narrows the policy in passes as real usage confirms what it actually calls",
+   "table": {
+    "type": "table",
+    "size": 17,
+    "columns": [
+     {
+      "label": "Pass",
+      "icon": "i3d:list",
+      "weight": 0.55
+     },
+     {
+      "label": "Policy Statement",
+      "icon": "i3d:policy",
+      "weight": 1.75
+     },
+     {
+      "label": "Why This Pass",
+      "icon": "i3d:search",
+      "weight": 0.95
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:play",
+      "cells": [
+       "Start",
+       "Action: `s3:*`, Resource: `*`",
+       "Unblocks the rollout quickly"
+      ]
+     },
+     {
+      "icon": "i3d:eye",
+      "cells": [
+       "Observe",
+       "IAM Access Analyzer reviews 30 days of CloudTrail activity: only `s3:GetObject` and `s3:PutObject` used",
+       "Confirms only two calls are invoked"
+      ]
+     },
+     {
+      "icon": "i3d:filter",
+      "cells": [
+       "Narrow",
+       "Action: [`s3:GetObject`, `s3:PutObject`], Resource: `arn:aws:s3:::finance-reports-2024/*`",
+       "Matches only the calls actually seen"
+      ]
+     },
+     {
+      "icon": "i3d:lock",
+      "cells": [
+       "Cap",
+       "Permission boundary limited to `s3:GetObject` and `s3:PutObject`",
+       "Blocks any future re-broadening"
+      ]
+     }
+    ]
+   },
+   "notes": "Walk the table pass by pass, pointing out that the second pass uses real usage evidence, not guesswork, to decide the narrower statement. Name IAM Access Analyzer as the console feature that supplies this evidence. Interview angle: this four-pass pattern is the standard answer to right-sizing an IAM policy over time."
+  },
+  {
+   "id": "T10-B",
+   "layout": "lead",
+   "kicker": "Iterative Tightening Traced",
+   "title": "Narrowing A Grant",
+   "lead": "Each pass trades early convenience for a smaller blast radius, ending with a policy that matches exactly what the workload does",
+   "figure": {
+    "type": "custom",
+    "name": "B_T10B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1080,
+   "figH": 360,
+   "notes": "Walk the table pass by pass, pointing out that the second pass uses real usage evidence, not guesswork, to decide the narrower statement. Name IAM Access Analyzer as the console feature that supplies this evidence. Interview angle: this four-pass pattern is the standard answer to right-sizing an IAM policy over time."
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3
+  },
+  {
+   "id": "T11",
+   "layout": "points",
+   "kicker": "Why Federation Exists",
+   "title": "Identity Providers",
+   "lead": "A separate password per cloud application does not scale past a handful of staff. Federation lets an external identity provider (IdP) verify an employee once, and the cloud trusts that proof instead of checking a password itself",
+   "points": [
+    {
+     "text": "Login request redirects from AWS to the company IdP",
+     "icon": "i3d:merge"
+    },
+    {
+     "text": "AWS trusts the signed proof, no password stored on its side",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Trust is pre-configured between AWS and the IdP beforehand",
+     "icon": "i3d:gear"
+    },
+    {
+     "text": "One IdP can serve AWS, other clouds and on-premise apps",
+     "icon": "i3d:cloud"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T11",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Explain the redirect as the core mechanism, not a login form on AWS itself. Say plainly: AWS never sees the password, only the IdP's signed proof. Interview hook: ask what problem federation solves versus one IAM user per employee."
+  },
+  {
+   "id": "T11-AN",
+   "layout": "analogy",
+   "label": "Analogy: company ID card at branch offices",
+   "kicker": "Why Federation Exists",
+   "title": "Identity Providers",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T11Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T11Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A company ID card issued by the head office is accepted at every branch office without a fresh check: just as a federated identity, once verified by the identity provider, is trusted across every connected cloud application.\n\nExplain the redirect as the core mechanism, not a login form on AWS itself. Say plainly: AWS never sees the password, only the IdP's signed proof. Interview hook: ask what problem federation solves versus one IAM user per employee."
+  },
+  {
+   "id": "T12",
+   "layout": "table",
+   "kicker": "Federation Concepts",
+   "title": "Side By Side",
+   "lead": "SAML and OIDC are the two standards that actually carry the IdP's signed proof to AWS; MFA and SSO describe what happens around that proof, before and after it is issued",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Concept",
+      "icon": "i3d:tag",
+      "weight": 0.8
+     },
+     {
+      "label": "Simple Explanation",
+      "icon": "i3d:doc",
+      "weight": 1.6
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:idcard",
+      "cells": [
+       "Identity Provider (IdP)",
+       "A service that verifies a user's identity"
+      ]
+     },
+     {
+      "icon": "i3d:doc",
+      "cells": [
+       "SAML",
+       "A standard used to exchange authentication information"
+      ]
+     },
+     {
+      "icon": "i3d:token",
+      "cells": [
+       "OIDC",
+       "A standard used for identity verification and authentication"
+      ]
+     },
+     {
+      "icon": "i3d:fingerprint",
+      "cells": [
+       "MFA",
+       "Requires an additional verification step during login"
+      ]
+     },
+     {
+      "icon": "i3d:link",
+      "cells": [
+       "SSO",
+       "Allows access to multiple applications with one login"
+      ]
+     }
+    ],
+    "highlight": [
+     1,
+     2
+    ]
+   },
+   "notes": "Point out SAML is XML-based and older, OIDC is token-based and built on OAuth 2.0: both do the same job of carrying proof. Mention Microsoft Entra ID as a real IdP that speaks either standard to AWS. Exam hook: SAML versus OIDC is a frequent interview comparison."
+  },
+  {
+   "id": "T13",
+   "layout": "points",
+   "kicker": "MFA Enforcement",
+   "title": "SSO In Practice",
+   "lead": "A policy condition can require that the current session was authenticated with multi-factor authentication (MFA), checked at request time rather than only at sign-in",
+   "points": [
+    {
+     "text": "Condition key `aws:MultiFactorAuthPresent` is true only for sessions started with MFA",
+     "icon": "img:images/res-iam-mfa-token.svg"
+    },
+    {
+     "text": "Typically guards destructive actions like delete or terminate",
+     "icon": "i3d:trash"
+    },
+    {
+     "text": "IAM Identity Center provides single sign-on (SSO) across many accounts",
+     "icon": "img:images/aws-iam-identity-center.svg"
+    },
+    {
+     "text": "Federated users get MFA from the IdP or IAM Identity Center",
+     "icon": "i3d:fingerprint"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T13",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 560,
+   "notes": "Point to the Condition block and stress that MFA presence is checked at request time, not at login time. Say plainly: a stolen access key without MFA still gets denied on the protected action. Interview hook: ask how someone would force MFA on only destructive actions rather than all of IAM."
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4
+  },
+  {
+   "id": "T14",
+   "layout": "points",
+   "kicker": "Machine Identity Map",
+   "title": "Instances To Agents",
+   "lead": "Instances and applications act on AWS without a human typing credentials. Each needs its own identity: an instance role, a workload role, or a certificate-based identity for external systems",
+   "points": [
+    {
+     "text": "Instance identity: role attached to an EC2 instance via a profile",
+     "icon": "img:images/aws-ec2.svg"
+    },
+    {
+     "text": "Workload identity: role attached to a Lambda function or ECS task",
+     "icon": "img:images/aws-lambda.svg"
+    },
+    {
+     "text": "Anti-pattern: long-lived access keys embedded inside application code",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "Scale challenge: many services each needing a distinct, revocable identity",
+     "icon": "i3d:server"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T14",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Frame this as the non-human counterpart to a user or role held by a person. Point to the four landscape bullets as the map for this section. Exam hook: interviewers ask why a key in code is worse than a role."
+  },
+  {
+   "id": "T15",
+   "layout": "points",
+   "kicker": "Instance Workload Roles",
+   "title": "Role On The Machine",
+   "lead": "An instance profile is a container that attaches an IAM role to a running EC2 instance, so the instance itself becomes the identity making calls. Lambda and ECS carry the same idea through an execution role or task role",
+   "points": [
+    {
+     "text": "Changing the attached role takes effect without redeploying code",
+     "icon": "i3d:toggle"
+    },
+    {
+     "text": "Lambda execution role: permissions the function code runs under",
+     "icon": "img:images/aws-lambda.svg"
+    },
+    {
+     "text": "ECS task role: scoped per task definition, not per cluster",
+     "icon": "img:images/aws-ecs.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T15",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Explain the instance profile as the wrapper that lets an EC2 instance hold a role. Contrast it with assigning a role directly to a person. Exam hook: an interviewer may ask what an instance profile actually contains."
+  },
+  {
+   "id": "T15-AN",
+   "layout": "analogy",
+   "label": "Analogy: hotel room housekeeping card",
+   "kicker": "Instance Workload Roles",
+   "title": "Role On The Machine",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T15Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T15Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A hotel gives a room its own access card for housekeeping services, regardless of which staff member performs the work: just as an instance role gives the EC2 instance its own identity to access AWS services.\n\nExplain the instance profile as the wrapper that lets an EC2 instance hold a role. Contrast it with assigning a role directly to a person. Exam hook: an interviewer may ask what an instance profile actually contains."
+  },
+  {
+   "id": "T16",
+   "layout": "points",
+   "kicker": "Credential Delivery",
+   "title": "Automatic And Local",
+   "lead": "Once a role is attached, the instance or function retrieves temporary credentials automatically, with no key typed in or stored anywhere",
+   "points": [
+    {
+     "text": "Instance metadata service hands out short-lived credentials locally",
+     "icon": "i3d:server"
+    },
+    {
+     "text": "Credentials refresh automatically well before they expire",
+     "icon": "i3d:clock"
+    },
+    {
+     "text": "Lambda injects temporary credentials into the execution environment automatically",
+     "icon": "img:images/aws-lambda.svg"
+    },
+    {
+     "text": "No long-lived keys needed in code or config files",
+     "icon": "i3d:code"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T16",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Stress that rotation is automatic and invisible to the application code. Point to the metadata-service arrow as where credentials originate locally. Exam hook: why rotation removes the need for manual key management."
+  },
+  {
+   "id": "T17",
+   "layout": "table",
+   "kicker": "Avoid Embedded Keys",
+   "title": "Key Versus Role",
+   "lead": "Hardcoding a long-lived access key into source code ties that credential to wherever the code travels (repositories, logs, container images) long past the instance's own lifetime",
+   "table": {
+    "type": "table",
+    "size": 17,
+    "columns": [
+     {
+      "label": "Dimension",
+      "icon": "i3d:list",
+      "weight": 0.8
+     },
+     {
+      "label": "Embedded Access Key",
+      "icon": "img:images/res-iam-long-term-security-credential.svg",
+      "weight": 1.2
+     },
+     {
+      "label": "Instance/Workload Role",
+      "icon": "img:images/res-iam-role.svg",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:pin",
+      "cells": [
+       "Where it ends up",
+       {
+        "text": "Git history, build logs, container images",
+        "tone": "risk"
+       },
+       {
+        "text": "Retrieved at runtime from the platform",
+        "tone": "safe"
+       }
+      ]
+     },
+     {
+      "icon": "i3d:wrench",
+      "cells": [
+       "Changing the credential",
+       {
+        "text": "Edit the code or config and redeploy",
+        "tone": "risk"
+       },
+       {
+        "text": "No code change; SDK retrieves refreshed credentials",
+        "tone": "safe"
+       }
+      ]
+     },
+     {
+      "icon": "i3d:alert",
+      "cells": [
+       "Leak risk",
+       {
+        "text": "High: may be exposed in code or files",
+        "tone": "risk"
+       },
+       {
+        "text": "Lower: avoids embedding long-lived keys in code or configuration files",
+        "tone": "safe"
+       }
+      ]
+     },
+     {
+      "icon": "i3d:ban",
+      "cells": [
+       "Revocation",
+       {
+        "text": "Must find and replace everywhere",
+        "tone": "risk"
+       },
+       {
+        "text": "Detach the role; access ends when current credentials expire",
+        "tone": "safe"
+       }
+      ]
+     }
+    ]
+   },
+   "notes": "Use the table to make the trade-off concrete rather than abstract. Point at the revocation row as the clearest practical difference. Exam hook: this comparison is a common interview question on IAM best practice."
+  },
+  {
+   "id": "T18",
+   "layout": "points",
+   "kicker": "Identity At Scale",
+   "title": "Governing Many Machines",
+   "lead": "Cloud environments run far more machine identities than human ones, so the same least-privilege discipline from earlier must apply to every service, container and external system calling AWS",
+   "points": [
+    {
+     "text": "Each microservice gets its own scoped role, not a shared one",
+     "icon": "img:images/res-iam-role.svg"
+    },
+    {
+     "text": "IAM Roles Anywhere issues temporary credentials to on-premises servers",
+     "icon": "img:images/res-iam-roles-anywhere.svg"
+    },
+    {
+     "text": "Cross-account roles let one service assume identity in another account",
+     "icon": "i3d:link"
+    },
+    {
+     "text": "Central governance tracks and revokes many non-human identities",
+     "icon": "img:images/aws-iam.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T18",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Close by connecting the single-instance mechanism to the organisation-wide governance problem. Point to IAM Roles Anywhere as the bridge for non-AWS machines. Exam hook: interviewers ask how identity scales once a company runs hundreds of services."
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "AI Agent Identity",
+   "title": "Scoped Short Lived",
+   "lead": "An AI agent, software that plans and carries out actions on its own, still needs an identity before calling any cloud API, and that identity needs the same guardrails as any machine identity",
+   "points": [
+    {
+     "text": "Scoped: credentials cover only the actions the task needs",
+     "icon": "i3d:target"
+    },
+    {
+     "text": "Short-lived: credentials expire automatically after a session window",
+     "icon": "i3d:hourglass"
+    },
+    {
+     "text": "Revocable: access can be withdrawn the moment the task ends",
+     "icon": "i3d:ban"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T19",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Frame this as the machine-identity principle extended to an autonomous caller. Say plainly: an agent is just another non-human identity, so the same three guarantees apply. Interview hook: ask why a long-lived key is dangerous specifically for an agent that plans its own next step."
+  },
+  {
+   "id": "T19-AN",
+   "layout": "analogy",
+   "label": "Analogy: delivery worker shift card",
+   "kicker": "AI Agent Identity",
+   "title": "Scoped Short Lived",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T19Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T19Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A delivery worker receives a temporary access card that opens only the assigned delivery area and expires after the shift: just as an AI agent receives limited, short-lived credentials for its assigned task.\n\nFrame this as the machine-identity principle extended to an autonomous caller. Say plainly: an agent is just another non-human identity, so the same three guarantees apply. Interview hook: ask why a long-lived key is dangerous specifically for an agent that plans its own next step."
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "Excessive Agency Risk",
+   "title": "When Scope Fails",
+   "lead": "Excessive agency happens when an agent's granted permissions exceed what its task genuinely needs, so one bad instruction can cascade into an action nobody intended",
+   "points": [
+    {
+     "text": "A broad role lets one misleading instruction delete production data",
+     "icon": "i3d:trash"
+    },
+    {
+     "text": "Wide permissions turn a flawed plan into a real action",
+     "icon": "i3d:bolt"
+    },
+    {
+     "text": "Scoped, short-lived, revocable credentials bound the damage one step causes",
+     "icon": "i3d:shield"
+    },
+    {
+     "text": "Least privilege for agents mirrors least privilege for any IAM role",
+     "icon": "img:images/res-iam-role.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T20",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Explain that excessive agency is not a bug in the model but a permissions design failure, same as any over-broad IAM role. Point out the parallel with the broad ec2:* example discussed in the practical. Interview hook: ask how scoping, short expiry and revocability each independently limit the blast radius of one wrong agent action."
+  },
+  {
+   "id": "D-LAB",
+   "layout": "breaker",
+   "index": 6,
+   "lab": true,
+   "kicker": "Practical Hands-On",
+   "title": "Building and Testing a Least-Privilege IAM Role"
+  },
+  {
+   "id": "P21",
+   "layout": "lead",
+   "kicker": "Practical Overview",
+   "title": "What Gets Built",
+   "lead": "This practical builds one IAM role that can view and start EC2 instances but cannot terminate them, then proves that scope using the IAM Policy Simulator rather than a live EC2 action",
+   "figure": {
+    "type": "custom",
+    "name": "D_P21",
+    "props": {
+     "steps": 6
+    }
+   },
+   "figW": 1080,
+   "figH": 344,
+   "notes": "Practical overview: walk the six steps in order before opening the console. The role is proved with the IAM Policy Simulator, not with a live EC2 action."
+  },
+  {
+   "id": "P22",
+   "layout": "screenshot",
+   "kicker": "Explore Existing Policy",
+   "title": "Reading Permissions",
+   "lead": "Before writing a policy, it helps to read one AWS already ships, to see which services, access levels and resources it allows",
+   "step": {
+    "text": "AmazonS3ReadOnlyAccess managed policy details page, Permissions tab active",
+    "icon": "img:images/aws-iam.svg"
+   },
+   "image": "images/tr22-managed-policy.png",
+   "rings": [
+    [
+     44,
+     676,
+     290,
+     92
+    ]
+   ],
+   "notes": "Practical step 1: open the AmazonS3ReadOnlyAccess managed policy and read its Permissions tab."
+  },
+  {
+   "id": "P23",
+   "layout": "screenshot",
+   "kicker": "Create Custom Policy",
+   "title": "Describe-Only JSON",
+   "lead": "The custom policy starts narrow: it allows only the EC2 describe action, nothing else, so the role begins with the smallest workable grant",
+   "step": {
+    "text": "IAM policy editor in JSON mode, one statement allowing `ec2:DescribeInstances`",
+    "icon": "img:images/aws-iam.svg"
+   },
+   "image": "images/tr23-policy-editor.png",
+   "rings": [
+    [
+     2316,
+     386,
+     132,
+     60
+    ],
+    [
+     352,
+     696,
+     464,
+     44
+    ]
+   ],
+   "notes": "Practical step 2: the policy editor in JSON mode with one statement allowing ec2:DescribeInstances."
+  },
+  {
+   "id": "P24",
+   "layout": "screenshot",
+   "kicker": "Verify The Role",
+   "title": "Attached Permissions",
+   "lead": "After the role is created and the custom policy attached, the role's own Permissions tab confirms exactly one policy is attached before any testing begins",
+   "step": {
+    "text": "IAM role Permissions tab listing one attached customer-managed policy",
+    "icon": "img:images/res-iam-role.svg"
+   },
+   "image": "images/tr24-role-permissions.png",
+   "rings": [
+    [
+     220,
+     824,
+     1210,
+     72
+    ]
+   ],
+   "notes": "Practical step 3: the role's Permissions tab lists one attached customer-managed policy."
+  },
+  {
+   "id": "P25",
+   "layout": "table",
+   "kicker": "Update, Retest, Discuss",
+   "title": "Closing The Gap",
+   "lead": "Once the simulator shows the start action denied, the policy is edited to add exactly that permission, and nothing else, before testing again",
+   "table": {
+    "type": "table",
+    "size": 19,
+    "columns": [
+     {
+      "label": "Action",
+      "icon": "i3d:bolt",
+      "weight": 1.1
+     },
+     {
+      "label": "Before Update",
+      "icon": "i3d:clock",
+      "weight": 1.0
+     },
+     {
+      "label": "After Update",
+      "icon": "i3d:check",
+      "weight": 1.0
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:search",
+      "cells": [
+       "DescribeInstances",
+       {
+        "text": "Allowed",
+        "icons": [
+         "i3d:check"
+        ]
+       },
+       {
+        "text": "Allowed",
+        "icons": [
+         "i3d:check"
+        ]
+       }
+      ]
+     },
+     {
+      "icon": "i3d:play",
+      "cells": [
+       "StartInstances",
+       {
+        "text": "Denied",
+        "icons": [
+         "i3d:cross"
+        ]
+       },
+       {
+        "text": "Allowed",
+        "icons": [
+         "i3d:check"
+        ]
+       }
+      ]
+     },
+     {
+      "icon": "i3d:trash",
+      "cells": [
+       "TerminateInstances",
+       {
+        "text": "Denied",
+        "icons": [
+         "i3d:cross"
+        ]
+       },
+       {
+        "text": "Denied",
+        "icons": [
+         "i3d:cross"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "notes": "Practical steps 4 to 6: record the simulator results, add exactly the missing permission, retest, then discuss the over-permissive policy and the trust relationship."
+  },
+  {
+   "id": "P25-B",
+   "layout": "screenshot",
+   "kicker": "Update, Retest, Discuss",
+   "title": "Closing The Gap",
+   "step": {
+    "text": "Policy Simulator before the update: DescribeInstances Allowed, StartInstances and TerminateInstances Denied (implicit deny)",
+    "icon": "img:images/aws-iam.svg"
+   },
+   "image": "images/tr25-simulator-before.png",
+   "rings": [
+    [
+     2056,
+     820,
+     192,
+     60
+    ],
+    [
+     2056,
+     1014,
+     164,
+     60
+    ],
+    [
+     2056,
+     1258,
+     164,
+     60
+    ]
+   ],
+   "notes": "Practical steps 4 to 6: record the simulator results, add exactly the missing permission, retest, then discuss the over-permissive policy and the trust relationship."
+  },
+  {
+   "id": "P25-C",
+   "layout": "screenshot",
+   "kicker": "Update, Retest, Discuss",
+   "title": "Closing The Gap",
+   "step": {
+    "text": "Policy edited to add `ec2:StartInstances`; TerminateInstances stays absent",
+    "icon": "img:images/aws-iam.svg"
+   },
+   "image": "images/tr25-policy-edited.png",
+   "rings": [
+    [
+     358,
+     685,
+     374,
+     33,
+     "band"
+    ]
+   ],
+   "notes": "Practical steps 4 to 6: record the simulator results, add exactly the missing permission, retest, then discuss the over-permissive policy and the trust relationship."
+  },
+  {
+   "id": "P25-D",
+   "layout": "screenshot",
+   "kicker": "Update, Retest, Discuss",
+   "title": "Closing The Gap",
+   "image": "images/tr25-simulator-after.png",
+   "rings": [
+    [
+     2444,
+     954,
+     224,
+     64
+    ],
+    [
+     2444,
+     1136,
+     224,
+     64
+    ],
+    [
+     2444,
+     1378,
+     208,
+     64
+    ]
+   ],
+   "notes": "Practical steps 4 to 6: record the simulator results, add exactly the missing permission, retest, then discuss the over-permissive policy and the trust relationship."
+  },
+  {
+   "id": "P25-E",
+   "layout": "points",
+   "kicker": "Update, Retest, Discuss",
+   "title": "Closing The Gap",
+   "points": [
+    {
+     "text": "Broad `ec2:*` grant shown only for discussion, never attached to the role",
+     "icon": "i3d:asterisk"
+    },
+    {
+     "text": "Trust relationship names the trusted account and allows `sts:AssumeRole`",
+     "icon": "i3d:policy"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_P25E",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "Practical steps 4 to 6: record the simulator results, add exactly the missing permission, retest, then discuss the over-permissive policy and the trust relationship."
+  },
+  {
+   "id": "P26",
+   "layout": "points",
+   "kicker": "Expected Result",
+   "title": "Scope Confirmed",
+   "lead": "The finished role lets its holder view and start EC2 instances but never terminate them, with every permission traceable to one explicit statement in its policy",
+   "points": [
+    {
+     "text": "Role cleanup: delete S14-EC2-Demo-Role before the custom policy",
+     "icon": "i3d:trash"
+    },
+    {
+     "text": "Policy cleanup: delete S14-EC2-ReadOnly-Demo once detached",
+     "icon": "i3d:policy"
+    },
+    {
+     "text": "Federation (SAML, OIDC, SSO) and AI-agent scoping stay conceptual here",
+     "icon": "i3d:eye"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_P26",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 330,
+   "pointsW": 540,
+   "notes": "Practical close: confirm the role can view and start but never terminate, then clean up in order: the role first, then the policy once detached."
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz",
+   "notes": "Quiz on IAM Roles & Least Privilege. Q1. How do you avoid storing permanent keys? Answer: Use a role. Q2. Name the three parts of a temporary credential set. Answer: Access key ID, secret access key and session token. Q3. Which policy decides who may assume a role, and which decides what it can do? Answer: The trust policy and the permission policy. Q4. What is wrong with Resource set to the asterisk on an S3 policy? Answer: It matches every object, not a chosen ARN. Q5. Can a permission boundary add access? Answer: No, it only limits permissions granted elsewhere. Q6. What does federation let AWS trust instead of a password? Answer: The identity provider's signed proof. Q7. Which condition key forces MFA on destructive actions? Answer: aws:MultiFactorAuthPresent. Q8. Why is a key in code worse than a role? Answer: It travels with the code and must be found and replaced everywhere; a role's credentials are retrieved at runtime and expire."
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Roles & Temporary Credentials: Assuming a role; session tokens; temporary vs long-lived credentials\n2. Principle of Least Privilege: Scoping actions & resources; wildcards & their risks; permission boundaries; iterative tightening\n3. Federation & Single Sign-On: Identity providers; SAML & OIDC; multi-factor authentication (MFA)\n4. Service & Machine Identity: Instance & workload identities; avoiding embedded keys; non-human identity at scale\n5. Identity for AI Agents: Scoped, short-lived & revocable credentials; excessive agency as a failure mode"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Encryption & Key Management"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}
