@@ -57,6 +57,14 @@
       "author": "Pallavi",
       "text": "Authentication icon (ID card) → use the person-with-x icon from the “Broken authentication” bullet\nRate Limiting icon (robot) → use the gauge icon from the “No rate limiting” bullet\nValidation icon (bug) → use the alert (!) icon from the “Missing input validation” bullet",
       "at": 1794995266411
+    },
+    "mwlyt1qxxgqv7o": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T11",
+      "author": "Pallavi",
+      "text": "add the last point orange box point in next slide above the visual",
+      "at": 1794996897084
     }
   }
 }
