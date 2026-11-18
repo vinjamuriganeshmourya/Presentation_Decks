@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "add this visual in befoer slide and add the table in another slide",
       "at": 1795004686450
+    },
+    "mwm3iejzevuwho": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21",
+      "author": "Pallavi",
+      "text": "Arrow starting point: right now the arrow starts from the Key Material icon. Move its start to the right edge of the dashed “Boundary” box, so the Key Material stays inside with no line touching it.\nArrow label: add a small label on that arrow: “Data keys”.",
+      "at": 1795004798592
     }
   }
 }
