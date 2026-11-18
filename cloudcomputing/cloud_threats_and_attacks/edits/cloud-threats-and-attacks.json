@@ -97,6 +97,14 @@
       "author": "Pallavi",
       "text": "Swap the positions of two boxes in the diagram:\n\n2nd box (Model) → put Vector DB here\n3rd box (Vector DB) → put Model here\n\nMove the labels above them too:\n\n2nd top label (Consumption) → Embedding\n3rd top label (Embedding) → Consumption",
       "at": 1794997669060
+    },
+    "mwlzar8n9bw8c3": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21",
+      "author": "Pallavi",
+      "text": "split the content, add the top line in one slide as points and this points in another slide",
+      "at": 1794997723228
     }
   }
 }
