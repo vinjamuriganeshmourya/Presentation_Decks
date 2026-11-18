@@ -73,6 +73,14 @@
       "author": "Pallavi",
       "text": "Above the two toggles (Bucket and Account) → a small heading: “S3 Block Public Access: OFF”",
       "at": 1794997021396
+    },
+    "mwlz07s509uj4m": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T17",
+      "author": "Pallavi",
+      "text": "Use a download/exfiltration arrow icon (an arrow leaving a database or document, pointing away from the Data box).\n\nReplace the red dustbin next to “Steals” with that icon.",
+      "at": 1794997231523
     }
   }
 }
