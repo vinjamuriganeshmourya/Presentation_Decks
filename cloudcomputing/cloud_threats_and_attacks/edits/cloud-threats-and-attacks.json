@@ -81,6 +81,14 @@
       "author": "Pallavi",
       "text": "Use a download/exfiltration arrow icon (an arrow leaving a database or document, pointing away from the Data box).\n\nReplace the red dustbin next to “Steals” with that icon.",
       "at": 1794997231523
+    },
+    "mwlz36v4xrcwfv": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T17-B",
+      "author": "Pallavi",
+      "text": "Top “Insider” label (with warning badge) → “Malicious Insider”\nBottom “Insider” label → “Accidental Insider”",
+      "at": 1794997370387
     }
   }
 }
