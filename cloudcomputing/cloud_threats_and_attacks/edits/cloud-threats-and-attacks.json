@@ -20,7 +20,7 @@
     },
     "mwlxhgwts1e7o3": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05-B",
       "author": "Pallavi",
       "text": "Slowloris arrows\nNow: the 4 arrows from Slowloris go to the CPU gauge.\nChange: add a small box inside the Web Server card called “Connection Slots” with 4–5 slots shown as full or locked. Point the 4 Slowloris arrows at those slots instead of the CPU.",
