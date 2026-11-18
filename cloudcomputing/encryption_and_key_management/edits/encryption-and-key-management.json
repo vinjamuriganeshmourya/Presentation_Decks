@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/encryption_and_key_management/encryption-and-key-management",
+  "slides": {},
+  "threads": {
+    "mwm362ufsdp7cm": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T12-B",
+      "author": "Pallavi",
+      "text": "What to change:\nArrow from Minimum TLS Version → Endpoint → remove it, or make it faded and dashed with a red ✗ so it’s clear the request never reaches the Endpoint.",
+      "at": 1795004223501
+    }
+  }
+}
