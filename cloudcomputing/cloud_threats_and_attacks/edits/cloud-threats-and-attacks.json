@@ -4,7 +4,7 @@
   "threads": {
     "mwlx6t5u8kg8mp": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T02",
       "author": "Pallavi",
       "text": "IoT Devices → Open Servers arrows: add the label “Small request (spoofed source: Target IP)” and keep them thin.\nOpen Servers → Target arrows: add the label “Large reply” and make them noticeably thicker.\n\nin visual",
