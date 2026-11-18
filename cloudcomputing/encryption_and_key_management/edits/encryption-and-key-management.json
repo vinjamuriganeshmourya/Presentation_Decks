@@ -33,6 +33,14 @@
       "author": "Pallavi",
       "text": "Arrow starting point: right now the arrow starts from the Key Material icon. Move its start to the right edge of the dashed “Boundary” box, so the Key Material stays inside with no line touching it.\nArrow label: add a small label on that arrow: “Data keys”.",
       "at": 1795004798592
+    },
+    "mwm3k8s8ijooqp": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T22-B",
+      "author": "Pallavi",
+      "text": "“AWS-Owned” label → “AWS-Managed (aws/*)”",
+      "at": 1795004884417
     }
   }
 }
