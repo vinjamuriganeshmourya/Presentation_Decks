@@ -1,0 +1,285 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "EC2 Launch and Flask Deployment on Beanstalk",
+  "course": "Cloud Computing",
+  "htmlName": "ec2-launch-and-flask-deployment-on-beanstalk",
+  "labDeck": true
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "D-LAB",
+   "layout": "breaker",
+   "index": 6,
+   "lab": true,
+   "kicker": "Practical Hands-On",
+   "title": "EC2 Launch and Flask Deployment on Beanstalk"
+  },
+  {
+   "id": "P01",
+   "layout": "lead",
+   "kicker": "Practical Overview",
+   "title": "EC2 Plus Beanstalk",
+   "lead": "Launch an EC2 instance, then deploy a Flask app on Elastic Beanstalk, to compare self-managed and managed provisioning live",
+   "figure": {
+    "type": "custom",
+    "name": "C_P01",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1000,
+   "figH": 330
+  },
+  {
+   "id": "P01-B",
+   "layout": "custom",
+   "component": "L_Steps",
+   "label": "Practical Steps",
+   "props": {
+    "id": "P01-B",
+    "kicker": "Practical Overview",
+    "title": "EC2 Plus Beanstalk",
+    "steps": [
+     {
+      "text": "Sign in to the AWS console and select the Mumbai region",
+      "icon": "LogIn"
+     },
+     {
+      "text": "Launch an EC2 instance with a chosen AMI, instance type and key pair",
+      "icon": "Rocket"
+     },
+     {
+      "text": "Connect to the instance and run basic verification commands",
+      "icon": "SquareTerminal"
+     },
+     {
+      "text": "Package a small Flask application as a ZIP archive",
+      "icon": "FileArchive"
+     },
+     {
+      "text": "Create an Elastic Beanstalk application and environment from the ZIP",
+      "icon": "Layers"
+     },
+     {
+      "text": "Deploy and verify Version 1, then update to Version 2",
+      "icon": "Upload"
+     },
+     {
+      "text": "Clean up every resource created to avoid charges",
+      "icon": "Trash2"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P02",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Instance Running With Status Checks Passed",
+   "props": {
+    "id": "P02",
+    "kicker": "EC2 Instance Launch",
+    "title": "Image and Sizing Choices",
+    "lead": "The instance launches from a machine image on a general-purpose size, with a security group allowing only the learner’s own IP for remote access",
+    "step": "Instance Running With Status Checks Passed",
+    "icon": "Server",
+    "image": "images/ec2-running.png",
+    "rings": [
+     [
+      1014,
+      356,
+      180,
+      50
+     ],
+     [
+      1788,
+      356,
+      346,
+      50
+     ]
+    ],
+    "caption": "s9-ec2-vm-demo in Running state with 3/3 status checks passed"
+   }
+  },
+  {
+   "id": "P02-B",
+   "layout": "points",
+   "kicker": "EC2 Instance Launch",
+   "title": "Image and Sizing Choices",
+   "points": [
+    {
+     "text": "AMI Amazon Linux 2023 on a `t3.micro` instance",
+     "icon": "Disc3"
+    },
+    {
+     "text": "Key pair `s9-ec2-key` for access",
+     "icon": "KeyRound"
+    },
+    {
+     "text": "Security group `s9-ec2-sg` allowing SSH (port 22) from My IP only",
+     "icon": "ShieldCheck"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_P02B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "pointsW": 500,
+   "figH": 380
+  },
+  {
+   "id": "P03",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Verification Commands On The Instance",
+   "props": {
+    "id": "P03",
+    "kicker": "Instance Connect",
+    "title": "Confirming Access",
+    "lead": "A browser-based terminal opens on the instance through SSH from a local terminal using the private key (.pem) file, and basic Linux commands confirm access",
+    "step": "Verification Commands On The Instance",
+    "icon": "SquareTerminal",
+    "image": "images/ec2-terminal.png",
+    "rings": [
+     [
+      0,
+      66,
+      172,
+      38
+     ],
+     [
+      0,
+      330,
+      378,
+      38
+     ]
+    ],
+    "caption": "`whoami`, `hostname`, `uname -a` and os-release output on the instance",
+    "leadSide": true,
+    "ringInset": true
+   }
+  },
+  {
+   "id": "P04",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Application Files In The Project Folder",
+   "props": {
+    "id": "P04",
+    "kicker": "Application Packaging",
+    "title": "Files Before Upload",
+    "lead": "The Flask application file and dependency list are archived in a ZIP with both files at the root, not inside a folder",
+    "step": "Application Files In The Project Folder",
+    "icon": "FolderOpen",
+    "image": "images/app-folder.png",
+    "rings": [
+     [
+      130,
+      84,
+      320,
+      106
+     ]
+    ],
+    "caption": "`application.py` and `requirements.txt` in the `s9-paas-demo` folder"
+   }
+  },
+  {
+   "id": "P05",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Environment Launched With Health Ok",
+   "props": {
+    "id": "P05",
+    "kicker": "Beanstalk Environment",
+    "title": "First Deployment Live",
+    "lead": "The ZIP is uploaded to a new Elastic Beanstalk environment on the Python platform, which provisions and manages the servers for us, unlike the EC2 VM we managed ourselves\nBehind the scenes, Beanstalk creates the EC2 instances, an auto scaling group and a launch template",
+    "step": "Environment Launched With Health Ok",
+    "icon": "Layers",
+    "image": "images/eb-env.png",
+    "rings": [
+     [
+      118,
+      548,
+      124,
+      90
+     ]
+    ],
+    "caption": "S9-paas-demo-env with Health Ok",
+    "leadSide": true
+   }
+  },
+  {
+   "id": "P06",
+   "layout": "custom",
+   "component": "L_Shot",
+   "label": "Version 2 Served At The Same URL",
+   "props": {
+    "id": "P06",
+    "kicker": "Version Update",
+    "title": "Redeploy and Confirm",
+    "lead": "The code is updated, re-zipped as Version 2 and deployed to the same environment, with no new server created",
+    "step": "Version 2 Served At The Same URL",
+    "icon": "Globe",
+    "image": "images/eb-v2.png",
+    "rings": [
+     [
+      584,
+      16,
+      1024,
+      40
+     ],
+     [
+      12,
+      262,
+      850,
+      44
+     ]
+    ],
+    "caption": "Version 2 page served at the same environment URL"
+   }
+  },
+  {
+   "id": "P06-B",
+   "layout": "custom",
+   "component": "L_Steps",
+   "label": "Verify And Clean Up",
+   "props": {
+    "id": "P06-B",
+    "kicker": "Version Update",
+    "title": "Redeploy and Confirm",
+    "steps": [
+     {
+      "text": "Verify that the Version 2 page loads at the same URL and the running version is the latest upload",
+      "icon": "CircleCheck"
+     },
+     {
+      "text": "Clean up to avoid charges: terminate the EC2 instance, the Elastic Beanstalk environment and delete the Beanstalk application",
+      "icon": "Trash2"
+     },
+     {
+      "text": "Then delete security group `s9-ec2-sg`, empty and delete the Beanstalk S3 bucket (`elasticbeanstalk-ap-south-1-…`), and check for leftover EBS volumes and Elastic IP addresses",
+      "icon": "PackageX"
+     }
+    ]
+   }
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}

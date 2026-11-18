@@ -14,6 +14,7 @@
     { "title": "Testing S3, EBS and EFS Storage on AWS", "folder": "practical_hands_on_testing_s3_ebs_and_efs_storage_on_aws" },
     { "title": "Storage Tiering, Backup & DR", "folder": null },
     { "title": "Elastic Compute Instances", "folder": "elastic_compute_instances" },
+    { "title": "EC2 Launch and Flask Deployment on Beanstalk", "folder": "practical_hands_on_ec2_launch_and_flask_deployment_on_beanstalk" },
     { "title": "Serverless Computing", "folder": "serverless_computing" },
     { "title": "Cloud Provider Comparison", "folder": "cloud_provider_comparison" },
     { "title": "Cloud Security & Shared Responsibility", "folder": "cloud_security_and_shared_responsibility" },
