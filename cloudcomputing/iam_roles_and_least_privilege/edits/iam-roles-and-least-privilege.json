@@ -17,6 +17,14 @@
       "author": "Pallavi",
       "text": "“Caller invokes sts:AssumeRole” bullet icon (code </>) → replace it with the laptop icon from the diagram’s “Caller” box\n“Caller also needs its own permission” bullet icon (checklist) → replace it with the ID card icon from the diagram’s “Own Permission” box",
       "at": 1794999360590
+    },
+    "mwm0c8ahibxwqh": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T03-B",
+      "author": "Pallavi",
+      "text": "Swap the two bullets: put “STS returns a fresh, time-limited credential set” on top, and “The caller uses the temporary credentials” below it.\nChange the icon on “The caller uses the temporary credentials” bullet: replace the gold key with the red checklist icon from “Role Permissions” in the diagram.",
+      "at": 1794999471860
     }
   }
 }
