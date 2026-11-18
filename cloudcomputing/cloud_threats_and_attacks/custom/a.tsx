@@ -19,10 +19,10 @@ import edgeMark from '../images/res-cloudfront-edge-location.svg'
  *
  *   slide 6  A_T01   526 x 330  pyramid of attack layers (3 steps)
  *   slide 7  A_T01B 1080 x 380  DoS vs DDoS, the TR's two pictures redrawn (2)
- *   slide 8  A_T02   566 x 330  botnet, reflection, amplification, IoT (4)
+ *   slide 8  A_T02   566 x 370  botnet, reflection, amplification, IoT (4)
  *   slide 11 A_T04   566 x 330  volumetric: traffic chart, pipe, upstream defence (4)
  *   slide 12 A_T05   546 x 330  protocol: connection table, malformed packet (2)
- *   slide 13 A_T05B  566 x 380  application: CPU gauge, Slowloris, normal traffic (3)
+ *   slide 13 A_T05B  566 x 380  application: CPU gauge, connection slots, Slowloris, normal traffic (3)
  *   slide 15 A_T06B 1080 x 420  rate limit, scrubbing, CDN edge into one origin (3)
  *   slide 16 A_T07   546 x 330  CloudFront edges, Shield, WAF, origin (4)
  */
@@ -218,9 +218,9 @@ const A_T01B: Fig = (p) => {
  * mask (spoofed address) and small replies reach the target; press 3 every reply leaves far larger than its query
  * (amplification); press 4 the bots turn into IoT devices.
  */
-const BN = { W: 566, H: 330, Y: 155, AX: 56, CX: 150, BX: 268, SX: 392, TX: 506, FAN: 212, BUS: 330, TBUS: 450 }
-const BN_BY = [48, 118, 188, 258]
-const BN_SY = [80, 155, 230]
+const BN = { W: 566, H: 370, Y: 195, AX: 56, CX: 150, BX: 268, SX: 392, TX: 506, FAN: 212, BUS: 330, TBUS: 450 }
+const BN_BY = [88, 158, 228, 298]
+const BN_SY = [120, 195, 270]
 const BN_MAP = [0, 1, 1, 2]
 const BN_IOT: Ico3DName[] = ['camera', 'router', 'phone', 'laptop']
 const BN_ORDER = BN_BY.map((by, i) => K.ride(`order${i}`, [[176, BN.Y], [BN.FAN, BN.Y], [BN.FAN, by], [246, by]], 0.1 + i * 0.18, 0.9 + i * 0.18, 2.2))
@@ -241,11 +241,24 @@ const A_T02: Fig = (p) => {
       <Wire pts={[[82, BN.Y], [124, BN.Y]]} />
       {BN_BY.map((by, i) => <Wire key={i} pts={[[176, BN.Y], [BN.FAN, BN.Y], [BN.FAN, by], [246, by]]} lit={hot === 0} delay={i * 90} />)}
       {/* bots -> open servers (spoofed queries) */}
-      {BN_BY.map((by, i) => <Wire key={`q${i}`} pts={[[290, by], [BN.BUS, by]]} on={s2} head={0} color={ORANGE} />)}
-      <Wire pts={[[BN.BUS, BN_BY[0]], [BN.BUS, BN_BY[3]]]} on={s2} head={0} color={ORANGE} />
-      {BN_SY.map((sy, j) => <Wire key={`s${j}`} pts={[[BN.BUS, sy], [368, sy]]} on={s2} color={ORANGE} delay={300} />)}
-      {/* open servers -> target (replies) */}
-      {BN_SY.map((sy, j) => <Wire key={`r${j}`} pts={sy === BN.Y ? [[416, sy], [478, sy]] : [[416, sy], [BN.TBUS, sy], [BN.TBUS, BN.Y]]} on={s2} head={sy === BN.Y ? 10 : 0} color={ORANGE} width={s3 ? 4 : 2.6} delay={500} />)}
+      {/* bots -> open servers: small spoofed requests, thin */}
+      {BN_BY.map((by, i) => <Wire key={`q${i}`} pts={[[290, by], [BN.BUS, by]]} on={s2} head={0} color={ORANGE} width={1.5} />)}
+      <Wire pts={[[BN.BUS, BN_BY[0]], [BN.BUS, BN_BY[3]]]} on={s2} head={0} color={ORANGE} width={1.5} />
+      {BN_SY.map((sy, j) => <Wire key={`s${j}`} pts={[[BN.BUS, sy], [368, sy]]} on={s2} color={ORANGE} width={1.5} head={7} delay={300} />)}
+      {/* open servers -> target: large replies, thick */}
+      {BN_SY.map((sy, j) => <Wire key={`r${j}`} pts={sy === BN.Y ? [[416, sy], [478, sy]] : [[416, sy], [BN.TBUS, sy], [BN.TBUS, BN.Y]]} on={s2} head={sy === BN.Y ? 15 : 0} color={ORANGE} width={6} delay={500} />)}
+      {/* the two arrow labels: each a callout whose leader ends ON the arrow it names, at the top open server:
+          the thin request going INTO it (x 349) and the thick reply coming OUT of it (x 433) */}
+      {[
+        { x: 349, cx: 300, w: 196, top: 12, text: <>Small request<br />(spoofed source: Target IP)</>, d: 400 },
+        { x: 433, cx: 452, w: 104, top: 29, text: <>Large reply</>, d: 600 },
+      ].map((l) => (
+        <div key={l.x}>
+          <Wire pts={[[l.x, l.top + (l.w > 150 ? 42 : 25)], [l.x, BN_SY[0] - 5]]} on={s2} head={0} width={1.4} color="#E9A774" dash="3 3" />
+          <Show on={s2} delay={l.d + 300} style={{ position: 'absolute', left: l.x - 4, top: BN_SY[0] - 4, width: 8, height: 8, borderRadius: 99, background: '#C2541C', boxShadow: '0 0 0 2px #FFFFFF', zIndex: 4 }}><span /></Show>
+          <Show on={s2} delay={l.d} style={{ position: 'absolute', left: l.cx - l.w / 2, top: l.top, width: l.w, padding: '3px 8px', borderRadius: 9, background: '#FFF6EE', boxShadow: 'inset 0 0 0 1.5px #FFD2B0', ...tag(13, '#C2541C'), whiteSpace: 'normal', lineHeight: 1.2, zIndex: 3 }}>{l.text}</Show>
+        </div>
+      ))}
       <Junction x={BN.TBUS} y={BN.Y} on={s2} lit />
 
       <Node x={BN.AX} y={BN.Y} size={52} label="Attacker" w={100}><Plinth size={52}><Ico3D name="laptop" size={38} loop="bob" /></Plinth></Node>
@@ -261,7 +274,7 @@ const A_T02: Fig = (p) => {
           <Corner name="mask" size={18} on={s2} d={i * 0.3} top />
         </div>
       ))}
-      <div style={{ position: 'absolute', left: BN.BX - 60, top: 288, width: 120, height: 18, ...tag(14), zIndex: 3 }}>
+      <div style={{ position: 'absolute', left: BN.BX - 60, top: 328, width: 120, height: 18, ...tag(14), zIndex: 3 }}>
         <span style={{ position: 'absolute', inset: 0, opacity: s4 ? 0 : 1, transition: 'opacity 520ms' }}>Bots</span>
         <span style={{ position: 'absolute', inset: 0, opacity: s4 ? 1 : 0, transition: 'opacity 520ms' }}>IoT Devices</span>
       </div>
@@ -270,7 +283,7 @@ const A_T02: Fig = (p) => {
           <Plinth size={48} lit={hot === 1}><Ico3D name="server" size={34} loop="bob" d={j * 0.4} /></Plinth>
         </Show>
       ))}
-      <Show on={s2} delay={300} style={{ position: 'absolute', left: BN.SX - 60, top: 260, width: 120, ...tag(14), zIndex: 3 }}>Open Servers</Show>
+      <Show on={s2} delay={300} style={{ position: 'absolute', left: BN.SX - 60, top: 300, width: 120, ...tag(14), zIndex: 3 }}>Open Servers</Show>
       <Node x={BN.TX} y={BN.Y} size={56} label="Target" w={90}>
         <span className={s3 && !held ? loopCls('shake') : undefined} style={{ display: 'grid', position: 'relative', ...loopVars(0, 1.1) }}>
           <Plinth size={56} lit={hot === 2} warm={s3}><Ico3D name="server" size={42} loop="none" /></Plinth>
@@ -278,8 +291,8 @@ const A_T02: Fig = (p) => {
       </Node>
 
       {BN_ORDER.map((c, i) => <Token key={i} cls={c} tone={BLUE} size={9} on={s1} />)}
-      {BN_QUERY.map((c, i) => <Token key={`q${i}`} cls={c} tone={ORANGE} size={8} on={s2} />)}
-      {BN_REPLY.map((c, j) => <Token key={`r${j}`} cls={c} tone={ORANGE} size={s3 ? 18 : 8} on={s2} />)}
+      {BN_QUERY.map((c, i) => <Token key={`q${i}`} cls={c} tone={ORANGE} size={6} on={s2} />)}
+      {BN_REPLY.map((c, j) => <Token key={`r${j}`} cls={c} tone={ORANGE} size={s3 ? 18 : 14} on={s2} />)}
     </Frame>
   )
 }
@@ -367,15 +380,16 @@ const A_T04: Fig = (p) => {
 /* ================================================================== slide 12 · A_T05 · protocol: SYN flood, malformed packets */
 
 /*
- * 546 x 330. Left: Requests (y 110) and a User (y 238). Middle: the server's Connection Table card (150..400 x
- * 20..312) with five slots. Right: the Parser. Press 1: SYN entries fill every slot and never complete (each with a
- * blinking hourglass); the user's request bounces off the full table. Press 2: an oversized packet reaches the
- * parser, which cracks.
+ * 546 x 330. Left: SYN Requests (y 110) and a User (y 238). Middle: the server's Connection Table card (150..400 x
+ * 20..312) with five slots. Right: Malformed Packets (y 70) feeding the Parser (y 236) straight down; the table has
+ * no wire to the parser (they are two separate attacks). Press 1: SYN entries fill every slot and never complete
+ * (each with a blinking hourglass); the user's request bounces off the full table. Press 2: a malformed packet
+ * reaches the parser, which cracks.
  */
-const SY = { W: 546, H: 330, LX: 64, RY: 110, UY: 238, TX: 152, TW: 250, TY: 19, TH: 292, PX: 476, PY: 166 }
+const SY = { W: 546, H: 330, LX: 64, RY: 110, UY: 238, TX: 152, TW: 250, TY: 19, TH: 292, PX: 476, PY: 236, MY: 70 }
 const SY_SYN = [0, 1, 2].map((i) => K.ride(`syn${i}`, [[90, SY.RY], [SY.TX - 4, SY.RY]], i * 0.5, i * 0.5 + 0.8, 1.5))
 const SY_USER = K.ride('user', [[90, SY.UY], [SY.TX - 6, SY.UY], [94, SY.UY]], 0.2, 1.8, 2.4)
-const SY_PKT = K.ride('pkt', [[SY.TX + SY.TW, SY.PY], [SY.PX - 30, SY.PY]], 0.2, 1.2, 2.2, 1.1)
+const SY_PKT = K.ride('pkt', [[SY.PX, SY.MY + 74], [SY.PX, SY.PY - 34]], 0.2, 1.2, 2.2, 1.1)
 
 const A_T05: Fig = (p) => {
   const step = stepOf(p)
@@ -388,9 +402,11 @@ const A_T05: Fig = (p) => {
     <Frame w={SY.W} h={SY.H}>
       <Wire pts={[[90, SY.RY], [SY.TX, SY.RY]]} color={ORANGE} />
       <Wire pts={[[90, SY.UY], [SY.TX, SY.UY]]} />
-      <Wire pts={[[SY.TX + SY.TW, SY.PY], [SY.PX - 28, SY.PY]]} on={s2} color={ORANGE} />
+      <Wire pts={[[SY.PX, SY.MY + 70], [SY.PX, SY.PY - 28]]} on={s2} color={ORANGE} />
 
-      <Node x={SY.LX} y={SY.RY} size={52} label="Requests" w={100}><Plinth size={52}><Ico3D name="bot" size={38} loop="bob" /></Plinth></Node>
+      <Node x={SY.PX} y={SY.MY} size={52} w={100} on={s2}><Plinth size={52} lit={hot === 1}><Ico3D name="package" size={38} loop="bob" badge="alert" /></Plinth></Node>
+      <Show on={s2} style={{ position: 'absolute', left: SY.PX - 50, top: SY.MY + 32, width: 100, ...tag(14), whiteSpace: 'normal', zIndex: 3 }}>Malformed<br />Packets</Show>
+      <Node x={SY.LX} y={SY.RY} size={52} label="SYN Requests" w={120}><Plinth size={52}><Ico3D name="bot" size={38} loop="bob" /></Plinth></Node>
       <Node x={SY.LX} y={SY.UY} size={52} label="User" w={100}>
         <span style={{ position: 'relative', display: 'grid' }}>
           <Plinth size={52}><Ico3D name="user" size={38} loop="bob" d={0.5} /></Plinth>
@@ -422,7 +438,7 @@ const A_T05: Fig = (p) => {
 
       {SY_SYN.map((c, i) => <Token key={i} cls={c} tone={ORANGE} size={9} on={s1} />)}
       <Token cls={SY_USER} tone={BLUE} size={10} on={s1} />
-      <Token cls={SY_PKT} tone={ORANGE} size={20} square on={s2} />
+      <Token cls={SY_PKT} tone={ORANGE} size={14} square on={s2} />
     </Frame>
   )
 }
@@ -430,15 +446,21 @@ const A_T05: Fig = (p) => {
 /* ================================================================== slide 13 · A_T05B · application: HTTP flood, Slowloris */
 
 /*
- * 566 x 380. Left: HTTP (y 110) and Slowloris (y 262). Middle: the Web Server card (176..390 x 40..340) with its CPU
- * gauge. Right: the Traffic meter, reading inside its normal band. Press 1 page requests stream in and peg the CPU;
- * press 2 four thin, slow connections hold the server open; press 3 the traffic meter appears, still normal.
+ * 566 x 380. Left: HTTP (y 128) and Slowloris (y 256). Middle: the Web Server card (176..400 x 30..350): the server at
+ * the top, a Connection Slots box (four slots) on the left, the CPU gauge on the right. Right: the Traffic meter,
+ * reading inside its normal band. Press 1 page requests run in past the server and down into the CPU gauge, which
+ * pegs; press 2 four thin, slow connections each take one slot and lock it; press 3 the traffic meter appears, still
+ * normal.
  */
-const AP = { W: 566, H: 380, LX: 66, HY: 110, LY: 270, SX: 176, SW: 214, SY: 30, SH: 320, MX: 488, MY: 160, FAN: 122 }
-const AP_FAN = [240, 264, 288, 312]
-const AP_HTTP = [0, 1, 2, 3].map((i) => K.ride(`http${i}`, [[92, AP.HY], [AP.SX - 4, AP.HY]], i * 0.3, i * 0.3 + 0.7, 1.2))
-const AP_SLOW = AP_FAN.map((y, i) => K.ride(`slow${i}`, [[88, AP.LY], [AP.FAN, AP.LY], [AP.FAN, y], [AP.SX - 4, y]], i * 1.4, i * 1.4 + 5, 7))
-const G = { CX: 107, CY: 246, R: 80 }
+const AP = { W: 566, H: 380, LX: 66, HY: 128, LY: 256, SX: 176, SW: 224, SY: 30, SH: 320, MX: 488, MY: 160, FAN: 122 }
+/* the slots box, in card coordinates; its four rows' centres in figure coordinates */
+const CS = { X: 14, Y: 112, W: 78, H: 188, R0: 48, RH: 26, RG: 8 }
+const AP_FAN = [0, 1, 2, 3].map((k) => AP.SY + CS.Y + CS.R0 + k * (CS.RH + CS.RG) + CS.RH / 2)
+const G = { CX: 158, CY: 236, R: 42 }
+const AP_HX = AP.SX + G.CX
+const AP_HTIP = AP.SY + G.CY - G.R - 10
+const AP_HTTP = [0, 1, 2, 3].map((i) => K.ride(`http${i}`, [[92, AP.HY], [AP_HX, AP.HY], [AP_HX, AP_HTIP - 4]], i * 0.3, i * 0.3 + 0.9, 1.4))
+const AP_SLOW = AP_FAN.map((y, i) => K.ride(`slow${i}`, [[88, AP.LY], [AP.FAN, AP.LY], [AP.FAN, y], [AP.SX + CS.X + 2, y]], i * 1.4, i * 1.4 + 5, 7))
 
 const A_T05B: Fig = (p) => {
   const step = stepOf(p)
@@ -457,16 +479,25 @@ const A_T05B: Fig = (p) => {
   }
   return (
     <Frame w={AP.W} h={AP.H}>
-      <Wire pts={[[92, AP.HY], [AP.SX, AP.HY]]} color={ORANGE} on={s1} />
-      {AP_FAN.map((y, i) => <Wire key={i} pts={[[88, AP.LY], [AP.FAN, AP.LY], [AP.FAN, y], [AP.SX, y]]} on={s2} color={ORANGE} width={1.5} head={7} delay={i * 120} />)}
 
       <Node x={AP.LX} y={AP.HY} size={52} label="HTTP" w={90}><Plinth size={52} lit={hot === 0}><Ico3D name="webpage" size={38} loop="bob" /></Plinth></Node>
       <Node x={AP.LX} y={AP.LY} size={52} label="Slowloris" w={100} on={s2}><Plinth size={52} lit={hot === 1}><Ico3D name="hourglass" size={38} loop="tilt" /></Plinth></Node>
 
       <Panel x={AP.SX} y={AP.SY} w={AP.SW} h={AP.SH}>
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 20, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Plinth size={54}><Ico3D name="server" size={40} loop="bob" d={0.3} /></Plinth>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 12, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Plinth size={46}><Ico3D name="server" size={34} loop="bob" d={0.3} /></Plinth>
           <span style={{ ...tag(15), marginTop: 6 }}>Web Server</span>
+        </div>
+        {/* the connection slots: each Slowloris connection holds one open, locked */}
+        <div style={box(CS.X, CS.Y, CS.W, CS.H, { borderRadius: 12, background: '#F7F9FE', boxShadow: hot === 1 ? `inset 0 0 0 2px ${ORANGE}` : 'inset 0 0 0 1.5px #D3DEF6', transition: tr(instant, 'box-shadow', 420) })}>
+          <div style={{ position: 'absolute', left: 4, right: 4, top: 8, ...tag(12.5), whiteSpace: 'normal', lineHeight: 1.15 }}>Connection Slots</div>
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} style={box(8, CS.R0 + k * (CS.RH + CS.RG), CS.W - 16, CS.RH, { borderRadius: 7, overflow: 'hidden', background: '#FFFFFF', boxShadow: 'inset 0 0 0 1.5px #D3DEF6' })}>
+              <div style={{ position: 'absolute', inset: 0, borderRadius: 7, background: 'linear-gradient(180deg, #FFFFFF 0%, #FFE9D8 100%)', boxShadow: 'inset 0 0 0 1.5px #FFC9A0', display: 'grid', placeItems: 'center', opacity: s2 ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE} ${600 + k * 160}ms` }}>
+                <Ico3D name="lock" size={18} loop="none" />
+              </div>
+            </div>
+          ))}
         </div>
         <svg aria-hidden width={AP.SW} height={AP.SH} viewBox={`0 0 ${AP.SW} ${AP.SH}`} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
           <defs>
@@ -476,21 +507,28 @@ const A_T05B: Fig = (p) => {
               <stop offset="1" stopColor={ORANGE} />
             </linearGradient>
           </defs>
-          <path d={arc(-90, 90)} fill="none" stroke="#E3EAF8" strokeWidth={16} strokeLinecap="round" />
-          <path d={arc(-90, 90)} fill="none" stroke="url(#t16a-gauge)" strokeWidth={16} strokeLinecap="round" opacity={0.9} />
+          <path d={arc(-90, 90)} fill="none" stroke="#E3EAF8" strokeWidth={12} strokeLinecap="round" />
+          <path d={arc(-90, 90)} fill="none" stroke="url(#t16a-gauge)" strokeWidth={12} strokeLinecap="round" opacity={0.9} />
         </svg>
         {/* the needle: rotation on one HTML box, its tremble on another (composited) */}
-        <div style={box(G.CX - 80, G.CY - 80, 160, 160, { transform: `rotate(${angle}deg)`, transition: instant ? 'none' : `transform 1100ms ${EASE}` })}>
+        <div style={box(G.CX - 40, G.CY - 40, 80, 80, { transform: `rotate(${angle}deg)`, transition: instant ? 'none' : `transform 1100ms ${EASE}` })}>
           <div className={s1 && !held ? 't16a-trem' : undefined} style={{ position: 'absolute', inset: 0 }}>
-            <svg aria-hidden width={160} height={160} viewBox="0 0 160 160" style={{ position: 'absolute', inset: 0 }}>
-              <path d="M 80 16 L 85.5 80 L 74.5 80 Z" fill={INK} />
+            <svg aria-hidden width={80} height={80} viewBox="0 0 160 160" style={{ position: 'absolute', inset: 0 }}>
+              <path d="M 80 16 L 86 80 L 74 80 Z" fill={INK} />
             </svg>
           </div>
         </div>
-        <span style={box(G.CX - 9, G.CY - 9, 18, 18, { borderRadius: 99, background: INK, boxShadow: '0 0 0 4px #FFFFFF' })} />
-        <span style={{ position: 'absolute', left: 0, right: 0, top: G.CY + 26, ...tag(15) }}>CPU</span>
+        <span style={box(G.CX - 7, G.CY - 7, 14, 14, { borderRadius: 99, background: INK, boxShadow: '0 0 0 3px #FFFFFF' })} />
+        <span style={{ position: 'absolute', left: G.CX - 50, width: 100, top: G.CY + 16, ...tag(15) }}>CPU</span>
       </Panel>
 
+      {/* the wires run INTO the card, so they are laid over it */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
+        {/* HTTP: in past the server, then down to the CPU gauge */}
+        <Wire pts={[[92, AP.HY], [AP_HX, AP.HY], [AP_HX, AP_HTIP]]} color={ORANGE} on={s1} />
+        {/* Slowloris: one thin connection into each slot */}
+        {AP_FAN.map((y, i) => <Wire key={i} pts={[[88, AP.LY], [AP.FAN, AP.LY], [AP.FAN, y], [AP.SX + CS.X + 6, y]]} on={s2} color={ORANGE} width={1.5} head={7} delay={i * 120} />)}
+      </div>
       {/* traffic meter: still inside its normal band */}
       <Node x={AP.MX} y={AP.MY} size={54} label="Traffic" w={110} on={s3}><Plinth size={54} lit={hot === 2}><Ico3D name="meter" size={40} loop="bob" d={0.5} /></Plinth></Node>
       <Show on={s3} delay={150} style={box(AP.MX - 56, AP.MY + 62, 112, 18, { zIndex: 3 })}>

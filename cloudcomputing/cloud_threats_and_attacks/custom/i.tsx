@@ -5,6 +5,7 @@ import { castSprite, ThreeStage, mat, mesh, CAST_IDLE, CAST_PRESETS, castClip, t
 import { buildSkin } from '@/decks/figures/cast/skins/config'
 import type { Skin } from '@/decks/figures/cast/skins/types'
 import bucketUrl from '../images/res-s3-bucket.svg'
+import { slideClock, ClockCard } from './clock'
 
 /**
  * BUILDER I · SESSION 16 (Cloud Threats & Attacks) ANALOGIES, real-time 3D on the engine's `@/engine/three-stage`,
@@ -268,7 +269,7 @@ function makeKey(m: THREE.Material, s = 1) {
 
 /* ------------------------------------------------------------------ Character Lab people */
 
-type Sprite = { object: THREE.Object3D; update: (t: number, camera: THREE.Camera) => void }
+type Sprite = { object: THREE.Object3D; update: (t: number, camera: THREE.Camera) => void; ready: Promise<void> }
 function faceAt(c: number, keys: [number, string][], loop: number): Pick<Timeline, 'expression' | 'prevExpression'> {
   let i = keys.length - 1
   for (let k = 0; k < keys.length; k++) if (keys[k][0] <= c) i = k
@@ -292,7 +293,7 @@ const who = (base: CharacterConfig, o: { name: string; gender?: CharacterConfig[
   accessories: { ...base.accessories, ...o.accessories },
   build: { ...base.build, ...o.build },
 })
-function person(o: { config: CharacterConfig; dress?: (s: Skin) => Skin; seed: number; faces: [number, string][]; pose: (p: Pose, c: number) => void; loop: number; height: number; frames: number; redraw: () => void; holdT?: number }): Sprite {
+function person(o: { config: CharacterConfig; dress?: (s: Skin) => Skin; seed: number; faces: [number, string][]; pose: (p: Pose, c: number) => void; loop: number; height: number; frames: number; redraw: () => void; holdT?: number; /** fixed texture size instead of re-measuring (T21) */ px?: number; /** no idle breathing: a still pose is one shared frame (T21) */ still?: boolean }): Sprite {
   /* no blink in the half second around the held moment, so a ?still frame never shows closed eyes */
   const quiet = (c: number) => o.holdT !== undefined && Math.abs(c - o.holdT) < 0.35
   return castSprite({
@@ -302,10 +303,10 @@ function person(o: { config: CharacterConfig; dress?: (s: Skin) => Skin; seed: n
     frames: o.frames,
     height: o.height,
     wide: 40,
-    adaptive: true,
+    ...(o.px ? { px: o.px } : { adaptive: true }),
     shadow: 0.2,
     onReady: o.redraw,
-    timeline: (c) => ({ seed: o.seed, idle: { ...CAST_IDLE, saccades: false, sway: false, blink: !quiet(c) }, life: 0, ...faceAt(c, o.faces, o.loop) }),
+    timeline: (c) => ({ seed: o.seed, idle: { ...CAST_IDLE, saccades: false, sway: false, blink: !quiet(c), ...(o.still ? { breath: false } : {}) }, life: 0, ...faceAt(c, o.faces, o.loop) }),
     pose: o.pose,
   })
 }
@@ -359,6 +360,31 @@ function rigToWorld(p: Pt, h: number, root: THREE.Vector3, camera: THREE.Camera,
   const lx = (p.x - 200) * u
   out.set(root.x + Math.cos(phi) * lx, root.y + (600 - p.y) * u, root.z - Math.sin(phi) * lx)
   return out
+}
+/** two-link IK for the LEFT arm (the viewer's left): shoulder and elbow angles that put the grip at `p` (from j.tsx) */
+function solveL(sh: number, p: Pt): { s: number; e: number } {
+  const UPPER = 95
+  const FORE = 99
+  const px = 200 - (sh - 6)
+  const dx = p.x - px
+  const dy = p.y - 205
+  const D = Math.max(20, Math.min(Math.hypot(dx, dy), UPPER + FORE - 0.5))
+  const ad = Math.atan2(-dx, dy)
+  const beta = Math.acos(Math.max(-1, Math.min(1, (UPPER * UPPER + D * D - FORE * FORE) / (2 * UPPER * D))))
+  const gamma = Math.acos(Math.max(-1, Math.min(1, (UPPER * UPPER + FORE * FORE - D * D) / (2 * UPPER * FORE))))
+  return { s: (ad + beta) / DEG, e: 180 - gamma / DEG }
+}
+/** the rig-frame point on a sprite (height `h`, at `root`, facing the camera) that the camera sees at world point `k` */
+function worldToRig(k: THREE.Vector3, root: THREE.Vector3, h: number, camera: THREE.Camera): Pt {
+  const cam = camera.position
+  const phi = Math.atan2(cam.x - root.x, cam.z - root.z)
+  const n = new THREE.Vector3(Math.sin(phi), 0, Math.cos(phi))
+  const ray = k.clone().sub(cam)
+  const t = n.dot(root.clone().sub(cam)) / n.dot(ray)
+  const q = cam.clone().addScaledVector(ray, t)
+  const u = h / 0.93 / 600
+  const lx = Math.cos(phi) * (q.x - root.x) - Math.sin(phi) * (q.z - root.z)
+  return { x: 200 + lx / u, y: 600 - (q.y - root.y) / u }
 }
 /** move a point toward the camera along its view ray, so a prop sits in front of the sprite and projects onto the hand */
 function towardCamera(p: THREE.Vector3, camera: THREE.Camera, d: number) {
@@ -1259,6 +1285,11 @@ function confTex() {
 
 /* ------------------------------------------------------------------ T21 everyday: the office */
 
+/* T21's people (both cards): frames at one fixed size, the size the engine picks for a 1080p screen (re-sizing
+   rebuilt every frame after the slide's zoom-in and hid a person while it did: the flicker), and no idle breathing
+   (a still pose is then one shared picture, so the frames that move are built far sooner and play from the start) */
+const T21_PEOPLE = { px: 256, still: true }
+
 function setupT21Everyday(kit: StageKit): Update {
   const { scene, camera, redraw } = kit
   scene.background = new THREE.Color('#EEF1F6')
@@ -1354,10 +1385,11 @@ function setupT21Everyday(kit: StageKit): Update {
   const mCfg = who(CAST_PRESETS.arjun, { name: 'Manager', skinTone: 'fair', hair: { style: 'sidePart', color: 'grey' }, outfit: { top: 'shirtTie', topColor: '#E8ECF5', bottom: 'trousers', bottomColor: '#26304A', shoeColor: '#2A2A30', accentColor: '#9C2F3A' }, accessories: { glasses: 'rect', watch: true, belt: true }, build: { height: 1.02, shoulders: 1.04 } })
   const eCfg = who(CAST_PRESETS.meera, { name: 'Employee', skinTone: 'medium', hair: { style: 'ponytail', color: 'black' }, outfit: { top: 'blouse', topColor: '#14B8A6', bottom: 'trousers', bottomColor: '#3E3D45', shoeColor: '#2A2A30' }, accessories: { earrings: true } })
   const sCfg = who(CAST_PRESETS.rohan, { name: 'Stranger', skinTone: 'dusky', hair: { style: 'short', color: 'black' }, outfit: { top: 'hoodie', topColor: '#3A3F4C', bottom: 'jeans', bottomColor: '#252A36', shoeColor: '#1B1F2A' }, accessories: { beard: 'short', watch: false } })
-  const mgr = person({ config: mCfg, dress: withNeck(BLAZER('#26304A', '#161D30')), seed: 211, faces: MGR21_FACES, pose: mgrPose21, loop: L21, height: P21.hM, frames: F21, redraw, holdT: devHold(HOLD21) })
-  const emp = person({ config: eCfg, dress: withNeck(LANYARD(C.brandDark)), seed: 212, faces: EMP21_FACES, pose: empPose21, loop: L21, height: P21.hE, frames: F21, redraw, holdT: devHold(HOLD21) })
-  const str = person({ config: sCfg, seed: 213, faces: STR21_FACES, pose: strPose21, loop: L21, height: P21.hS, frames: F21, redraw, holdT: devHold(HOLD21) })
+  const mgr = person({ config: mCfg, dress: withNeck(BLAZER('#26304A', '#161D30')), seed: 211, faces: MGR21_FACES, pose: mgrPose21, loop: L21, height: P21.hM, frames: F21, redraw, holdT: devHold(HOLD21), ...T21_PEOPLE })
+  const emp = person({ config: eCfg, dress: withNeck(LANYARD(C.brandDark)), seed: 212, faces: EMP21_FACES, pose: empPose21, loop: L21, height: P21.hE, frames: F21, redraw, holdT: devHold(HOLD21), ...T21_PEOPLE })
+  const str = person({ config: sCfg, seed: 213, faces: STR21_FACES, pose: strPose21, loop: L21, height: P21.hS, frames: F21, redraw, holdT: devHold(HOLD21), ...T21_PEOPLE })
   scene.add(mgr.object, emp.object, str.object)
+  const clk = slideClock('T21', scene, devHold(HOLD21), [mgr, emp, str])
   const shM = buildSkin(mCfg).shoulderHalf
   const shE = buildSkin(eCfg).shoulderHalf
   const shS = buildSkin(sCfg).shoulderHalf
@@ -1367,7 +1399,7 @@ function setupT21Everyday(kit: StageKit): Update {
   const b = new THREE.Vector3()
   const chest = new THREE.Vector3()
   return (t: number) => {
-    const c = mod(t, L21)
+    const c = mod(clk.time(t), L21)
     const cq = frameT(c, L21, F21)
     const at = eAt21(c)
     eRoot.set(at.x, bob(at.walking, c), P21.ez)
@@ -1377,16 +1409,16 @@ function setupT21Everyday(kit: StageKit): Update {
     mgr.update(c, camera)
     emp.update(c, camera)
     str.update(c, camera)
-    const atq = eAt21(cq)
-    const eRootQ = new THREE.Vector3(atq.x, bob(atq.walking, cq), P21.ez)
+    /* props in her hands ride her body where it IS (eRoot, the smooth clock) and take the arm from the frame on
+       screen (cq): a root from the frame clock made a carried folder judder against her walking body */
 
     /* the folder */
     const fh = folderHolder21(c)
     const posOf = (w: FH, out: THREE.Vector3) => {
       if (w === 0) return handWorld('R', shM, mgrArmR21(cq), P21.hM, P21.mgr, camera, out)
-      if (w === 1) return handWorld('L', shE, empArmL21(cq), P21.hE, eRootQ, camera, out)
+      if (w === 1) return handWorld('L', shE, empArmL21(cq), P21.hE, eRoot, camera, out)
       if (w === 3) return out.copy(CAB_TOP)
-      rigToWorld({ x: 200, y: 318 }, P21.hE, eRootQ, camera, out)
+      rigToWorld({ x: 200, y: 318 }, P21.hE, eRoot, camera, out)
       return towardCamera(out, camera, 0.16)
     }
     posOf(fh.from, a)
@@ -1427,11 +1459,11 @@ function setupT21Everyday(kit: StageKit): Update {
       drawer.updateMatrixWorld()
       const src = new THREE.Vector3(0, 0.08, -0.1).applyMatrix4(drawer.matrixWorld)
       /* drawer -> her chest -> her outstretched right hand -> the stranger's hand */
-      rigToWorld({ x: 200, y: 330 }, P21.hE, eRootQ, camera, chest)
+      rigToWorld({ x: 200, y: 330 }, P21.hE, eRoot, camera, chest)
       towardCamera(chest, camera, 0.18)
       const lift = seg(c, T21.lift[0], T21.lift[1])
       const out = seg(c, T21.hand[0], T21.hand[1])
-      const hR = handWorld('R', shE, empArmR21(cq), P21.hE, eRootQ, camera, a)
+      const hR = handWorld('R', shE, empArmR21(cq), P21.hE, eRoot, camera, a)
       const hS = handWorld('L', shS, strArmL21(cq), P21.hS, P21.str, camera, b)
       const move = seg(c, T21.hand[1], T21.hand[2])
       carried.position.copy(src).lerp(chest, lift)
@@ -1456,15 +1488,14 @@ function setupT21Concept(kit: StageKit): Update {
   office21(scene, { wall: '#EEF2FA', floor: ['#E3EAF8', '#C9D5EC'], trim: '#1F2E63', frame: '#2C3E7E', outside: '#3B4A72' })
   void redraw
 
-  /* the user's standing desk and laptop at the left */
+  /* the user's standing desk and laptop at her left. They are PLACED FROM HER HAND (below, once she exists): her left
+     arm hangs relaxed, a little out from her side with a soft elbow, and the laptop's keys are put exactly where that
+     hand is seen, just behind her; the desk stands under the laptop. (It was a fixed desk half a metre away: her arm
+     reached stiffly for its corner, and a solved arm to a fixed desk put her elbow up in the air.) */
   const deskM = mat('#E8EDF6', { roughness: 0.4 })
   const legM = mat('#5E6B86', { metalness: 0.4, roughness: 0.4 })
-  const desk = new THREE.Vector3(-1.62, 0, -0.5)
-  scene.add(box(0.56, 0.035, 0.44, deskM, [desk.x, 0.76, desk.z], 0.01))
-  scene.add(box(0.05, 0.74, 0.05, legM, [desk.x, 0.37, desk.z - 0.05]), box(0.38, 0.03, 0.32, legM, [desk.x, 0.015, desk.z - 0.05]))
   const laptop = new THREE.Group()
-  laptop.position.set(desk.x + 0.06, 0.778, desk.z + 0.04)
-  laptop.rotation.y = 0.55
+  laptop.rotation.y = 0.6
   const shell = mat('#C9D0DC', { roughness: 0.35, metalness: 0.5 })
   laptop.add(box(0.34, 0.015, 0.23, shell, [0, 0.0075, 0], 0.005))
   const lid = new THREE.Group()
@@ -1578,19 +1609,36 @@ function setupT21Concept(kit: StageKit): Update {
   const uCfg = who(CAST_PRESETS.ananya, { name: 'User', skinTone: 'wheatish', hair: { style: 'bob', color: 'black' }, outfit: { top: 'tshirt', topColor: '#7C5CE0', bottom: 'jeans', bottomColor: '#2C3C81', shoeColor: '#F2F2F5' } })
   const oCfg = who(CAST_PRESETS.kabir, { name: 'Outsider', skinTone: 'fair', hair: { style: 'buzz', color: 'brown' }, outfit: { top: 'hoodie', topColor: '#2E3340', bottom: 'jeans', bottomColor: '#1F2430', shoeColor: '#14171F' }, accessories: { glasses: 'round', beard: 'stubble' } })
   const U = new THREE.Vector3(-1.08, 0, -0.42)
+  /* her resting hand (rig frame: about 25 degrees out from her side, the arm a little bent), the keys put behind it on the
+     view ray, the laptop and the desk under them */
+  const shU = buildSkin(uCfg).shoulderHalf
+  const KEYS: Pt = { x: 200 - (shU - 6) - 68, y: 205 + 150 }
+  const keyW = rigToWorld(KEYS, 1.6, U, camera, new THREE.Vector3())
+  keyW.addScaledVector(keyW.clone().sub(camera.position).normalize(), 0.2)
+  const keyLocal = new THREE.Vector3(0.07, 0.02, 0.05).applyAxisAngle(new THREE.Vector3(0, 1, 0), laptop.rotation.y)
+  laptop.position.copy(keyW).sub(keyLocal)
+  const deskTop = laptop.position.y
+  const desk = new THREE.Vector3(laptop.position.x - 0.02, 0, laptop.position.z - 0.02)
+  scene.add(box(0.5, 0.035, 0.42, deskM, [desk.x, deskTop - 0.0175, desk.z], 0.01))
+  scene.add(box(0.05, deskTop - 0.05, 0.05, legM, [desk.x, (deskTop - 0.035) / 2, desk.z - 0.05]), box(0.36, 0.03, 0.3, legM, [desk.x, 0.015, desk.z - 0.05]))
   const user = person({
     config: uCfg,
     seed: 214,
     faces: [[0, 'thinking'], [0.6, 'happy'], [2.6, 'listening'], [T21.mgrSees[0] + 0.15, 'confused'], [5.4, 'worried'], [6.9, 'thinking']],
     pose: (p, c) => {
       /* hands at the laptop: typing the task, then waiting for the answer, looking across at the assistant */
-      /* her hand on the laptop's keyboard (forward kinematics: about 0.5 to her left at desk height) */
-      p.shoulderL = 65
-      p.elbowL = 45
+      /* her left hand on the keys (solved, so the grip lands on the keyboard), wrist turned down, fingers relaxed */
+      const typing = (1 - hold(c, 0.5, 0.6, 7.4, 7.6)) * Math.max(0, Math.sin(c * TAU * 5.5)) * 1.4
+      const a = solveL(shU, { x: KEYS.x, y: KEYS.y - typing })
+      p.shoulderL = a.s
+      p.elbowL = a.e
+      p.wristL = -62
+      p.fL1 = p.fL2 = p.fL3 = p.fL4 = 0.05
+      p.tL = 0.3
+      p.spreadL = 0.1
+      p.palmL = 0.1
       p.shoulderR = 12
       p.elbowR = 16
-      const typing = (1 - hold(c, 0.5, 0.6, 7.4, 7.6)) * Math.max(0, Math.sin(c * TAU * 5)) * 3
-      p.elbowL += typing
       const watch = hold(c, 0.6, 0.9, 7.2, 7.6)
       to(p, 'headTurn', 0.4, watch)
       to(p, 'lookX', 0.85, watch)
@@ -1605,11 +1653,13 @@ function setupT21Concept(kit: StageKit): Update {
     frames: F21,
     redraw,
     holdT: devHold(HOLD21),
+    ...T21_PEOPLE,
   })
   user.object.position.copy(U)
-  const out = person({ config: oCfg, seed: 215, faces: STR21_FACES, pose: strPose21, loop: L21, height: P21.hS, frames: F21, redraw, holdT: devHold(HOLD21) })
+  const out = person({ config: oCfg, seed: 215, faces: STR21_FACES, pose: strPose21, loop: L21, height: P21.hS, frames: F21, redraw, holdT: devHold(HOLD21), ...T21_PEOPLE })
   out.object.position.copy(P21.str)
   scene.add(user.object, out.object)
+  const clk = slideClock('T21', scene, devHold(HOLD21), [user, out])
   const shO = buildSkin(oCfg).shoulderHalf
 
   const from = new THREE.Vector3()
@@ -1623,7 +1673,7 @@ function setupT21Concept(kit: StageKit): Update {
   flyDoc.renderOrder = 8
   scene.add(flyDoc)
   return (t: number) => {
-    const c = mod(t, L21)
+    const c = mod(clk.time(t), L21)
     const cq = frameT(c, L21, F21)
     user.update(c, camera)
     out.update(c, camera)
@@ -1701,10 +1751,20 @@ const card = (setup: (k: StageKit) => Update, holdT: number) => {
   return F as unknown as (p: Record<string, unknown>) => ReactNode
 }
 
+/* T21: both cards on one clock (custom/clock.tsx): held until the people are built, tap to pause */
+const card21 = (setup: (k: StageKit) => Update, holdT: number) => {
+  const F = ({ step = 0 }: Fig) => (
+    <ClockCard id="T21" w={W} h={H}>
+      <ThreeStage w={W} h={H} step={step} holdT={holdT} setup={setup} />
+    </ClockCard>
+  )
+  return F as unknown as (p: Record<string, unknown>) => ReactNode
+}
+
 export const figures: Record<string, (p: Record<string, unknown>) => ReactNode> = {
   I_T17Everyday: card(setupT17Everyday, devHold(HOLD17)),
   I_T17Concept: card(setupT17Concept, devHold(HOLD17)),
-  I_T21Everyday: card(setupT21Everyday, devHold(HOLD21)),
-  I_T21Concept: card(setupT21Concept, devHold(HOLD21)),
+  I_T21Everyday: card21(setupT21Everyday, devHold(HOLD21)),
+  I_T21Concept: card21(setupT21Concept, devHold(HOLD21)),
 }
 export const css = ''

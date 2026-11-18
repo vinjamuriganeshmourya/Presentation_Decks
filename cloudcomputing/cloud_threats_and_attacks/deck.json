@@ -126,7 +126,7 @@
      "steps": 4
     }
    },
-   "figH": 330,
+   "figH": 370,
    "pointsW": 520,
    "notes": "Explain command-and-control as the botnet's remote-control channel, and amplification as asking a small question that gets a huge answer sent to the victim. A common interview question is why amplification attacks use spoofed source addresses."
   },
@@ -270,11 +270,11 @@
    "lead": "Protocol attacks exhaust the connection state that servers and firewalls track per session, familiar from the SYN flood abusing the TCP handshake; application-layer attacks instead exhaust compute by mimicking real traffic",
    "points": [
     {
-     "text": "Protocol · SYN flood: many connection requests are sent and never completed, so the server's connection table fills up",
+     "text": "Protocol \u00b7 SYN flood: many connection requests are sent and never completed, so the server's connection table fills up",
      "icon": "i3d:conntable"
     },
     {
-     "text": "Protocol · malformed packets: oversized or invalid headers crash parsers",
+     "text": "Protocol \u00b7 malformed packets: oversized or invalid headers crash parsers",
      "icon": "i3d:alert"
     }
    ],
@@ -296,11 +296,11 @@
    "title": "Protocol Vs App Layer",
    "points": [
     {
-     "text": "Application · HTTP flood: repeated valid-looking page requests drain compute",
+     "text": "Application \u00b7 HTTP flood: repeated valid-looking page requests drain compute",
      "icon": "i3d:webpage"
     },
     {
-     "text": "Application · Slowloris: many slow, incomplete requests hold connections open",
+     "text": "Application \u00b7 Slowloris: many slow, incomplete requests hold connections open",
      "icon": "i3d:hourglass"
     },
     {
@@ -598,9 +598,6 @@
      }
     ]
    },
-   "note": {
-    "text": "Breach cost rises the longer detection takes, so AWS Security Hub and CloudTrail support continuous security monitoring and investigation over periodic review"
-   },
    "notes": "Walk through the table left to right as the breach timeline unfolds. Mention the GDPR fine figure as a concrete, commonly-asked compliance number in interviews."
   },
   {
@@ -616,8 +613,9 @@
     }
    },
    "figW": 1080,
-   "figH": 420,
-   "notes": "Walk through the table left to right as the breach timeline unfolds. Mention the GDPR fine figure as a concrete, commonly-asked compliance number in interviews."
+   "figH": 340,
+   "notes": "Walk through the table left to right as the breach timeline unfolds. Mention the GDPR fine figure as a concrete, commonly-asked compliance number in interviews.",
+   "lead": "Breach cost rises the longer detection takes, so AWS Security Hub and CloudTrail support continuous security monitoring and investigation over periodic review"
   },
   {
    "id": "D3",
@@ -771,6 +769,13 @@
     "text": "All three mistakes are caught by continuous automated checks, such as AWS Config and Trusted Advisor, not a one-time manual review"
    },
    "notes": "Point out 0.0.0.0/0 means every IP address on the internet, so a database port opened to it is reachable by anyone. Reference the IAM credential report as where administrators audit unrotated or default keys. A common interview question: how to spot an open SSH rule: check inbound rules for 0.0.0.0/0 on port 22."
+  },
+  {
+   "id": "S-QUIZ-1",
+   "layout": "quiz",
+   "section": "Misconfiguration",
+   "label": "Quiz Time",
+   "notes": "Quiz on Denial of Service, Data Breaches and Misconfiguration. Q1. Why do amplification attacks spoof the source address? Answer: So the large replies go to the target, not to the attacker. Q2. What does a SYN flood fill up? Answer: The server's connection table. Q3. Which AWS service stores keys so they are not hardcoded in code? Answer: AWS Secrets Manager. Q4. What does \"Principal\": \"*\" in a bucket policy allow? Answer: Any principal, so anyone can read or list the bucket's objects."
   },
   {
    "id": "D4",
@@ -1047,10 +1052,47 @@
   },
   {
    "id": "T21",
+   "layout": "points",
+   "kicker": "Prompt Injection",
+   "title": "Hijacking Instructions",
+   "points": [
+    {
+     "text": "A large language model (LLM) is the AI system behind chatbots and assistants",
+     "icon": "i3d:model"
+    },
+    {
+     "text": "It reads its instructions and the data it is given as one stream of text",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "It cannot reliably tell trusted commands apart from untrusted data",
+     "icon": "i3d:alert"
+    },
+    {
+     "text": "Prompt injection hides a malicious instruction inside that text",
+     "icon": "i3d:mask"
+    },
+    {
+     "text": "The model obeys it instead of its intended task",
+     "icon": "i3d:target"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T21A",
+    "props": {
+     "steps": 5
+    }
+   },
+   "pointsW": 520,
+   "figH": 380,
+   "notes": "Distinguish direct from indirect by who typed the malicious text. Say an email summary tool reading a poisoned attachment is the classic indirect case. Exam hook: ask which type does not need the attacker to touch the chat box."
+  },
+  {
+   "id": "T21-B",
    "layout": "lead",
    "kicker": "Prompt Injection",
    "title": "Hijacking Instructions",
-   "lead": "A large language model (LLM), the AI system behind chatbots and assistants, reads its instructions and the data it is given as one stream of text, so it cannot reliably tell trusted commands apart from untrusted data. Prompt injection hides a malicious instruction inside that text so the model obeys it instead of its intended task",
    "figure": {
     "type": "custom",
     "name": "D_T21",

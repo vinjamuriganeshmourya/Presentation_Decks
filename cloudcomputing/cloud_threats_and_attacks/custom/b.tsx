@@ -154,22 +154,22 @@ const B_T08: Fig = ({ step = 0 }) => {
 /* ================================================================== 19 · B_T09 · a leaked key's journey */
 
 /*
- * 526 x 330. Row A: Repository -> Attacker -> Console, the key riding the path. Row B, the leak vectors under the
- * station where each shows: public exposure (forum, repo, log) under the repository, one key opening three locks
- * under the attacker, the missing MFA shield under the console. Steps: 1 the key in the code, 2 the locks, 3 no MFA,
- * 4 public exposure. Done (and held): the TR note's two services: Secrets Manager on the first wire takes the key in,
- * GuardDuty on the second wire flags the login.
+ * 526 x 330. Row A: Repository -> Attacker -> Console. The key rides straight from the Repository to the Attacker on a
+ * wire labelled "Leaked key", then on to the Console. GuardDuty sits on the second wire and flags the login. Secrets
+ * Manager is NOT on the key's path: it sits under the Repository as the place the key should have been stored. Row B,
+ * the leak vectors under the station where each shows: public exposure under the repository, one key opening three
+ * locks under the attacker, the missing MFA shield under the console. Steps: 1 the key in the code, 2 the locks,
+ * 3 no MFA, 4 public exposure. Done (and held): Secrets Manager and GuardDuty (the TR note).
  */
-const A9 = { W: 526, H: 330, Y: 106, X: [82, 263, 444], T: 62, BY: 230, M: 48, TY: 262 }
+const A9 = { W: 526, H: 330, Y: 90, X: [80, 258, 456], T: 62, BY: 258, M: 48, TY: 286, SY: 176, SM: 44 }
 const A9_W1: Pt[] = [[A9.X[0] + A9.T / 2, A9.Y], [A9.X[1] - A9.T / 2, A9.Y]]
 const A9_W2: Pt[] = [[A9.X[1] + A9.T / 2, A9.Y], [A9.X[2] - A9.T / 2, A9.Y]]
-const A9_SM = (A9.X[0] + A9.X[1]) / 2
+const A9_KEY = (A9.X[0] + A9.X[1]) / 2
 const A9_GD = (A9.X[1] + A9.X[2]) / 2
 const A9_RIDE_ALL = [
   K.ride('9-a', [A9_W1[0], A9_W1[1]], 0.1, 1.0, 2.6),
   K.ride('9-b', [A9_W2[0], A9_W2[1]], 1.25, 2.15, 2.6),
 ]
-const A9_RIDE_VAULT = K.ride('9-v', [A9_W1[0], [A9_SM - A9.M / 2 + 4, A9.Y]], 0.1, 0.9, 1.6, 0.4)
 
 const B_T09: Fig = ({ step = 0 }) => {
   const s = step as number
@@ -183,20 +183,20 @@ const B_T09: Fig = ({ step = 0 }) => {
     ['Console', <Tile key="c" name="webpage" size={A9.T} d={1.0} />],
   ]
   const lockX = [A9.X[1] - 40, A9.X[1], A9.X[1] + 40]
-  const pubX = [A9.X[0] - 40, A9.X[0], A9.X[0] + 40]
+  const pubX = [A9.X[0] - 38, A9.X[0], A9.X[0] + 38]
   return (
     <Frame w={A9.W} h={A9.H}>
-      <Wire pts={A9_W1} on head={10} />
+      <Wire pts={A9_W1} on head={10} color={on(1) ? ORANGE : colors.brand} />
       <Wire pts={A9_W2} on head={10} delay={300} />
+      <TagAt x={A9_KEY} y={A9.Y - 30} text="Leaked key" w={130} size={14} on={on(1)} color={ORANGE} />
       {stations.map(([label, node], i) => (
         <div key={label}>
           <At x={A9.X[i]} y={A9.Y} s={A9.T}>{node}</At>
           <TagAt x={A9.X[i]} y={A9.Y + A9.T / 2 + 8} text={label} w={130} />
         </div>
       ))}
-      {/* the key riding the path while it is still leaking; once Secrets Manager holds it, it rides only into the vault */}
-      {!done && s >= 1 && A9_RIDE_ALL.map((c) => <Rider key={c} cls={c} size={26}><Ico3D name="key" size={26} loop="none" /></Rider>)}
-      {done && <Rider cls={A9_RIDE_VAULT} size={26}><Ico3D name="key" size={26} loop="none" /></Rider>}
+      {/* the key rides straight from the repository to the attacker, then on to the console */}
+      {on(1) && A9_RIDE_ALL.map((c) => <Rider key={c} cls={c} size={26}><Ico3D name="key" size={26} loop="none" /></Rider>)}
 
       {/* 2 · reused: one key opens three locks */}
       <Show on={on(2)} style={{ position: 'absolute', inset: 0, zIndex: 3 }}>
@@ -223,12 +223,12 @@ const B_T09: Fig = ({ step = 0 }) => {
         <TagAt x={A9.X[0]} y={A9.TY} text="Public" w={120} />
       </Show>
 
-      {/* the note: Secrets Manager takes the key in, GuardDuty flags the login */}
+      {/* the note: Secrets Manager under the repository (where the key belongs), GuardDuty on the login wire */}
       <Show on={done} style={{ position: 'absolute', inset: 0, zIndex: 4 }}>
-        <At x={A9_SM} y={A9.Y} s={A9.M}><MarkTile src={secretsMark} size={A9.M} /></At>
-        <TagAt x={A9_SM} y={A9.Y - A9.M / 2 - 26} text="Secrets Manager" w={150} />
+        <At x={A9.X[0]} y={A9.SY} s={A9.SM}><MarkTile src={secretsMark} size={A9.SM} /></At>
+        <div style={{ position: 'absolute', left: A9.X[0] + A9.SM / 2 + 12, top: A9.SY - 19, width: 150, ...tag(14), whiteSpace: 'normal', textAlign: 'left', lineHeight: 1.2 }}>Store keys here instead of in code</div>
         <At x={A9_GD} y={A9.Y} s={A9.M}><MarkTile src={guarddutyMark} size={A9.M} /></At>
-        <TagAt x={A9_GD} y={A9.Y - A9.M / 2 - 26} text="GuardDuty" w={120} />
+        <div style={{ position: 'absolute', left: A9_GD - 80, top: A9.Y - A9.M / 2 - 44, width: 160, ...tag(14), whiteSpace: 'normal', lineHeight: 1.2 }}>GuardDuty<br />(flags anomalous use)</div>
         <At x={A9.X[2] + A9.T / 2 - 4} y={A9.Y - A9.T / 2 + 4} s={28} z={5}><Ico3D name="flag" size={28} loop="swing" t={2.6} /></At>
       </Show>
     </Frame>
@@ -264,10 +264,10 @@ const B_T10: Fig = ({ step = 0 }) => {
   ]
   /* [station index, icon, tag, which point] */
   const gaps: [number, string, string, number][] = [
-    [2, 'idcard', 'Authentication', 1],
+    [2, 'user-x', 'Authentication', 1],
     [0, 'list', 'Exposure', 2],
-    [1, 'bot', 'Rate Limiting', 3],
-    [3, 'bug', 'Validation', 4],
+    [1, 'gauge', 'Rate Limiting', 3],
+    [3, 'alert', 'Validation', 4],
   ]
   return (
     <Frame w={A10.W} h={A10.H}>
@@ -295,12 +295,12 @@ const B_T10: Fig = ({ step = 0 }) => {
 /* ================================================================== 22 · B_T11B · cost rises with time to detect */
 
 /*
- * 1080 x 420, no lead. Cost on the y axis, Time to Detect on the x axis; four stacked bars rise left to right, each
+ * 1080 x 340, under a one-sentence lead (the note moved here from slide 21). Cost on the y axis, Time to Detect on the x axis; four stacked bars rise left to right, each
  * adding the TR's next cost category on top, tagged above its bar with its icon (the breach timeline of the table).
  * Security Hub and CloudTrail sit at the short-detection end. Steps 1-4: one bar each. Loop: the lit bar walks, the
  * marks' halos breathe, a dot runs the time axis.
  */
-const A11 = { W: 1080, H: 420, OX: 140, OY: 336, TOP: 50, END: 1020, BW: 116, SEG: 52, BX: [410, 590, 770, 950] }
+const A11 = { W: 1080, H: 340, OX: 140, OY: 280, TOP: 40, END: 1020, BW: 116, SEG: 44, BX: [410, 590, 770, 950] }
 const A11_CATS: [string, string][] = [
   ['Detection & Containment', 'search'],
   ['Legal & Regulatory', 'gavel'],
@@ -326,10 +326,10 @@ const B_T11B: Fig = ({ step = 0 }) => {
       <Token cls={A11_TIME} on size={10} />
 
       {/* the short-detection end: continuous monitoring and investigation */}
-      <At x={240} y={160} s={58}><MarkTile src={hubMark} size={58} /></At>
-      <TagAt x={240} y={160 + 29 + 8} text="Security Hub" w={140} />
-      <At x={240} y={266} s={58}><MarkTile src={trailMark} size={58} /></At>
-      <TagAt x={240} y={266 + 29 + 8} text="CloudTrail" w={140} />
+      <At x={240} y={120} s={58}><MarkTile src={hubMark} size={58} /></At>
+      <TagAt x={240} y={120 + 29 + 8} text="Security Hub" w={140} />
+      <At x={240} y={214} s={58}><MarkTile src={trailMark} size={58} /></At>
+      <TagAt x={240} y={214 + 29 + 8} text="CloudTrail" w={140} />
 
       {A11.BX.map((x, b) => {
         const h = (b + 1) * A11.SEG
@@ -472,6 +472,7 @@ const B_T13: Fig = ({ step = 0 }) => {
           <TagAt x={x} y={A13.TB} text={k === 0 ? 'Bucket' : 'Account'} w={110} />
         </div>
       ))}
+      <TagAt x={(A13.TX[0] + A13.TX[1]) / 2} y={A13.RY - 58} text="S3 Block Public Access: OFF" w={300} size={15} on={on(2)} />
       {/* 4 · automated scanners find it within minutes */}
       <Show on={on(4)} style={{ position: 'absolute', inset: 0, zIndex: 3 }}>
         <At x={A13.GX} y={A13.RY} s={52}><PairTile main="radar" over="clock" size={52} lit={hot === 3} loop="tilt" /></At>

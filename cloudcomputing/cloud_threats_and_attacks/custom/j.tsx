@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { castSprite, ThreeStage, lightRig, mat, mesh, CAST_IDLE, CAST_PRESETS, castClip, type CharacterConfig, type Pose, type StageKit, type Timeline, type Update } from '@/engine/three-stage'
 import { buildSkin } from '@/decks/figures/cast/skins/config'
 import type { Skin } from '@/decks/figures/cast/skins/types'
+import { slideClock, ClockCard } from './clock'
 
 /**
  * BUILDER J · SESSION 16 (Cloud Threats & Attacks), SLIDES 42 (T22-AN) AND 45 (T24-AN).
@@ -456,7 +457,9 @@ function faceAt(c: number, keys: [number, string][], L: number): Pick<Timeline, 
   const prevStart = prev[0] <= curStart ? prev[0] : prev[0] - L
   return { expression: castClip(cur[1], curStart, false), prevExpression: castClip(prev[1], prevStart, false) }
 }
-const timeline = (seed: number, L: number, keys: [number, string][]) => (t: number): Timeline => ({ seed, idle: { ...CAST_IDLE, saccades: false, sway: false }, life: 0, ...faceAt(t, keys, L) })
+/* T22's people only (T24 has its own timeline): no idle breathing, so a still pose is one shared frame and the frames
+   that move are built far sooner (they play from the start) */
+const timeline = (seed: number, L: number, keys: [number, string][]) => (t: number): Timeline => ({ seed, idle: { ...CAST_IDLE, saccades: false, sway: false, breath: false }, life: 0, ...faceAt(t, keys, L) })
 
 /* ---- arms, solved in the rig's frame (Arm.tsx: the right arm is the left one mirrored about x 200) ---- */
 
@@ -563,6 +566,9 @@ const T22 = {
   stackB: 6.1,
   restB: 6.75,
 }
+
+/* the moments the folder changes holder (stack -> clerk -> B -> clerk -> stack) */
+const HANDOFFS22 = [T22.reachB + 0.05, T22.give, T22.take, T22.stackB]
 
 /* one ground plan for both cards (metres) */
 const P22 = {
@@ -697,7 +703,7 @@ function setupReception(kit: StageKit): Update {
     height: P22.hClerk,
     wide: 70,
     shadow: 0.16,
-    adaptive: true,
+    px: 256, // one fixed size (1080p's): no re-sizing, no rebuild, no flicker
     onReady: kit.redraw,
     timeline: timeline(41, L22, [
       [0, 'neutral'],
@@ -737,7 +743,7 @@ function setupReception(kit: StageKit): Update {
     height: P22.hB,
     wide: 60,
     shadow: 0.2,
-    adaptive: true,
+    px: 256, // one fixed size (1080p's): no re-sizing, no rebuild, no flicker
     onReady: kit.redraw,
     timeline: timeline(42, L22, [
       [0, 'neutral'],
@@ -775,11 +781,11 @@ function setupReception(kit: StageKit): Update {
   const visitorA = castSprite({
     config: VISITOR_A,
     loop: L22,
-    frames: 42,
+    frames: F22,
     height: P22.hA,
     wide: 30,
     shadow: 0.2,
-    adaptive: true,
+    px: 256, // one fixed size (1080p's): no re-sizing, no rebuild, no flicker
     onReady: kit.redraw,
     timeline: timeline(43, L22, [
       [0, 'neutral'],
@@ -807,13 +813,16 @@ function setupReception(kit: StageKit): Update {
   })
   visitorA.object.position.copy(P22.a)
   scene.add(visitorA.object)
+  const clk = slideClock('T22', scene, devT(HOLD22), [clerk, visitorB, visitorA])
 
   const hand = new THREE.Vector3()
+  const prevHand = new THREE.Vector3()
   const flatQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0.12))
   const q = new THREE.Quaternion()
   const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion)
   return (t: number) => {
-    const c = ((t % L22) + L22) % L22
+    const tt = clk.time(t)
+    const c = ((tt % L22) + L22) % L22
     clerk.update(c, camera)
     visitorB.update(c, camera)
     visitorA.update(c, camera)
@@ -821,13 +830,21 @@ function setupReception(kit: StageKit): Update {
     /* where the folder is: on the stack, in her hand, in B's hand, back in her hand, on the stack */
     const inClerk = (c >= T22.reachB + 0.05 && c < T22.give) || (c >= T22.take && c < T22.stackB)
     const inB = c >= T22.give && c < T22.take
-    if (inClerk) {
-      rigToWorld(reachR(shK, gripK(cq)), P22.hClerk, P22.clerk, camera, hand)
-      towardCamera(hand, camera, 0.09)
-    } else if (inB) {
-      rigToWorld(reachL(shB, gripB(cq)), P22.hB, P22.b, camera, hand)
-      towardCamera(hand, camera, 0.09)
-    } else hand.copy(P22.slid)
+    const holder = (x: number) => ((x >= T22.reachB + 0.05 && x < T22.give) || (x >= T22.take && x < T22.stackB) ? 1 : x >= T22.give && x < T22.take ? 2 : 0)
+    const placeAt = (who: number, out: THREE.Vector3) => {
+      if (who === 1) towardCamera(rigToWorld(reachR(shK, gripK(cq)), P22.hClerk, P22.clerk, camera, out), camera, 0.09)
+      else if (who === 2) towardCamera(rigToWorld(reachL(shB, gripB(cq)), P22.hB, P22.b, camera, out), camera, 0.09)
+      else out.copy(P22.slid)
+      return out
+    }
+    placeAt(holder(c), hand)
+    /* a hand-off glides over a fifth of a second from the last holder to the next (it was a jump of a few cm) */
+    for (const sw of HANDOFFS22) {
+      if (c >= sw && c < sw + 0.2) {
+        placeAt(holder(sw - 0.001), prevHand)
+        hand.lerpVectors(prevHand, hand, seg(c, sw, sw + 0.2))
+      }
+    }
     folder.group.position.copy(hand)
     /* flat on the stack, upright in a hand (turning over the first part of the lift and the last of the put-down) */
     const up = inClerk || inB ? (c < T22.give ? seg(c, T22.reachB, T22.outA + 0.2) : c >= T22.take ? 1 - seg(c, T22.stackA + 0.35, T22.stackB) : 1) : 0
@@ -987,7 +1004,7 @@ function setupAssistant(kit: StageKit): Update {
     height: P22C.hB,
     wide: 40,
     shadow: 0.2,
-    adaptive: true,
+    px: 256, // one fixed size (1080p's): no re-sizing, no rebuild, no flicker
     onReady: kit.redraw,
     timeline: timeline(44, L22, [
       [0, 'thinking'],
@@ -1027,11 +1044,11 @@ function setupAssistant(kit: StageKit): Update {
   const userA = castSprite({
     config: USER_A,
     loop: L22,
-    frames: 42,
+    frames: F22,
     height: P22C.hA,
     wide: 40,
     shadow: 0.2,
-    adaptive: true,
+    px: 256, // one fixed size (1080p's): no re-sizing, no rebuild, no flicker
     onReady: kit.redraw,
     timeline: timeline(45, L22, [
       [0, 'neutral'],
@@ -1062,6 +1079,7 @@ function setupAssistant(kit: StageKit): Update {
   userA.object.position.copy(P22C.a)
   drawOver(userA.object)
   scene.add(userA.object)
+  const clk = slideClock('T22', scene, devT(HOLD22), [userB, userA])
 
   const from = new THREE.Vector3()
   const tmp = new THREE.Vector3()
@@ -1071,7 +1089,8 @@ function setupAssistant(kit: StageKit): Update {
   const orbP = P22C.orb.clone()
   const slid = P22C.slid.clone()
   return (t: number) => {
-    const c = ((t % L22) + L22) % L22
+    const tt = clk.time(t)
+    const c = ((tt % L22) + L22) % L22
     userB.update(c, camera)
     userA.update(c, camera)
     /* the orb: a slow turn of its ring, a pulse while it answers */
@@ -1575,9 +1594,17 @@ const card = (setup: (k: StageKit) => Update, holdT: number) =>
     </div>
   )) as (p: Record<string, unknown>) => ReactNode
 
+/* T22: both cards on one clock (custom/clock.tsx): held until the people are built, tap to pause */
+const card22 = (setup: (k: StageKit) => Update, holdT: number) =>
+  (({ step = 0 }: Fig) => (
+    <ClockCard id="T22" w={W} h={H}>
+      <ThreeStage w={W} h={H} step={step} holdT={holdT} setup={setup} />
+    </ClockCard>
+  )) as (p: Record<string, unknown>) => ReactNode
+
 export const figures: Record<string, (p: Record<string, unknown>) => ReactNode> = {
-  J_T22Everyday: card(setupReception, devT(HOLD22)),
-  J_T22Concept: card(setupAssistant, devT(HOLD22)),
+  J_T22Everyday: card22(setupReception, devT(HOLD22)),
+  J_T22Concept: card22(setupAssistant, devT(HOLD22)),
   J_T24Everyday: card(setupKitchen, devT(HOLD24)),
   J_T24Concept: card(setupGpu, devT(HOLD24)),
 }

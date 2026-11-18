@@ -8,7 +8,8 @@ import bedrockMark from '../images/aws-bedrock.svg'
 /*
  * BUILDER D · Session 16 Cloud Threats & Attacks, Section 5 (AI-Specific Threats): technical figures for
  *   slide 38 D_T20 (546 x 330, 4 steps)  the AI pipeline with one threat on each stage
- *   slide 39 D_T21 (1080 x 310, 3 steps) the chat window with the hidden instruction + the three TR rows
+ *   slide 40 D_T21A (546 x 380, 5 steps) one stream of text into the LLM, which obeys the hidden line
+ *   slide 41 D_T21 (1080 x 310, 3 steps) the chat window with the hidden instruction + the three TR rows
  *   slide 41 D_T22 (546 x 330, 3 steps)  three private sources into the model, one snippet out in the response
  *   slide 43 D_T23 (546 x 330, 4 steps)  documents -> embeddings -> vector DB, an attacker probing the store
  *   slide 44 D_T24 (546 x 330, 3 steps)  API calls and cloud bill climbing; one long output; users waiting
@@ -51,16 +52,16 @@ const held0 = (step: number, n: number, held: boolean) => held || step >= n
 
 /* ================================================================== slide 38 · D_T20 · the AI pipeline map */
 
-/* Prompt -> Model -> Vector DB -> Response on one row; a threat tile above each stage, its arrow tip on the stage's top */
+/* Prompt -> Vector DB -> Model -> Response on one row (retrieval feeds the model); a threat tile above each stage, its arrow tip on the stage's top */
 const A = { W: 546, H: 330, S: 64, T: 56, CY: 226, TY: 70 }
 const A_X = [70, 205, 340, 475]
-const A_STAGE: [string, string][] = [['Prompt', 'chat'], ['Model', 'model'], ['Vector DB', 'database'], ['Response', 'doc']]
+const A_STAGE: [string, string][] = [['Prompt', 'chat'], ['Vector DB', 'database'], ['Model', 'model'], ['Response', 'doc']]
 /* the four TR threats in the TR's order, each on the stage it attacks */
 const A_THREAT: { stage: number; label: string; icon: string; badge?: Badge }[] = [
   { stage: 0, label: 'Injection', icon: 'bug' },
   { stage: 3, label: 'Disclosure', icon: 'eye', badge: 'alert' },
-  { stage: 2, label: 'Embedding', icon: 'vector', badge: 'alert' },
-  { stage: 1, label: 'Consumption', icon: 'meter' },
+  { stage: 1, label: 'Embedding', icon: 'vector', badge: 'alert' },
+  { stage: 2, label: 'Consumption', icon: 'meter' },
 ]
 const A_RIDE = [0, 1, 2].map((i) => K.ride(`a-${i}`, [[A_X[i] + A.S / 2 + 4, A.CY], [A_X[i + 1] - A.S / 2 - 6, A.CY]], 0.1 + i * 0.9, 0.85 + i * 0.9, PERIOD))
 
@@ -76,7 +77,7 @@ const D_T20: Fig = (p) => {
       ))}
       {A_RIDE.map((c, i) => <Token key={i} cls={c} size={10} />)}
       {A_STAGE.map(([label, icon], i) => (
-        <Node key={label} x={A_X[i]} y={A.CY} label={label} icon={icon} size={A.S} lit={litStage === i} d={i * 0.5} loop={i === 1 ? 'pulse' : 'bob'} />
+        <Node key={label} x={A_X[i]} y={A.CY} label={label} icon={icon} size={A.S} lit={litStage === i} d={i * 0.5} loop={label === 'Model' ? 'pulse' : 'bob'} />
       ))}
       {A_THREAT.map((t, i) => {
         const on = held || step >= i + 1
@@ -88,6 +89,104 @@ const D_T20: Fig = (p) => {
           </div>
         )
       })}
+    </Frame>
+  )
+}
+
+/* ================================================================== slide 40 · D_T21A · one stream of text */
+
+/*
+ * 546 x 380, beside the five points of T21 (one step each). Left: the trusted Instructions card and the untrusted Data
+ * card; their wires merge into ONE stream of text (a pill of segments) that runs into the LLM. 1 the LLM (chatbots,
+ * assistants); 2 both cards join one stream; 3 the segments turn one colour and a balance wobbles on the LLM (it cannot
+ * tell them apart); 4 one line of the data glows orange (the hidden instruction) and so does its segment; 5 the LLM's
+ * output goes to the Hidden Instruction, and the Intended Task is crossed.
+ */
+const S1 = { W: 546, H: 380, CX: 20, CW: 140, IY: 36, IH: 112, DY: 200, DH: 152, J: 184, Y: 185, PX: 200, PW: 118, LX: 372, LS: 64, B: 430, OX: 478, OS: 52 }
+const S1_IN: Pt[] = [[S1.CX + S1.CW, S1.IY + S1.IH / 2], [S1.J, S1.IY + S1.IH / 2], [S1.J, S1.Y], [S1.PX, S1.Y]]
+const S1_DA: Pt[] = [[S1.CX + S1.CW, S1.DY + S1.DH / 2], [S1.J, S1.DY + S1.DH / 2], [S1.J, S1.Y], [S1.PX, S1.Y]]
+const S1_OUT_T: Pt[] = [[S1.LX + S1.LS / 2, S1.Y], [S1.B, S1.Y], [S1.B, S1.IY + S1.IH / 2], [S1.OX - S1.OS / 2, S1.IY + S1.IH / 2]]
+const S1_OUT_H: Pt[] = [[S1.LX + S1.LS / 2, S1.Y], [S1.B, S1.Y], [S1.B, S1.DY + S1.DH / 2], [S1.OX - S1.OS / 2, S1.DY + S1.DH / 2]]
+const S1_R_IN = K.ride('s1-in', S1_IN, 0.1, 1.0, PERIOD)
+const S1_R_DA = K.ride('s1-da', S1_DA, 0.4, 1.3, PERIOD)
+const S1_R_ST = K.ride('s1-st', [[S1.PX + S1.PW, S1.Y], [S1.LX - S1.LS / 2 - 4, S1.Y]], 1.3, 1.7, PERIOD)
+const S1_R_OUT = K.ride('s1-out', S1_OUT_H, 1.8, 2.8, PERIOD)
+const S1_BLUE = '#8FB0FF'
+const S1_GREY = '#C9D3E8'
+const S1_SAME = '#A9B8DA'
+
+const D_T21A: Fig = (p) => {
+  const step = Number(p.step ?? 0)
+  const held = useHeld()
+  const instant = useInstant()
+  const hot = useHot(5, step, PERIOD * 1000)
+  const on = (n: number) => held0(step, n, held)
+  const tr = instant ? 'none' : `background 520ms ${EASE}, opacity 520ms ${EASE}, box-shadow 420ms ${EASE}`
+  /* the stream's five segments: two from the instructions, three from the data (the fourth is the hidden line) */
+  const segs = [0, 1, 2, 3, 4].map((i) => (on(4) && i === 3 ? ORANGE : on(3) ? S1_SAME : i < 2 ? S1_BLUE : S1_GREY))
+  const card = (y: number, h: number, icon: string, label: string, lit: boolean, bars: ReactNode) => (
+    <Panel x={S1.CX} y={y} w={S1.CW} h={h} lit={lit} on={on(2)}>
+      <div style={{ position: 'absolute', left: 14, top: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Ico3D name={nm(icon)} size={28} loop="float" d={y / 100} />
+        <span style={{ ...tag(14), textAlign: 'left' }}>{label}</span>
+      </div>
+      <div style={{ position: 'absolute', left: 16, top: 56, display: 'flex', flexDirection: 'column', gap: 10 }}>{bars}</div>
+    </Panel>
+  )
+  return (
+    <Frame w={S1.W} h={S1.H}>
+      {/* trusted instructions, untrusted data: both into one stream */}
+      <Wire pts={S1_IN} on={on(2)} head={0} color={colors.brand} lit={hot === 1} />
+      <Wire pts={S1_DA} on={on(2)} head={0} color={on(4) ? ORANGE : '#9FB3D6'} lit={hot === 1} delay={200} />
+      <Wire pts={[[S1.PX + S1.PW, S1.Y], [S1.LX - S1.LS / 2, S1.Y]]} on={on(2)} head={9} delay={500} />
+      {card(S1.IY, S1.IH, 'checklist', 'Instructions', false, <><Bar w={96} /><Bar w={72} /></>)}
+      {card(S1.DY, S1.DH, 'doc', 'Data', hot === 3, (
+        <>
+          <Bar w={100} />
+          <Bar w={80} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ position: 'relative', display: 'block', width: 76, height: 9 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: 99, background: '#DCE4F4' }} />
+              <span style={{ position: 'absolute', inset: 0, borderRadius: 99, background: `linear-gradient(90deg, #FFB37A, ${ORANGE})`, opacity: on(4) ? 1 : 0, transition: tr }} />
+            </span>
+            <span style={{ display: 'grid', opacity: on(4) ? 1 : 0, transition: tr }}><Ico3D name="mask" size={22} loop="beat" t={2.4} /></span>
+          </span>
+          <Bar w={90} />
+        </>
+      ))}
+      {/* one stream of text */}
+      <Show on={on(2)} delay={300} style={{ position: 'absolute', left: S1.PX, top: S1.Y - 17, width: S1.PW, height: 34, zIndex: 3 }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 99, background: '#FFFFFF', boxShadow: hot === 1 ? `inset 0 0 0 2.5px ${ORANGE}, 0 8px 18px -12px rgba(31,64,140,0.5)` : `inset 0 0 0 1.5px ${colors.line}, 0 8px 18px -12px rgba(31,64,140,0.5)`, transition: tr, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {segs.map((bg, i) => <span key={i} style={{ width: 18, height: 10, borderRadius: 99, background: bg, transition: instant ? 'none' : `background 520ms ${EASE} ${i * 70}ms` }} />)}
+        </div>
+        <div style={{ position: 'absolute', left: -30, right: -30, top: 44, ...tag(13) }}>One Stream of Text</div>
+      </Show>
+      {/* the LLM, the system behind chatbots and assistants */}
+      <Node x={S1.LX} y={S1.Y} label="LLM" icon="model" size={S1.LS} on={on(1)} lit={hot === 0 || hot === 2} loop="pulse" w={110} />
+      <Show on={on(1)} delay={250} style={{ position: 'absolute', left: S1.LX - 40, top: S1.Y + S1.LS / 2 + 34, width: 80, display: 'flex', justifyContent: 'center', gap: 10, zIndex: 3 }}>
+        <Ico3D name="chat" size={26} loop="bob" d={0.2} />
+        <Ico3D name="bot" size={26} loop="bob" d={0.7} />
+      </Show>
+      {/* 3 · it cannot tell the two apart: a balance wobbles on the LLM */}
+      <Show on={on(3)} style={{ position: 'absolute', left: S1.LX + S1.LS / 2 - 18, top: S1.Y - S1.LS / 2 - 18, width: 36, height: 36, borderRadius: 99, background: '#FFFFFF', boxShadow: '0 6px 14px -8px rgba(31,64,140,0.7)', display: 'grid', placeItems: 'center', zIndex: 5 }}>
+        <Ico3D name="scale" size={26} loop="swing" t={2.6} />
+      </Show>
+      {/* 5 · it obeys the hidden instruction instead of its intended task */}
+      <Wire pts={S1_OUT_T} on={on(5)} head={9} color="#B9C6E4" dash="6 5" />
+      <Wire pts={S1_OUT_H} on={on(5)} head={10} color={ORANGE} width={3} delay={200} />
+      <Show on={on(5)} style={{ position: 'absolute', left: S1.OX - 60, top: S1.IY + S1.IH / 2 - S1.OS / 2, width: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 3 }}>
+        <span style={{ opacity: 0.6 }}><Plinth size={S1.OS}><Ico3D name="target" size={38} loop="none" badge="cross" /></Plinth></span>
+        <span style={tag(13)}>Intended Task</span>
+      </Show>
+      <Show on={on(5)} delay={250} style={{ position: 'absolute', left: S1.OX - 60, top: S1.DY + S1.DH / 2 - S1.OS / 2, width: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 3 }}>
+        <Plinth size={S1.OS} warm lit={hot === 4}><Ico3D name="mask" size={38} loop="beat" t={2.4} /></Plinth>
+        <span style={{ ...tag(13, '#C2541C'), whiteSpace: 'normal', lineHeight: 1.15 }}>Hidden Instruction</span>
+      </Show>
+      {/* flow dots */}
+      <Token cls={S1_R_IN} on={on(2) && !held} size={9} tone={colors.brand} />
+      <Token cls={S1_R_DA} on={on(2) && !held} size={9} tone={on(4) ? ORANGE : '#9FB3D6'} />
+      <Token cls={S1_R_ST} on={on(2) && !held} size={10} tone={on(3) ? S1_SAME : colors.brand} />
+      <Token cls={S1_R_OUT} on={on(5) && !held} size={10} tone={ORANGE} />
     </Frame>
   )
 }
@@ -272,7 +371,7 @@ const D_T23: Fig = (p) => {
       {hot >= 0 && hot < 3 && <Token key={`t${hot}`} cls={E_ATK[hot].back ? E_BACK : E_IN} tone={ORANGE} />}
       {E_ROW.map(([label, icon], i) => (
         <div key={label}>
-          <Node x={E_X[i]} y={E.TY} label={label} icon={icon} size={E.S} lit={hot === 3 && i !== 1} d={i * 0.5} loop={i === 1 ? 'pulse' : 'bob'} />
+          <Node x={E_X[i]} y={E.TY} label={label} icon={icon} size={E.S} lit={hot === 3 && i !== 1} d={i * 0.5} loop={label === 'Model' ? 'pulse' : 'bob'} />
           {/* point 4: the source files carry a lock, the vector DB does not */}
           {i !== 1 && (
             <Show on={on4} style={{ position: 'absolute', left: E_X[i] + E.S / 2 - 16, top: E.TY - E.S / 2 - 14, zIndex: 4 }}>
@@ -429,7 +528,7 @@ const D_T25: Fig = (p) => {
   )
 }
 
-export const figures: Record<string, Fig> = { D_T20, D_T21, D_T22, D_T23, D_T24, D_T25 }
+export const figures: Record<string, Fig> = { D_T20, D_T21A, D_T21, D_T22, D_T23, D_T24, D_T25 }
 export const css = `
 ${K.css()}
 .cc-still [class*="t16d-"], .deck-thumb [class*="t16d-"] { animation: none !important; opacity: 0 !important; }

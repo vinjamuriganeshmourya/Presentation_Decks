@@ -39,11 +39,11 @@ function Rider({ cls, name, size = 30, on = true, dim = false, badge }: { cls: s
 }
 
 /** a tile centred on (x, y) with its one-word tag under it */
-function Node({ x, y, label, size = 64, on = true, delay = 0, children, w = 140, label2, tagColor }: { x: number; y: number; label: string; size?: number; on?: boolean; delay?: number; children: ReactNode; w?: number; label2?: string; tagColor?: string }) {
+function Node({ x, y, label, size = 64, on = true, delay = 0, children, w = 140, label2, tagColor, wrap = false }: { x: number; y: number; label: string; size?: number; on?: boolean; delay?: number; children: ReactNode; w?: number; label2?: string; tagColor?: string; wrap?: boolean }) {
   return (
     <Show on={on} delay={delay} style={{ position: 'absolute', left: x - w / 2, top: y - size / 2, width: w, zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
       <div style={{ width: size, height: size, display: 'grid', placeItems: 'center' }}>{children}</div>
-      <span style={tag(15, tagColor)}>{label}</span>
+      <span style={wrap ? { ...tag(15, tagColor), whiteSpace: 'normal' } : tag(15, tagColor)}>{label}</span>
       {label2 && (
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: -4 }}>
           <Ico3D name="flag" size={24} loop="swing" t={2.4} />
@@ -122,6 +122,22 @@ const B_UX = 66
 const B_DX = B_CW - 66
 const B_RIDE = [0, 1].map((i) => K.ride(`b${i}`, [[B_UX + 36, B_TY], [B_DX - 40, B_TY]], 0.2, 1.4, 2.4))
 
+/** data theft: a database with an orange arrow leaving it, pointing away (the arrow drifts out on the compositor) */
+function Exfil() {
+  return (
+    <span aria-hidden style={{ position: 'relative', display: 'inline-block', width: 50, height: 34 }}>
+      <span style={{ position: 'absolute', left: 0, top: 2 }}><Ico3D name="database" size={30} loop="none" /></span>
+      <span className="t16c-exfil" style={{ position: 'absolute', left: 24, top: 6, width: 26, height: 22 }}>
+        <svg width={26} height={22} viewBox="0 0 26 22" style={{ display: 'block', overflow: 'visible' }}>
+          <path d="M3 11 H15" stroke="#FFFFFF" strokeWidth={7} strokeLinecap="round" />
+          <path d="M3 11 H15" stroke={ORANGE} strokeWidth={3.4} strokeLinecap="round" />
+          <polygon points="24,11 14,4 14,18" fill={ORANGE} stroke="#FFFFFF" strokeWidth={1.5} strokeLinejoin="round" />
+        </svg>
+      </span>
+    </span>
+  )
+}
+
 function T17Card({ i, on, lit }: { i: number; on: boolean; lit: boolean }) {
   const held = useHeld()
   const mal = i === 0
@@ -163,7 +179,7 @@ function T17Card({ i, on, lit }: { i: number; on: boolean; lit: boolean }) {
         </>
       )}
       <div style={{ position: 'absolute', left: 20, right: 20, bottom: 20, display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center' }}>
-        <Ico3D name={mal ? 'trash' : 'globe'} size={34} loop="bob" d={0.3 + i} />
+        {mal ? <Exfil /> : <Ico3D name="globe" size={34} loop="bob" d={0.3 + i} />}
         <span style={tag(15)}>{mal ? 'Steals' : 'Exposes'}</span>
       </div>
     </Panel>
@@ -188,12 +204,12 @@ const C_T17: Fig = ({ step = 0 }) => {
  * filling with their calls (rows scroll); right, GuardDuty reading the log and raising its flag on the unusual entry.
  */
 const E = { W: 566, H: 380, LX: 64, LOGX: 140, LOGW: 256, GX: 494 }
-const E_UY = [196, 302]
+const E_UY = [168, 286]
 const E_LOGY = PAD
 const E_LOGH = E.H - PAD * 2
 const E_GY = 120
 const E_FY = 268
-const E_RIDE = E_UY.map((y, i) => K.ride(`e${i}`, [[E.LX + 30, y], [E.LOGX - 4, y]], 0.1 + i * 0.9, 0.9 + i * 0.9, 2.4))
+const E_RIDE = E_UY.map((y, i) => K.ride(`e${i}`, [[E.LX + 28, y], [E.LOGX - 4, y]], 0.1 + i * 0.9, 0.9 + i * 0.9, 2.4))
 const E_RIDE_G = K.ride('eg', [[E.LOGX + E.LOGW + 2, E_GY], [E.GX - 34, E_GY]], 0.4, 1.3, 2.4)
 const E_ROWS: [Ico3DName, Ico3DName, boolean][] = [
   ['user', 'doc', false],
@@ -234,10 +250,10 @@ const C_T17B: Fig = ({ step = 0 }) => {
       </Node>
       {E_UY.map((y, i) => (
         <div key={i}>
-          <Node x={E.LX} y={y} label="Insider" size={60} on={s >= 1} delay={150 + i * 150} w={110}>
-            <Plinth size={60} lit={hot === 0}><Ico3D name="user" size={44} loop="bob" d={i * 0.9} badge={i === 0 ? 'alert' : undefined} /></Plinth>
+          <Node x={E.LX} y={y} label={i === 0 ? 'Malicious Insider' : 'Accidental Insider'} wrap size={56} on={s >= 1} delay={150 + i * 150} w={110}>
+            <Plinth size={56} lit={hot === 0}><Ico3D name="user" size={41} loop="bob" d={i * 0.9} badge={i === 0 ? 'alert' : undefined} /></Plinth>
           </Node>
-          <Wire pts={[[E.LX + 30, y], [E.LOGX, y]]} on={s >= 2} head={9} lit={hot === 1} delay={150} />
+          <Wire pts={[[E.LX + 28, y], [E.LOGX, y]]} on={s >= 2} head={9} lit={hot === 1} delay={150} />
           <Token cls={E_RIDE[i]} on={s >= 2} size={9} />
         </div>
       ))}
@@ -573,6 +589,10 @@ export const css = `
 .cc-still .t16c-scroll, .deck-thumb .t16c-scroll, .cc-still .t16c-scanline, .deck-thumb .t16c-scanline,
 .cc-still .t16c-keyout, .deck-thumb .t16c-keyout, .cc-still .t16c-keyin, .deck-thumb .t16c-keyin { animation: none !important; }
 .cc-still .t16c-keyout, .deck-thumb .t16c-keyout { opacity: 0 !important; }
+@keyframes t16c-exfil { 0%, 100% { transform: translateX(0); opacity: 1 } 50% { transform: translateX(4px); opacity: 0.85 } }
+.t16c-exfil { animation: t16c-exfil 2.2s cubic-bezier(0.45,0,0.55,1) infinite; }
+.cc-still .t16c-exfil, .deck-thumb .t16c-exfil { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .t16c-exfil { animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .t16c-scroll, .t16c-scanline, .t16c-keyout, .t16c-keyin { animation: none !important; } }
 ${K.css()}
 `
