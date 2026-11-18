@@ -17,6 +17,14 @@
       "author": "Pallavi",
       "text": "Connection Table → Parser arrow: delete it.\nParser input: add a “Malformed Packets” source icon with an arrow going straight to the Parser.\n“Requests” label → “SYN Requests”",
       "at": 1794994592737
+    },
+    "mwlxhgwts1e7o3": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05-B",
+      "author": "Pallavi",
+      "text": "Slowloris arrows\nNow: the 4 arrows from Slowloris go to the CPU gauge.\nChange: add a small box inside the Web Server card called “Connection Slots” with 4–5 slots shown as full or locked. Point the 4 Slowloris arrows at those slots instead of the CPU.",
+      "at": 1794994677263
     }
   }
 }
