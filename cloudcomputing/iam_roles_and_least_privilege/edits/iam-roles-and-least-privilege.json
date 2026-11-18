@@ -33,6 +33,14 @@
       "author": "Pallavi",
       "text": "Leak icon on the Temporary bar (near Expires) → move it left, so it sits right above where the orange part starts on the Temporary bar.\nLeak icon on the Long-Lived bar (middle) → move it left to the same position, right above where the orange part starts on the Long-Lived bar.\nOrange on the Long-Lived bar (fading in the middle) → extend it all the way to the right end, fading only at the very edge.",
       "at": 1795001172549
+    },
+    "mwm1d654d27bmi": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05-B",
+      "author": "Pallavi",
+      "text": "add this visaul in previous slide and add the table in another slide",
+      "at": 1795001195069
     }
   }
 }
