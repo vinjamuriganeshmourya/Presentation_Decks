@@ -19,7 +19,7 @@
     { "title": "Cloud Security & Shared Responsibility", "folder": "cloud_security_and_shared_responsibility" },
     { "title": "IAM Fundamentals", "folder": "iam_fundamentals" },
     { "title": "IAM & Least Privilege", "folder": "iam_roles_and_least_privilege" },
-    { "title": "Encryption & Key Management", "folder": null },
+    { "title": "Encryption & Key Management", "folder": "encryption_and_key_management" },
     { "title": "Cloud Threats & Attacks", "folder": "cloud_threats_and_attacks" },
     { "title": "Security Practices & Compliance", "folder": null },
     { "title": "Cloud-Native Applications", "folder": null },
