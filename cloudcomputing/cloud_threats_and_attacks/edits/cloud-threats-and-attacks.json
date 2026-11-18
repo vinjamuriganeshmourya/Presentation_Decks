@@ -49,6 +49,14 @@
       "author": "Pallavi",
       "text": "Key path: make the key move straight from Repository → Attacker, with the arrow labeled “Leaked key”.\nSecrets Manager: take it off this arrow and place it below or beside the Repository, labeled “Store keys here instead of in code”.\nGuardDuty label → “GuardDuty (flags anomalous use)”",
       "at": 1794995149462
+    },
+    "mwlxu37uqjy02c": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T10",
+      "author": "Pallavi",
+      "text": "Authentication icon (ID card) → use the person-with-x icon from the “Broken authentication” bullet\nRate Limiting icon (robot) → use the gauge icon from the “No rate limiting” bullet\nValidation icon (bug) → use the alert (!) icon from the “Missing input validation” bullet",
+      "at": 1794995266411
     }
   }
 }
