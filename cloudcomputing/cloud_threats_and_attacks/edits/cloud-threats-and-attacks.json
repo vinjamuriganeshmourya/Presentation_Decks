@@ -12,7 +12,7 @@
     },
     "mwlxfn3ekhxjft": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05",
       "author": "Pallavi",
       "text": "Connection Table → Parser arrow: delete it.\nParser input: add a “Malformed Packets” source icon with an arrow going straight to the Parser.\n“Requests” label → “SYN Requests”",
