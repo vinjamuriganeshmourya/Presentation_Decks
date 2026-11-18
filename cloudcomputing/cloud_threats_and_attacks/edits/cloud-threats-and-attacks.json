@@ -41,6 +41,14 @@
       "author": "Pallavi",
       "text": "add quiz time before this slide",
       "at": 1794994939955
+    },
+    "mwlxrla5ksgahq": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T09",
+      "author": "Pallavi",
+      "text": "Key path: make the key move straight from Repository → Attacker, with the arrow labeled “Leaked key”.\nSecrets Manager: take it off this arrow and place it below or beside the Repository, labeled “Store keys here instead of in code”.\nGuardDuty label → “GuardDuty (flags anomalous use)”",
+      "at": 1794995149462
     }
   }
 }
