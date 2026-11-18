@@ -16,6 +16,7 @@
     { "title": "Elastic Compute Instances", "folder": "elastic_compute_instances" },
     { "title": "EC2 Launch and Flask Deployment on Beanstalk", "folder": "practical_hands_on_ec2_launch_and_flask_deployment_on_beanstalk" },
     { "title": "Serverless Computing", "folder": "serverless_computing" },
+    { "title": "Deploying a Lambda Function and Observing Cold and Warm Starts", "folder": "practical_hands_on_deploying_a_lambda_function_and_observing_cold_and_warm_starts" },
     { "title": "Cloud Provider Comparison", "folder": "cloud_provider_comparison" },
     { "title": "Cloud Security & Shared Responsibility", "folder": "cloud_security_and_shared_responsibility" },
     { "title": "IAM Fundamentals", "folder": "iam_fundamentals" },
