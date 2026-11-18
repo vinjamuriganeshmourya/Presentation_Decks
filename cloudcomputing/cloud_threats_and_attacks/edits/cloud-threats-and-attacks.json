@@ -28,7 +28,7 @@
     },
     "mwlxhml95bprvm": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05-B",
       "author": "Pallavi",
       "text": "HTTP arrow\nNow: the HTTP arrow stops at the Web Server icon.\nChange: extend the arrow down so it ends at the CPU gauge.",
