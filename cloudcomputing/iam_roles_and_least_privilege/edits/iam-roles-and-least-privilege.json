@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "Swap the two bullets: put “STS returns a fresh, time-limited credential set” on top, and “The caller uses the temporary credentials” below it.\nChange the icon on “The caller uses the temporary credentials” bullet: replace the gold key with the red checklist icon from “Role Permissions” in the diagram.",
       "at": 1794999471860
+    },
+    "mwm1corakxv4yp": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05-B",
+      "author": "Pallavi",
+      "text": "Leak icon on the Temporary bar (near Expires) → move it left, so it sits right above where the orange part starts on the Temporary bar.\nLeak icon on the Long-Lived bar (middle) → move it left to the same position, right above where the orange part starts on the Long-Lived bar.\nOrange on the Long-Lived bar (fading in the middle) → extend it all the way to the right end, fading only at the very edge.",
+      "at": 1795001172549
     }
   }
 }
