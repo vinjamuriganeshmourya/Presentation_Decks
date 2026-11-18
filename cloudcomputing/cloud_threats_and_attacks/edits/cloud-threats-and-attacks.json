@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "Slowloris arrows\nNow: the 4 arrows from Slowloris go to the CPU gauge.\nChange: add a small box inside the Web Server card called “Connection Slots” with 4–5 slots shown as full or locked. Point the 4 Slowloris arrows at those slots instead of the CPU.",
       "at": 1794994677263
+    },
+    "mwlxhml95bprvm": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05-B",
+      "author": "Pallavi",
+      "text": "HTTP arrow\nNow: the HTTP arrow stops at the Web Server icon.\nChange: extend the arrow down so it ends at the CPU gauge.",
+      "at": 1794994684693
     }
   }
 }
