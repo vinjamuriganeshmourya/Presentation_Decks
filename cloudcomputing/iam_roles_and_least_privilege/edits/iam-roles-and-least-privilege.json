@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "replace the 2nd points icon with the red checklist icon (✓ ✓ ✗) used for “Permissions” in the diagram.",
       "at": 1794999098381
+    },
+    "mwm09uinoqw5hh": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T03",
+      "author": "Pallavi",
+      "text": "“Caller invokes sts:AssumeRole” bullet icon (code </>) → replace it with the laptop icon from the diagram’s “Caller” box\n“Caller also needs its own permission” bullet icon (checklist) → replace it with the ID card icon from the diagram’s “Own Permission” box",
+      "at": 1794999360590
     }
   }
 }
