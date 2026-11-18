@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "What to change:\nArrow from Minimum TLS Version → Endpoint → remove it, or make it faded and dashed with a red ✗ so it’s clear the request never reaches the Endpoint.",
       "at": 1795004223501
+    },
+    "mwm396cejvwp34": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T14",
+      "author": "Pallavi",
+      "text": "Volume (hard-disk icon): replace the green unlocked padlock badge with a locked padlock.\nBucket (green bucket icon): replace the green unlocked padlock badge with a locked padlock.\nDatabase (blue database icon): replace the green unlocked padlock badge with a locked padlock.\n\nin visual",
+      "at": 1795004368089
     }
   }
 }
