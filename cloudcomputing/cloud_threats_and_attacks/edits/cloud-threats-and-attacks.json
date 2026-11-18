@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "IoT Devices → Open Servers arrows: add the label “Small request (spoofed source: Target IP)” and keep them thin.\nOpen Servers → Target arrows: add the label “Large reply” and make them noticeably thicker.\n\nin visual",
       "at": 1794994179926
+    },
+    "mwlxfn3ekhxjft": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05",
+      "author": "Pallavi",
+      "text": "Connection Table → Parser arrow: delete it.\nParser input: add a “Malformed Packets” source icon with an arrow going straight to the Parser.\n“Requests” label → “SYN Requests”",
+      "at": 1794994592737
     }
   }
 }
