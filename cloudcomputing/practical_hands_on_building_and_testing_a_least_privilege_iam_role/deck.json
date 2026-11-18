@@ -43,8 +43,7 @@
    "title": "Reading Permissions",
    "lead": "Before writing a policy, it helps to read one AWS already ships, to see which services, access levels and resources it allows",
    "step": {
-    "text": "AmazonS3ReadOnlyAccess managed policy details page, Permissions tab active",
-    "icon": "img:images/aws-iam.svg"
+    "text": "AmazonS3ReadOnlyAccess managed policy details page, Permissions tab active"
    },
    "image": "images/tr22-managed-policy.png",
    "rings": [
@@ -64,8 +63,7 @@
    "title": "Describe-Only JSON",
    "lead": "The custom policy starts narrow: it allows only the EC2 describe action, nothing else, so the role begins with the smallest workable grant",
    "step": {
-    "text": "IAM policy editor in JSON mode, one statement allowing `ec2:DescribeInstances`",
-    "icon": "img:images/aws-iam.svg"
+    "text": "IAM policy editor in JSON mode, one statement allowing `ec2:DescribeInstances`"
    },
    "image": "images/tr23-policy-editor.png",
    "rings": [
@@ -91,8 +89,7 @@
    "title": "Attached Permissions",
    "lead": "After the role is created and the custom policy attached, the role's own Permissions tab confirms exactly one policy is attached before any testing begins",
    "step": {
-    "text": "IAM role Permissions tab listing one attached customer-managed policy",
-    "icon": "img:images/res-iam-role.svg"
+    "text": "IAM role Permissions tab listing one attached customer-managed policy"
    },
    "image": "images/tr24-role-permissions.png",
    "rings": [
@@ -196,8 +193,7 @@
    "kicker": "Update, Retest, Discuss",
    "title": "Closing The Gap",
    "step": {
-    "text": "Policy Simulator before the update: DescribeInstances Allowed, StartInstances and TerminateInstances Denied (implicit deny)",
-    "icon": "img:images/aws-iam.svg"
+    "text": "Policy Simulator before the update: DescribeInstances Allowed, StartInstances and TerminateInstances Denied (implicit deny)"
    },
    "image": "images/tr25-simulator-before.png",
    "rings": [
@@ -228,8 +224,7 @@
    "kicker": "Update, Retest, Discuss",
    "title": "Closing The Gap",
    "step": {
-    "text": "Policy edited to add `ec2:StartInstances`; TerminateInstances stays absent",
-    "icon": "img:images/aws-iam.svg"
+    "text": "Policy edited to add `ec2:StartInstances`; TerminateInstances stays absent"
    },
    "image": "images/tr25-policy-edited.png",
    "rings": [
