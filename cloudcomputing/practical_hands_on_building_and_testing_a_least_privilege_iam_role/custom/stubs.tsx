@@ -1,0 +1,40 @@
+import type { ReactNode } from 'react'
+/** Placeholders so the deck renders while a builder's figure is missing. Every name here is replaced by a/b/c/d/h/i/j. */
+const Stub = (name: string) => () => (
+  <div style={{ width: '100%', height: '100%', minHeight: 120, display: 'grid', placeItems: 'center', border: '2px dashed #c9d3e6', borderRadius: 14, color: '#8a97b3', fontSize: 14 }}>{name}</div>
+)
+export const figures: Record<string, (p: Record<string, unknown>) => ReactNode> = {
+  A_T01: Stub('A_T01'),
+  A_T02: Stub('A_T02'),
+  H_T02Everyday: Stub('H_T02Everyday'),
+  H_T02Concept: Stub('H_T02Concept'),
+  A_T03: Stub('A_T03'),
+  A_T03B: Stub('A_T03B'),
+  A_T04: Stub('A_T04'),
+  A_T05B: Stub('A_T05B'),
+  B_T06: Stub('B_T06'),
+  B_T07: Stub('B_T07'),
+  B_T08: Stub('B_T08'),
+  H_T08Everyday: Stub('H_T08Everyday'),
+  H_T08Concept: Stub('H_T08Concept'),
+  B_T09: Stub('B_T09'),
+  I_T09Everyday: Stub('I_T09Everyday'),
+  I_T09Concept: Stub('I_T09Concept'),
+  B_T10B: Stub('B_T10B'),
+  C_T11: Stub('C_T11'),
+  I_T11Everyday: Stub('I_T11Everyday'),
+  I_T11Concept: Stub('I_T11Concept'),
+  C_T13: Stub('C_T13'),
+  C_T14: Stub('C_T14'),
+  C_T15: Stub('C_T15'),
+  J_T15Everyday: Stub('J_T15Everyday'),
+  J_T15Concept: Stub('J_T15Concept'),
+  C_T16: Stub('C_T16'),
+  C_T18: Stub('C_T18'),
+  D_T19: Stub('D_T19'),
+  J_T19Everyday: Stub('J_T19Everyday'),
+  J_T19Concept: Stub('J_T19Concept'),
+  D_T20: Stub('D_T20'),
+  D_P25E: Stub('D_P25E'),
+  D_P26: Stub('D_P26'),
+}
