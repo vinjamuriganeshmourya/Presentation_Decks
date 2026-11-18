@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/iam_roles_and_least_privilege/iam-roles-and-least-privilege",
+  "slides": {},
+  "threads": {
+    "mwm0489t5zuw7a": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T02",
+      "author": "Pallavi",
+      "text": "replace the 2nd points icon with the red checklist icon (✓ ✓ ✗) used for “Permissions” in the diagram.",
+      "at": 1794999098381
+    }
+  }
+}
