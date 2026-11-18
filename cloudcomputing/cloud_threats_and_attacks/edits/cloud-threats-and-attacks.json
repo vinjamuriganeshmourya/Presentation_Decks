@@ -52,7 +52,7 @@
     },
     "mwlxu37uqjy02c": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T10",
       "author": "Pallavi",
       "text": "Authentication icon (ID card) → use the person-with-x icon from the “Broken authentication” bullet\nRate Limiting icon (robot) → use the gauge icon from the “No rate limiting” bullet\nValidation icon (bug) → use the alert (!) icon from the “Missing input validation” bullet",
