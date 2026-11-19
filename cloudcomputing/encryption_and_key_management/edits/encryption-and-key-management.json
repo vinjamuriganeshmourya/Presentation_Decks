@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/encryption_and_key_management/encryption-and-key-management",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwm362ufsdp7cm": {
       "replies": {},
