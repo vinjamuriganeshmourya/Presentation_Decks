@@ -186,7 +186,7 @@ const B_PB = B.PY + B.TB + B.HR + B.RR // 118, the panel's bottom
 const B_SY = [158, 222, 286]
 const B_COL = [{ x: 34, w: 104 }, { x: 146, w: 274 }, { x: 428, w: 84 }]
 const bBranch = (y: number): Pt[] => (y === B.KY ? [[B.J, y], [B.SX - B.SS / 2, y]] : [[B.J, B.KY], [B.J, y], [B.SX - B.SS / 2, y]])
-const B_OUT = B_SY.map((y, i) => K.ride(`t21o${i}`, [[B.KX + B.KS / 2, B.KY], ...bBranch(y)], 0.1 + i * 1.0, 1.1 + i * 1.0, B.PER))
+const B_OUT = B_SY.map((y, i) => K.ride(`t21o${i}`, [[B.BX1, B.KY], ...bBranch(y)], 0.1 + i * 1.0, 1.1 + i * 1.0, B.PER))
 const B_POL = K.ride('t21p', [[B.PO, B.POY - 22], [B.PO, B_PB]], 0.2, 0.9, B.PER)
 const B_LOG = K.ride('t21l', [[B.CX, B_PB], [B.CX, B.CY - B.CS / 2]], 0.4, 0.8, 0.8)
 const KEY_ID = '1a2b3c4d-5e6f-7890-abcd-ef1234567890'
@@ -258,7 +258,10 @@ const D_T21: Fig = (p) => {
       </Node>
 
       {/* point 2: S3, EBS and RDS use it; only results leave */}
-      <W pts={[[B.KX + B.KS / 2, B.KY], [B.J, B.KY]]} on={s(2)} head={0} lit={hot === 1} />
+      <W pts={[[B.BX1, B.KY], [B.J, B.KY]]} on={s(2)} head={0} lit={hot === 1} />
+      <Show on={s(2)} style={{ ...box(B.BX1 + 2, B.KY - 32, B.J - B.BX1 - 4, 28), zIndex: 3 }}>
+        <span style={{ display: 'block', ...tag(11, colors.brandDark), fontWeight: 700, lineHeight: '13px', textAlign: 'center' }}>Data<br />keys</span>
+      </Show>
       {B_SY.map((y) => <W key={y} pts={bBranch(y)} on={s(2)} lit={hot === 1} delay={150} />)}
       <Junction x={B.J} y={B.KY} on={s(2)} lit={hot === 1} />
       {B_SY.map((y, i) => (
@@ -303,11 +306,16 @@ const C_CTL: { icon: Ico3DName; label: string; loop: Loop }[] = [
 
 const D_T22B: Fig = (p) => {
   const { hot, s } = useBuild({ ...p, steps: p.steps ?? 2 }, 2400)
+  /* the whole drawing scales down as one when the slide gives it a smaller box (the lead sentence sits above it) */
+  const k = Math.min(1, (Number(p.w) || C.W) / C.W, (Number(p.h) || C.H) / C.H)
   return (
+    <div style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%' }}>
+    <div style={{ width: C.W * k, height: C.H * k }}>
+    <div style={{ width: C.W, height: C.H, transform: k < 1 ? `scale(${k})` : undefined, transformOrigin: '0 0' }}>
     <Frame w={C.W} h={C.H}>
       {/* AWS-Owned: the padlock alone, nothing for the account to turn */}
       <Panel x={C.AX} y={C.Y} w={C.CW} h={C.CH} on={s(1)} lit={hot === 0} />
-      <Node x={C_AC} y={C.LY} icon="lock" size={C.LS} k={0.7} w={200} label="AWS-Owned" tagSize={16} on={s(1)} loop="glint" />
+      <Node x={C_AC} y={C.LY} icon="lock" size={C.LS} k={0.7} w={200} label="AWS-Managed (aws/*)" tagSize={16} on={s(1)} loop="glint" />
       <Corner x={C_AC + C.LS / 2 - 6} y={C.LY - C.LS / 2 + 6} icon="cloud" size={34} on={s(1)} loop="float" />
       {[-80, 0, 80].map((dx, i) => (
         <Show key={dx} on={s(1)} delay={i * 100} style={{ ...box(C_AC + dx - 20, C.RY - 20, 40, 40), zIndex: 3 }}>
@@ -329,6 +337,9 @@ const D_T22B: Fig = (p) => {
       <Rider cls={C_RA} icon="doc" size={26} on={s(1)} />
       <Rider cls={C_RC} icon="doc" size={26} on={s(2)} />
     </Frame>
+    </div>
+    </div>
+    </div>
   )
 }
 

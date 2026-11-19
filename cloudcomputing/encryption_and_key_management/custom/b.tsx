@@ -651,7 +651,8 @@ const B_T12B: Fig = (p) => {
 
       {/* row 2: the minimum TLS version gate in front of an endpoint */}
       <Wire pts={[[SP_CR, SP.Y2], [SP.GX - SP.S / 2, SP.Y2]]} lit={hot === 1} />
-      <Wire pts={[[SP.GX + SP.S / 2, SP.Y2], [SP.EX - SP.S / 2, SP.Y2]]} lit={hot === 1} />
+      <Wire pts={[[SP.GX + SP.S / 2, SP.Y2], [SP.EX - SP.S / 2, SP.Y2]]} lit={hot === 1} dash="6 6" opacity={0.4} />
+      <span aria-hidden style={{ ...box((SP.GX + SP.EX) / 2 - 13, SP.Y2 - 13, 26, 26), zIndex: 4, display: 'grid', placeItems: 'center' }}><Ico3D name="cross" size={24} loop="none" /></span>
       <Node x={SP.CX} y={SP.Y2} size={SP.S} label="Client" w={90}><Tile name="laptop" size={SP.S} d={0.6} /></Node>
       <Node x={SP.GX} y={SP.Y2} size={SP.S} label="Minimum TLS Version" w={170}>
         <Tile name="gate" size={SP.S} loop="pulse" lit={hot === 1} />
@@ -660,7 +661,6 @@ const B_T12B: Fig = (p) => {
       <Node x={SP.EX} y={SP.Y2} size={SP.S} label="Endpoint" w={100}><Tile name="server" size={SP.S} d={0.4} /></Node>
       {held ? <OldPill parked /> : s(2) && <OldPill cls={SP_OLD} />}
       <Packet cls={SP_NEW1} on={s(2)} />
-      <Packet cls={SP_NEW2} on={s(2)} />
     </Frame>
   )
 }

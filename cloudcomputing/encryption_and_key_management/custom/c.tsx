@@ -171,7 +171,6 @@ const C_T14: Fig = (p) => {
   const held = useHeld()
   const hot = useHot(4, step, 1700)
   const s = (n: number) => held || step >= n
-  const run = !held
   const main: { name: Ico3DName; title: string }[] = [
     { name: 'disk', title: 'Volume' },
     { name: 'bucket', title: 'Bucket' },
@@ -186,7 +185,7 @@ const C_T14: Fig = (p) => {
       {main.map((m, i) => (
         <Node key={i} x={LS_C[i]} y={LS.MY} size={LS.MS}>
           <Tile name={m.name} size={LS.MS} d={i * 0.4} />
-          <Corner size={22}><ClickLock size={20} run={run} d={((4.5 - i * 1.5) % 4.5)} /></Corner>
+          <Corner size={22}><Ico3D name="lock" size={20} loop="pulse" d={i * 0.6} t={2.4} /></Corner>
         </Node>
       ))}
 

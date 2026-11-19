@@ -582,6 +582,12 @@
       "notes": "\"Name ACM as the exact AWS console location, since the topic names a specific tool. Exam hook: ask why aws:SecureTransport in a bucket policy blocks plaintext S3 access.\""
     },
     {
+      "id": "S-QUIZ-1",
+      "layout": "quiz",
+      "label": "Quiz Time",
+      "notes": "Quiz on Data States, Core Tools and Encryption in Transit. Q1. Name the three data states. Answer: At rest, in transit and in use. Q2. Why is hashing not encryption? Answer: It is one-way and cannot be reversed. Q3. Which key type is used at each stage of the TLS handshake? Answer: Asymmetric keys set up trust, then a symmetric session key encrypts the traffic. Q4. Why does aws:SecureTransport in a bucket policy block plaintext S3 access? Answer: The policy denies requests where aws:SecureTransport is false."
+    },
+    {
       "id": "D4",
       "layout": "breaker",
       "index": 4,
@@ -768,11 +774,27 @@
       "notes": "\"Stress that the encryption decision is permanent at creation, unlike S3's bucket-level toggle. Give the workaround for an existing unencrypted database: snapshot it, copy the snapshot with encryption enabled, then restore.\""
     },
     {
+      "id": "T18-B",
+      "layout": "lead",
+      "kicker": "Client vs Server Side",
+      "title": "Where Work Happens",
+      "lead": "A second question cuts across volumes, buckets and databases alike: whether the storage service does the encrypting, or the application does it before the data ever leaves",
+      "figure": {
+        "type": "custom",
+        "name": "C_T18B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figW": 1080,
+      "figH": 420,
+      "notes": "\"Stress that server-side is the default across the volume, bucket and database cases, while client-side shifts that same job onto the application. Note the trade-off for interviews: client-side gives stronger control but loses provider-side features like search or indexing on the data.\""
+    },
+    {
       "id": "T18",
       "layout": "table",
       "kicker": "Client vs Server Side",
       "title": "Where Work Happens",
-      "lead": "A second question cuts across volumes, buckets and databases alike: whether the storage service does the encrypting, or the application does it before the data ever leaves",
       "table": {
         "type": "table",
         "size": 19,
@@ -828,22 +850,6 @@
           }
         ]
       },
-      "notes": "\"Stress that server-side is the default across the volume, bucket and database cases, while client-side shifts that same job onto the application. Note the trade-off for interviews: client-side gives stronger control but loses provider-side features like search or indexing on the data.\""
-    },
-    {
-      "id": "T18-B",
-      "layout": "lead",
-      "kicker": "Client vs Server Side",
-      "title": "Where Work Happens",
-      "figure": {
-        "type": "custom",
-        "name": "C_T18B",
-        "props": {
-          "steps": 2
-        }
-      },
-      "figW": 1080,
-      "figH": 420,
       "notes": "\"Stress that server-side is the default across the volume, bucket and database cases, while client-side shifts that same job onto the application. Note the trade-off for interviews: client-side gives stronger control but loses provider-side features like search or indexing on the data.\""
     },
     {
@@ -946,11 +952,28 @@
       "notes": "TR analogy: A bank keeps every locker's key inside its own guarded room, letting a customer use it without ever walking out with the actual key: just as KMS uses a key internally without ever releasing the raw key material to the application.\n\n\"Open with the bank-locker problem before naming KMS. Point to where a key's alias and rotation status appear if a console view is shown. Exam hook: KMS never exports plaintext key material by design.\""
     },
     {
+      "id": "T22-B",
+      "layout": "lead",
+      "kicker": "Provider Vs Customer Keys",
+      "title": "Who Controls Keys",
+      "lead": "AWS encrypts many services automatically using its own keys, but regulated workloads often need direct control over key policy, rotation and audit trail, which is what a customer-managed key provides",
+      "figure": {
+        "type": "custom",
+        "name": "D_T22B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figW": 1080,
+      "leadW": 1080,
+      "figH": 340,
+      "notes": "\"Explain that the choice is about control and auditability, not strength of encryption. Point to the key-policy tab if a console screenshot is on screen. Exam hook: ask which option supports revoking access instantly by disabling the key.\""
+    },
+    {
       "id": "T22",
       "layout": "table",
       "kicker": "Provider Vs Customer Keys",
       "title": "Who Controls Keys",
-      "lead": "AWS encrypts many services automatically using its own keys, but regulated workloads often need direct control over key policy, rotation and audit trail, which is what a customer-managed key provides",
       "table": {
         "type": "table",
         "size": 18,
@@ -1014,22 +1037,6 @@
           }
         ]
       },
-      "notes": "\"Explain that the choice is about control and auditability, not strength of encryption. Point to the key-policy tab if a console screenshot is on screen. Exam hook: ask which option supports revoking access instantly by disabling the key.\""
-    },
-    {
-      "id": "T22-B",
-      "layout": "lead",
-      "kicker": "Provider Vs Customer Keys",
-      "title": "Who Controls Keys",
-      "figure": {
-        "type": "custom",
-        "name": "D_T22B",
-        "props": {
-          "steps": 2
-        }
-      },
-      "figW": 1080,
-      "figH": 420,
       "notes": "\"Explain that the choice is about control and auditability, not strength of encryption. Point to the key-policy tab if a console screenshot is on screen. Exam hook: ask which option supports revoking access instantly by disabling the key.\""
     },
     {
@@ -1187,7 +1194,7 @@
           "at": 1
         },
         {
-          "text": "Owner can delete the imported material, making the key unusable for new operations",
+          "text": "Owner can delete the imported material, making the key unusable until the same material is re-imported",
           "icon": "i3d:trash",
           "at": 2
         }
