@@ -28,7 +28,7 @@
     },
     "mwm3iejzevuwho": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T21",
       "author": "Pallavi",
       "text": "Arrow starting point: right now the arrow starts from the Key Material icon. Move its start to the right edge of the dashed “Boundary” box, so the Key Material stays inside with no line touching it.\nArrow label: add a small label on that arrow: “Data keys”.",
