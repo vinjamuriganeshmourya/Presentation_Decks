@@ -1,0 +1,10 @@
+{
+  "deck": "cloudcomputing/practical_hands_on_deploying_a_lambda_function_and_observing_cold_and_warm_starts/deploying-a-lambda-function-and-observing-cold-and-warm-starts",
+  "slides": {
+    "D-LAB": {
+      "text": {
+        "Deploying a Lambda Function and Observing Cold and Warm Starts": "Measuring Cold Starts with AWS Lambda"
+      }
+    }
+  }
+}
