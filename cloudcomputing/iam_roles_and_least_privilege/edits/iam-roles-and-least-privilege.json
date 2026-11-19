@@ -12,7 +12,7 @@
     },
     "mwm09uinoqw5hh": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T03",
       "author": "Pallavi",
       "text": "“Caller invokes sts:AssumeRole” bullet icon (code </>) → replace it with the laptop icon from the diagram’s “Caller” box\n“Caller also needs its own permission” bullet icon (checklist) → replace it with the ID card icon from the diagram’s “Own Permission” box",
