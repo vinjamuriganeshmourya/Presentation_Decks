@@ -28,7 +28,7 @@
     },
     "mwm1corakxv4yp": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05-B",
       "author": "Pallavi",
       "text": "Leak icon on the Temporary bar (near Expires) → move it left, so it sits right above where the orange part starts on the Temporary bar.\nLeak icon on the Long-Lived bar (middle) → move it left to the same position, right above where the orange part starts on the Long-Lived bar.\nOrange on the Long-Lived bar (fading in the middle) → extend it all the way to the right end, fading only at the very edge.",
