@@ -787,7 +787,7 @@
         }
       },
       "figW": 1080,
-      "figH": 420,
+      "figH": 340,
       "notes": "\"Stress that server-side is the default across the volume, bucket and database cases, while client-side shifts that same job onto the application. Note the trade-off for interviews: client-side gives stronger control but loses provider-side features like search or indexing on the data.\""
     },
     {

@@ -601,7 +601,12 @@ const C_T18B: Fig = (p) => {
   const held = useHeld()
   const hot = useHot(2, step, 2600)
   const s = (n: number) => held || step >= n
+  /* the whole drawing scales down as one when the slide gives it a smaller box (the lead sentence sits above it) */
+  const k = Math.min(1, (Number(p.w) || WH.W) / WH.W, (Number(p.h) || WH.H) / WH.H)
   return (
+    <div style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%' }}>
+    <div style={{ width: WH.W * k, height: WH.H * k }}>
+    <div style={{ width: WH.W, height: WH.H, transform: k < 1 ? `scale(${k})` : undefined, transformOrigin: '0 0' }}>
     <Frame w={WH.W} h={WH.H}>
       {/* the two tags and the two frames */}
       {[['Server-Side', WH.LF], ['Client-Side', WH.RF]].map(([l, x]) => (
@@ -635,6 +640,9 @@ const C_T18B: Fig = (p) => {
       <IconTok cls={WH_RIDE.r2} name="lock" on={s(2)} />
       <IconTok cls={WH_RIDE.r3} name="lock" on={s(2)} />
     </Frame>
+    </div>
+    </div>
+    </div>
   )
 }
 
