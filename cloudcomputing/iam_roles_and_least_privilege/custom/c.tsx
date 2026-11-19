@@ -188,8 +188,9 @@ const C_T11: Fig = ({ step = 0 }) => {
 
 /*
  * 526 x 330. Top: the policy's Condition block (mono, the MFA line lit at press 1), an arrow from it to the
- * TerminateInstances action on an EC2 instance, marked Denied (orange cross). Loop: a request without the MFA token
- * hits the deny, one carrying the token passes (a check replaces the cross for that moment).
+ * TerminateInstances action on an EC2 instance, marked Denied (red cross). Loop: a request without the MFA token
+ * hits the deny, one carrying the token passes (a check replaces the cross, and "Allowed (MFA present)" replaces
+ * "Denied (no MFA)" under it, for that moment).
  * Bottom: IdP -> MFA Token <- Identity Center; Identity Center fans out over a rail to three account tiles.
  */
 const M = { W: 526, H: 330, PX: PAD, PY: 22, PW: 348, LH: 19.5, AX: 440, AT: 56, BY: 260, BT: 52, RAIL: 204, AC: 44 }
@@ -237,7 +238,11 @@ const C_T13: Fig = ({ step = 0 }) => {
           {!held && <span className="t14c-pass" style={{ position: 'absolute', right: -10, top: -10, zIndex: 5, opacity: 0 }}><Ico3D name="check" size={26} loop="none" /></span>}
         </div>
         <span style={tag(13)}>TerminateInstances</span>
-        <span style={tag(13, colors.ink)}>Allowed (MFA present)</span>
+        {/* the verdict follows the badge (review 2026-11-19): no MFA key, red cross, Denied; the MFA key, green check, Allowed */}
+        <span style={{ display: 'grid', justifyItems: 'center' }}>
+          <span className={held ? undefined : 't14c-denyT'} style={{ ...tag(13, colors.ink), gridArea: '1 / 1' }}>Denied (no MFA)</span>
+          {!held && <span className="t14c-passT" style={{ ...tag(13, colors.ink), gridArea: '1 / 1', opacity: 0 }}>Allowed (MFA present)</span>}
+        </span>
       </Show>
       <RideIco cls={M_RIDE.bad} name="key" on={s >= 2} size={28} />
       <Rider cls={M_RIDE.good} on={s >= 2} size={28}>
@@ -613,6 +618,10 @@ ${K.css()}
 .t14c-deny { animation: t14c-deny ${M_P}s ease-in-out infinite; }
 @keyframes t14c-pass { 0%, 72%, 100% { opacity: 0; transform: scale(0.8) } 76% { opacity: 1; transform: scale(1.2) } 82%, 94% { opacity: 1; transform: scale(1) } }
 .t14c-pass { animation: t14c-pass ${M_P}s ease-in-out infinite; }
+@keyframes t14c-denyT { 0%, 72%, 100% { opacity: 1 } 76%, 96% { opacity: 0 } }
+.t14c-denyT { animation: t14c-denyT ${M_P}s ease-in-out infinite; }
+@keyframes t14c-passT { 0%, 72%, 100% { opacity: 0 } 76%, 94% { opacity: 1 } }
+.t14c-passT { animation: t14c-passT ${M_P}s ease-in-out infinite; }
 @keyframes t14c-swapA { 0%, 40% { opacity: 1; transform: translateY(0) } 48%, 92% { opacity: 0; transform: translateY(-10px) } 100% { opacity: 1; transform: translateY(0) } }
 @keyframes t14c-swapB { 0%, 40% { opacity: 0; transform: translateY(10px) } 48%, 92% { opacity: 1; transform: translateY(0) } 100% { opacity: 0; transform: translateY(10px) } }
 .t14c-swapA { animation: t14c-swapA 4.4s cubic-bezier(0.45,0,0.55,1) infinite; }
@@ -621,7 +630,7 @@ ${K.css()}
 .t14c-spin { animation: t14c-spin ${D_P}s linear infinite; transform-origin: 50% 50%; }
 @keyframes t14c-inject { 0%, 12% { opacity: 0; transform: scale(0.6) } 26%, 86% { opacity: 1; transform: scale(1) } 100% { opacity: 0; transform: scale(0.6) } }
 .t14c-inject { animation: t14c-inject ${D_P}s cubic-bezier(0.45,0,0.55,1) infinite; }
-.cc-still .t14c-deny, .cc-still .t14c-pass, .cc-still .t14c-swapA, .cc-still .t14c-swapB, .cc-still .t14c-spin, .cc-still .t14c-inject,
-.deck-thumb .t14c-deny, .deck-thumb .t14c-pass, .deck-thumb .t14c-swapA, .deck-thumb .t14c-swapB, .deck-thumb .t14c-spin, .deck-thumb .t14c-inject { animation: none !important; }
-@media (prefers-reduced-motion: reduce) { .t14c-deny, .t14c-pass, .t14c-swapA, .t14c-swapB, .t14c-spin, .t14c-inject { animation: none !important; } }
+.cc-still .t14c-deny, .cc-still .t14c-pass, .cc-still .t14c-denyT, .cc-still .t14c-passT, .cc-still .t14c-swapA, .cc-still .t14c-swapB, .cc-still .t14c-spin, .cc-still .t14c-inject,
+.deck-thumb .t14c-deny, .deck-thumb .t14c-pass, .deck-thumb .t14c-denyT, .deck-thumb .t14c-passT, .deck-thumb .t14c-swapA, .deck-thumb .t14c-swapB, .deck-thumb .t14c-spin, .deck-thumb .t14c-inject { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .t14c-deny, .t14c-pass, .t14c-denyT, .t14c-passT, .t14c-swapA, .t14c-swapB, .t14c-spin, .t14c-inject { animation: none !important; } }
 `
