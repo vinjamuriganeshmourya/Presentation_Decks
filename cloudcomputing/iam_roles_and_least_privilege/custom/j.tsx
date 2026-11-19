@@ -583,6 +583,51 @@ const turnKeys = (rest: [number, number]): Key[] => [
 const doorOpen15 = (u: number) => seg(u, B15.open[0], B15.open[1]) * (1 - seg(u, B15.close[0], B15.close[1]))
 /** the active worker's own time: whoever's turn it is (0 or 1), and u */
 const turnU = (c: number, k: number) => mod(c - k * TURN, L15)
+
+/*
+ * LOW-END PCs (review 2026-11-19: slide 33 "glitches"). Each housekeeper is a castSprite of F15 frames built a few at
+ * a time after the slide opens, and until a frame exists the sprite shows the nearest earlier one. The scene did not
+ * wait: bodies slid along the floor in a frozen pose, the key card followed a hand that was not drawn there, the
+ * door opened with nobody at it. 3.5 s of that on this desktop, 7 s at a 6x CPU slowdown, most of a loop on a
+ * classroom PC. Now both cards hold the complete held picture (loop time HOLD15, the thumbnail) and start together
+ * from it once the frames already built run further ahead than the rest will take to build at the rate measured
+ * (with a margin): about 1 s here, longer on a slow PC, never a frame shown that is not the one asked for. The
+ * concept card has no people but waits on the same gate, so the two stay beat for beat. Held frames are unchanged
+ * (they are drawn at HOLD15 either way). Nothing is dropped: same frames, same sizes, same loop.
+ */
+const HOLD_C15 = devT(HOLD15)
+type Gate = { armed: number; start: number | null; first: number | null; seen: number | null; built: number[] }
+let gate15: Gate = { armed: -1e9, start: null, first: null, seen: null, built: [] }
+/** the everyday card (the one with the people) makes a fresh gate for this visit of the slide */
+const arm15 = () => (gate15 = { armed: performance.now(), start: null, first: null, seen: null, built: [0, 0] })
+/** the concept card, if its scene is built first, closes a gate left open by an earlier visit (never replaces one) */
+const close15 = () => {
+  if (performance.now() - gate15.armed > 1500) gate15.start = null
+}
+/**
+ * the loop time both cards draw at stage time t: held at HOLD15 until the gate opens, then running on from there.
+ * While held it creeps by a millionth of a second a second (frame 33 of 108 throughout): a sprite whose clock never
+ * changes takes itself for a held frame (`?still`) and builds that one frame and no other. A real held frame is drawn
+ * at one t, so it gets exactly HOLD15.
+ */
+function clock15(t: number) {
+  const g = gate15
+  if (g.start !== null) return mod(HOLD_C15 + t - g.start, L15)
+  if (g.seen === null) g.seen = t
+  return HOLD_C15 + (t - g.seen) * 1e-6
+}
+/** called by the everyday card each frame: open the gate when the frames ahead outrun the frames still to build */
+function tryOpen15(t: number) {
+  const g = gate15
+  if (g.start !== null) return
+  const built = g.built[0] + g.built[1]
+  if (!built) return
+  if (g.first === null) g.first = t
+  const left = 2 * F15 - built
+  const lead = (Math.min(g.built[0], g.built[1]) / F15) * L15 // seconds of loop already built ahead, per person
+  const rate = built / Math.max(0.25, t - g.first) // frames a second, both people
+  if (left <= 0 || lead >= 1.6 * (left / rate) + 0.3) g.start = t
+}
 const FACES15: [number, string][] = [
   [0, 'neutral'],
   [B15.arrive, 'thinking'],
@@ -650,6 +695,7 @@ function corridorWall(St: THREE.Group, wall: THREE.Material, trim: THREE.Materia
 
 function setupHotel(kit: StageKit): Update {
   const { scene, camera, redraw } = kit
+  const gate = arm15()
   scene.background = new THREE.Color('#F3EEE6')
   setCamera(camera, CAM15.pos, CAM15.at, CAM15.fov)
   lightRig(scene, [-0.2, 0, -0.4])
@@ -820,7 +866,10 @@ function setupHotel(kit: StageKit): Update {
       wide: 60,
       shadow: 0.2,
       adaptive: true,
-      onReady: redraw,
+      onReady: () => {
+        gate.built[k]++
+        redraw()
+      },
       timeline: timeline(151 + k, L15, shiftKeys(FACES15, k * TURN, L15)),
       pose: (p: Pose, c: number) => {
         const u = turnU(c, k)
@@ -865,7 +914,8 @@ function setupHotel(kit: StageKit): Update {
   const hand = new THREE.Vector3()
   const root = new THREE.Vector3()
   return (t: number) => {
-    const c = mod(t, L15)
+    if (gate === gate15) tryOpen15(t)
+    const c = clock15(t)
     let open = 0
     let blink = 0
     let neat = 0
@@ -958,6 +1008,7 @@ const appTex = (kind: 'app' | 'gear', base: string) =>
 
 function setupInstance(kit: StageKit): Update {
   const { scene, camera, redraw } = kit
+  close15()
   scene.background = new THREE.Color('#EEF3FB')
   setCamera(camera, CAM15.pos, CAM15.at, CAM15.fov)
   lightRig(scene, [-0.2, 0, -0.4])
@@ -1166,7 +1217,7 @@ function setupInstance(kit: StageKit): Update {
   const tmp = new THREE.Vector3()
   const lockTouch = lockWorld.clone().add(new THREE.Vector3(-0.08, 0, 0.24))
   return (t: number) => {
-    const c = mod(t, L15)
+    const c = clock15(t)
     let open = 0
     let blink = 0
     let run = 0

@@ -95,7 +95,7 @@
     },
     {
      "text": "Permission policy defines what the role can do once assumed",
-     "icon": "i3d:checklist"
+     "icon": "img:images/res-iam-permissions.svg"
     },
     {
      "text": "Usable by people, applications, or other AWS services alike",
@@ -149,7 +149,7 @@
    "points": [
     {
      "text": "Caller invokes `sts:AssumeRole`, naming the target role's ARN",
-     "icon": "i3d:code"
+     "icon": "i3d:laptop"
     },
     {
      "text": "STS checks the role's trust policy allows that caller",
@@ -157,7 +157,7 @@
     },
     {
      "text": "Caller also needs its own permission to call AssumeRole",
-     "icon": "i3d:checklist"
+     "icon": "i3d:idcard"
     }
    ],
    "figure": {
@@ -178,12 +178,12 @@
    "title": "AssumeRole Flow",
    "points": [
     {
-     "text": "The caller uses the temporary credentials to make requests with the assumed role's permissions",
-     "icon": "i3d:key"
-    },
-    {
      "text": "STS returns a fresh, time-limited credential set for the role",
      "icon": "img:images/res-iam-temporary-security-credential.svg"
+    },
+    {
+     "text": "The caller uses the temporary credentials to make requests with the assumed role's permissions",
+     "icon": "img:images/res-iam-permissions.svg"
     }
    ],
    "figure": {
@@ -262,10 +262,26 @@
   },
   {
    "id": "T05",
-   "layout": "table",
+   "layout": "lead",
    "kicker": "Temporary Vs Long-Lived",
    "title": "Credential Comparison",
    "lead": "Long-lived access keys, created for a user, stay valid until someone deletes them; temporary credentials from a role expire on their own, which changes the risk a leaked credential carries",
+   "figure": {
+    "type": "custom",
+    "name": "A_T05B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1080,
+   "figH": 340,
+   "notes": "Use the two timelines to make the exposure-window argument concrete rather than abstract: the same leak, one window that closes on its own and one that stays open until someone notices. This is the practical reason cloud security teams push roles over keys."
+  },
+  {
+   "id": "T05-B",
+   "layout": "table",
+   "kicker": "Temporary Vs Long-Lived",
+   "title": "Credential Comparison",
    "table": {
     "type": "table",
     "size": 19,
@@ -321,23 +337,7 @@
      }
     ]
    },
-   "notes": "Use the table to make the exposure-window argument concrete rather than abstract. Point at the leak-exposure row as the practical reason cloud security teams push roles over keys. This comparison is a near-guaranteed interview question."
-  },
-  {
-   "id": "T05-B",
-   "layout": "lead",
-   "kicker": "Temporary Vs Long-Lived",
-   "title": "Credential Comparison",
-   "figure": {
-    "type": "custom",
-    "name": "A_T05B",
-    "props": {
-     "steps": 2
-    }
-   },
-   "figW": 1080,
-   "figH": 420,
-   "notes": "Use the table to make the exposure-window argument concrete rather than abstract. Point at the leak-exposure row as the practical reason cloud security teams push roles over keys. This comparison is a near-guaranteed interview question."
+   "notes": "Walk the four rows. Point at the leak-exposure row as the practical reason cloud security teams push roles over keys. This comparison is a near-guaranteed interview question."
   },
   {
    "id": "D2",
@@ -395,7 +395,7 @@
      "icon": "i3d:target"
     },
     {
-     "text": "Separate statements per service keep each grant narrow",
+     "text": "Separate statements per action keep each grant narrow",
      "icon": "i3d:list"
     },
     {
@@ -609,6 +609,13 @@
    "figW": 1080,
    "figH": 360,
    "notes": "Walk the table pass by pass, pointing out that the second pass uses real usage evidence, not guesswork, to decide the narrower statement. Name IAM Access Analyzer as the console feature that supplies this evidence. Interview angle: this four-pass pattern is the standard answer to right-sizing an IAM policy over time."
+  },
+  {
+   "id": "S-QUIZ-1",
+   "layout": "quiz",
+   "section": "Principle of Least Privilege",
+   "label": "Quiz Time",
+   "notes": "Quiz on Roles & Temporary Credentials and the Principle of Least Privilege. Q1. Which policy decides who may assume a role, and which decides what it can do? Answer: The trust policy decides who; the permission policy decides what. Q2. Which service hands back the temporary credentials when a caller assumes a role? Answer: AWS Security Token Service (STS). Q3. Why does a leaked temporary credential carry less risk than a leaked access key? Answer: It expires on its own, so the exposure ends with the session. Q4. What is wrong with Resource set to the asterisk? Answer: It matches every resource, not a chosen ARN. Q5. Can a permission boundary add access? Answer: No, it only limits permissions granted elsewhere."
   },
   {
    "id": "D3",

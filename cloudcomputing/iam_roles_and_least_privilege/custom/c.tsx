@@ -237,7 +237,7 @@ const C_T13: Fig = ({ step = 0 }) => {
           {!held && <span className="t14c-pass" style={{ position: 'absolute', right: -10, top: -10, zIndex: 5, opacity: 0 }}><Ico3D name="check" size={26} loop="none" /></span>}
         </div>
         <span style={tag(13)}>TerminateInstances</span>
-        <span style={{ ...tag(13, colors.ink), display: 'flex', alignItems: 'center', gap: 5 }}><Ico3D name="lock" size={18} loop="pulse" t={2.2} />Denied</span>
+        <span style={tag(13, colors.ink)}>Allowed (MFA present)</span>
       </Show>
       <RideIco cls={M_RIDE.bad} name="key" on={s >= 2} size={28} />
       <Rider cls={M_RIDE.good} on={s >= 2} size={28}>
@@ -433,6 +433,7 @@ const D_RIDE = [
 const D_RIDE_C = K.ride('d2', [[D_W[2][0][0] + 12, D.Y], [D_W[2][1][0] - 18, D.Y]], 1.9, 3.0, D_P, 0.6)
 const D_BW = (D.W - PAD * 2 - D.GAP) / 2
 const D_BH = D.H - PAD - D.BY
+const D_BH2 = D_BH - 30 // the right panel: room under it for its "No keys stored" label
 
 /** a root svg ring turning round the credentials: the refresh loop (rotation on the root svg only) */
 function RefreshRing({ on, lit }: { on: boolean; lit: boolean }) {
@@ -451,14 +452,16 @@ function RefreshRing({ on, lit }: { on: boolean; lit: boolean }) {
   )
 }
 
-/** a file tile with an empty key slot on its corner */
+/** a file tile with its key badge crossed out on its corner (the strike as on C_T14's Embedded Key, review 2026-11-19;
+    turned the other way here: the small key lies along -45deg and a strike on that diagonal hid it) */
 function KeySlotFile({ name, label, d }: { name: Ico3DName; label: string; d: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
       <span style={{ position: 'relative', display: 'grid' }}>
         {tile(name, { size: 56, d })}
         <span style={{ position: 'absolute', right: -14, bottom: -12, width: 30, height: 30, borderRadius: 9, background: '#FFFFFF', border: `2px dashed ${colors.brand}88`, display: 'grid', placeItems: 'center' }}>
-          <span className={loopCls('blink')} style={{ display: 'grid', opacity: 0.4, ...loopVars(d, 2.4) }}><Ico3D name="key" size={18} loop="none" /></span>
+          <span style={{ display: 'grid' }}><Ico3D name="key" size={18} loop="none" /></span>
+          <span aria-hidden className={loopCls('glow')} style={{ position: 'absolute', left: -3, right: -3, top: '50%', height: 4, marginTop: -2, borderRadius: 4, background: ORANGE, transform: 'rotate(45deg)', boxShadow: '0 0 0 2px #FFFFFF', ...loopVars(d, 1.8) }} />
         </span>
       </span>
       <span style={tag(14)}>{label}</span>
@@ -508,12 +511,15 @@ const C_T16: Fig = ({ step = 0 }) => {
         </div>
       </Panel>
       {/* 4 · no long-lived keys in code or config files: their key slots stay empty */}
-      <Panel x={PAD + D_BW + D.GAP} y={D.BY} w={D_BW} h={D_BH} on={s >= 4} lit={hot === 3}>
+      <Panel x={PAD + D_BW + D.GAP} y={D.BY} w={D_BW} h={D_BH2} on={s >= 4} lit={hot === 3}>
         <div style={{ position: 'absolute', inset: 0, padding: PAD, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 46 }}>
           <KeySlotFile name="doc" label="Config" d={0} />
           <KeySlotFile name="code" label="Code" d={0.8} />
         </div>
       </Panel>
+      <Show on={s >= 4} delay={250} style={{ position: 'absolute', left: PAD + D_BW + D.GAP, top: D.BY + D_BH2 + 8, width: D_BW, zIndex: 3, display: 'flex', justifyContent: 'center' }}>
+        <span style={tag(14)}>No keys stored</span>
+      </Show>
     </Frame>
   )
 }

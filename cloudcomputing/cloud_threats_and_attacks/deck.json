@@ -1006,7 +1006,8 @@
    "figH": 330,
    "pointsW": 500,
    "note": {
-    "text": "Trust-based attacks confirm why least-privilege access and key rotation matter more than any single perimeter defence"
+    "text": "Trust-based attacks confirm why least-privilege access and key rotation matter more than any single perimeter defence",
+  "bg": "blue"
    },
    "notes": "Connect this back to the key-management session: rotation and scoped permissions blunt a leaked key's damage. Point at how a token differs from a password: it needs no further login. Interview hook: why does key rotation limit the blast radius of a leak?"
   },

@@ -22,7 +22,7 @@ import ec2Mark from '../images/aws-ec2.svg'
  *   slide 9  A_T03   546 x 330  AssumeRole flow, stages 1-3: request, trust policy check, own permission (3)
  *   slide 10 A_T03B  546 x 330 in 566 x 380  the same flow, stages 4-5: credentials back, role permissions (2)
  *   slide 11 A_T04   506 x 330  three credential pieces into one signed request, expiry clock, duration dial (4)
- *   slide 13 A_T05B 1080 x 420  two timeline bars, a leak marker on each (2)
+ *   slide 13 A_T05B 1080 x 340  two timeline bars, a leak marker on each (2); under the lead since 2026-11-19
  *
  * The countdown ring (Countdown) is two clipped half rings ROTATED over a full ring: transform only, no dash offset.
  */
@@ -248,8 +248,9 @@ const A_T02: Fig = (p) => {
  * One 546 x 330 stage for both frames (T03B centres it in its 566 x 380 box), so every part keeps its place.
  * Caller (64, 196). The request lane y 176 runs Caller -> `sts:AssumeRole` card (x 116..244) -> STS (364, 196); STS
  * forks at a junction (420) up to the Trust Policy (472, 110) and down to the caller's Own Permission (472, 258).
- * T03B adds the return lane y 216, STS -> Temporary Credentials (270, 216) -> Caller, and the caller's signed requests
- * up its top edge to Role Permissions (200, 66).
+ * T03B adds the return lane y 216, STS -> Temporary Credentials (270, 216) -> Caller (press 1, the clock and the fade
+ * with it: time-limited), then the caller's signed requests up its top edge to Role Permissions (200, 66) (press 2).
+ * The order follows the bullets, swapped on review 2026-11-19.
  */
 const AF0 = { W: 546, H: 330, CX: 64, CY: 196, CS: 64, UP: 176, LO: 216, QX0: 116, QX1: 244, QY0: 152, QY1: 200, SX: 364, J: 420, PX: 472, TPY: 110, OPY: 258, TCX: 270, TCS: 48, RPX: 200, RPY: 66 }
 const AF_X = ['CX', 'QX0', 'QX1', 'SX', 'J', 'PX', 'TCX', 'RPX'] as const
@@ -311,17 +312,17 @@ function AssumeFlow({ L, s1, s2, s3, s4, s5, hotA, hotB }: { L: AfL; s1: boolean
       </Node>
 
       {/* stages 4-5: the credentials come back, the caller works with the role's permissions */}
-      <Wire pts={[[AF_SL, AF.LO], [AF.TCX + AF.TCS / 2, AF.LO]]} on={s4} lit={hotB === 1} head={8} />
-      <Wire pts={[[AF.TCX - AF.TCS / 2, AF.LO], [AF_CR, AF.LO]]} on={s4} lit={hotB === 1} delay={200} />
+      <Wire pts={[[AF_SL, AF.LO], [AF.TCX + AF.TCS / 2, AF.LO]]} on={s4} lit={hotB === 0} head={8} />
+      <Wire pts={[[AF.TCX - AF.TCS / 2, AF.LO], [AF_CR, AF.LO]]} on={s4} lit={hotB === 0} delay={200} />
       <Node x={AF.TCX} y={AF.LO} size={AF.TCS} label="Temporary Credentials" w={100} wrap={90} on={s4}>
-        <span className={fadeCls(s5 && !held)} style={{ display: 'grid', ...tv(2.8) }}><MarkTile src={tempMark} size={AF.TCS} lit={hotB === 1} /></span>
-        <Corner name="clock" on={s5} loop="pulse" />
+        <span className={fadeCls(s4 && !held)} style={{ display: 'grid', ...tv(2.8) }}><MarkTile src={tempMark} size={AF.TCS} lit={hotB === 0} /></span>
+        <Corner name="clock" on={s4} loop="pulse" />
       </Node>
-      <Wire pts={[[AF.CX, AF.CY - AF.CS / 2], [AF.CX, AF.RPY], [AF.RPX - 26, AF.RPY]]} on={s4} lit={hotB === 0} />
-      <Node x={AF.RPX} y={AF.RPY} size={52} label="Role Permissions" w={130} on={s4}><MarkTile src={permMark} size={52} lit={hotB === 0} /></Node>
+      <Wire pts={[[AF.CX, AF.CY - AF.CS / 2], [AF.CX, AF.RPY], [AF.RPX - 26, AF.RPY]]} on={s5} lit={hotB === 1} />
+      <Node x={AF.RPX} y={AF.RPY} size={52} label="Role Permissions" w={130} on={s5}><MarkTile src={permMark} size={52} lit={hotB === 1} /></Node>
 
       {/* the two parts always there: the caller and STS */}
-      <Node x={AF.CX} y={AF.CY} size={AF.CS} label="Caller" w={90}><Tile name="laptop" size={AF.CS} lit={hotB === 0} /></Node>
+      <Node x={AF.CX} y={AF.CY} size={AF.CS} label="Caller" w={90}><Tile name="laptop" size={AF.CS} lit={hotB === 1} /></Node>
       <Node x={AF.SX} y={AF.CY} size={AF.CS} label="STS" w={90} z={4}><MarkTile src={stsMark} size={AF.CS} lit={hotA === 1 || hotA === 2} /></Node>
     </>
   )
@@ -356,7 +357,7 @@ const A_T03B: Fig = (p) => {
       <Token cls={L.REQ} />
       <Token cls={L.RET1} on={s(1)} />
       <Token cls={L.RET2} on={s(1)} />
-      <Token cls={L.USE} on={s(1)} />
+      <Token cls={L.USE} on={s(2)} />
     </Frame>
   )
 }
@@ -450,12 +451,13 @@ const A_T04: Fig = (p) => {
 /* ================================================================== slide 13 · A_T05B · two timelines */
 
 /*
- * 1080 x 420. Row 1 (y 130): the Temporary credential (official mark) and its bar, x 160..560, ending at a clock
- * end cap (600). Row 2 (y 300): the Long-Lived user key and its bar, x 160 to the right, fading out with no end.
- * A leak at x 320 on both rows: an orange exposure band grows from it (scaleX) with a leaked key riding above; on
- * row 1 the cap closes it at the bar's end, on row 2 it never stops. Press 1 row 1, press 2 row 2.
+ * 1080 x 340 (was 420 before the lead moved onto this slide). Row 1 (y 112): the Temporary credential (official mark) and its bar, x 160..560, ending at a clock
+ * end cap (600). Row 2 (y 262): the Long-Lived user key and its bar, x 160 to the right, fading out with no end.
+ * A leak at x 320 on both rows: the leaked key appears above that point and stays there while an orange exposure band
+ * grows from it (scaleX); on row 1 the cap closes it at the bar's end, on row 2 it runs to the bar's faded end and
+ * fades only at the very edge. Press 1 row 1, press 2 row 2. (Review 2026-11-19: key held still, band to the end, 8 s.)
  */
-const TL = { W: 1080, H: 420, LX: 84, Y1: 144, Y2: 312, B0: 160, B1: 560, CAP: 600, END: 1060, BH: 28, LEAK: 320, T: 6 }
+const TL = { W: 1080, H: 340, LX: 84, Y1: 112, Y2: 262, B0: 160, B1: 560, CAP: 600, END: 1060, BH: 28, LEAK: 320, T: 8 }
 
 function Bar({ y, x1, fade, on, lit, delay = 0 }: { y: number; x1: number; fade?: boolean; on: boolean; lit: boolean; delay?: number }) {
   const instant = useInstant()
@@ -477,8 +479,8 @@ function Leak({ y, x1, row, run, held }: { y: number; x1: number; row: 1 | 2; ru
   return (
     <>
       {/* the exposure: from the leak to wherever the credential still works */}
-      <div aria-hidden className={run ? `t14a-l t14a-ex${row}` : undefined} style={box(TL.LEAK, y - TL.BH / 2 + 5, len, TL.BH - 10, { zIndex: 3, borderRadius: 9, transformOrigin: '0 50%', background: row === 1 ? 'rgba(255,138,61,0.95)' : `linear-gradient(90deg, rgba(255,138,61,0.95) 0%, rgba(255,138,61,0.95) 66%, rgba(255,138,61,0) 100%)` })} />
-      {/* the leaked key rides above the bar */}
+      <div aria-hidden className={run ? `t14a-l t14a-ex${row}` : undefined} style={box(TL.LEAK, y - TL.BH / 2 + 5, len, TL.BH - 10, { zIndex: 3, borderRadius: 9, transformOrigin: '0 50%', background: row === 1 ? 'rgba(255,138,61,0.95)' : `linear-gradient(90deg, rgba(255,138,61,0.95) 0%, rgba(255,138,61,0.95) 93%, rgba(255,138,61,0) 100%)` })} />
+      {/* the leaked key stays above the point the exposure starts from (review 2026-11-19: it used to ride ahead) */}
       <div className={run ? `t14a-l t14a-mk${row}` : undefined} style={box(TL.LEAK - 40, y - TL.BH / 2 - 76, 80, 66, { zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' })}>
         <span style={tag(13.5)}>Leak</span>
         <span style={{ marginTop: 4 }}><Plinth size={40} warm><Ico3D name="key" size={28} loop="tilt" /></Plinth></span>
@@ -534,9 +536,8 @@ const TURN = [0, 1, 2].map((k) => {
 .t14a-turn${k} { animation: t14a-turn${k} ${per}s linear infinite; }`
 }).join('\n')
 
-/* T05B: the marker moves 140 px/s from the leak; row 1 stops at its cap (240 px), row 2 runs 640 px before fading */
+/* T05B: the band grows 140 px/s from the leak; row 1 stops at its cap (240 px), row 2 runs to the bar's end */
 const MK1 = 240
-const MK2 = 640
 const t5 = (s: number) => `${((s / TL.T) * 100).toFixed(2)}%`
 
 export const css = `
@@ -552,10 +553,9 @@ ${TURN}
 .t14a-leave { animation: t14a-leave 4.4s cubic-bezier(0.45,0,0.55,1) infinite; }
 @keyframes t14a-needle { 0%, 100% { transform: rotate(-78deg) } 50% { transform: rotate(78deg) } }
 .t14a-needle { animation: t14a-needle 5.2s cubic-bezier(0.45,0,0.55,1) infinite; }
-@keyframes t14a-mk1 { 0%, ${t5(0.3)} { transform: translateX(0); opacity: 0 } ${t5(0.5)} { transform: translateX(0); opacity: 1 } ${t5(0.5 + MK1 / 140)} { transform: translateX(${MK1}px); opacity: 1 } ${t5(0.5 + MK1 / 140 + 0.6)}, 100% { transform: translateX(${MK1}px); opacity: 0 } }
+@keyframes t14a-mk1 { 0%, ${t5(0.3)} { opacity: 0 } ${t5(0.5)}, 92% { opacity: 1 } 100% { opacity: 0 } }
 .t14a-mk1 { animation: t14a-mk1 ${TL.T}s linear infinite; }
-@keyframes t14a-mk2 { 0%, ${t5(0.3)} { transform: translateX(0); opacity: 0 } ${t5(0.5)} { transform: translateX(0); opacity: 1 } ${t5(0.5 + MK2 / 140 - 0.8)} { opacity: 1 } ${t5(0.5 + MK2 / 140)}, 100% { transform: translateX(${MK2}px); opacity: 0 } }
-.t14a-mk2 { animation: t14a-mk2 ${TL.T}s linear infinite; }
+.t14a-mk2 { animation: t14a-mk1 ${TL.T}s linear infinite; }
 @keyframes t14a-ex1 { 0%, ${t5(0.5)} { transform: scaleX(0); opacity: 1 } ${t5(0.5 + MK1 / 140)} { transform: scaleX(1); opacity: 1 } 92% { transform: scaleX(1); opacity: 1 } 100% { transform: scaleX(1); opacity: 0 } }
 .t14a-ex1 { animation: t14a-ex1 ${TL.T}s linear infinite; }
 @keyframes t14a-ex2 { 0%, ${t5(0.5)} { transform: scaleX(0); opacity: 1 } ${t5(0.5 + (TL.END - TL.LEAK) / 140)} { transform: scaleX(1); opacity: 1 } 92% { transform: scaleX(1); opacity: 1 } 100% { transform: scaleX(1); opacity: 0 } }
