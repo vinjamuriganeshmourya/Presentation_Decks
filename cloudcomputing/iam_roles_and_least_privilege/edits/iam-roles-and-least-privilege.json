@@ -20,7 +20,7 @@
     },
     "mwm0c8ahibxwqh": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T03-B",
       "author": "Pallavi",
       "text": "Swap the two bullets: put “STS returns a fresh, time-limited credential set” on top, and “The caller uses the temporary credentials” below it.\nChange the icon on “The caller uses the temporary credentials” bullet: replace the gold key with the red checklist icon from “Role Permissions” in the diagram.",
