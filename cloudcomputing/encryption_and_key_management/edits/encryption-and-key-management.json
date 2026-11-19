@@ -4,7 +4,7 @@
   "threads": {
     "mwm362ufsdp7cm": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T12-B",
       "author": "Pallavi",
       "text": "What to change:\nArrow from Minimum TLS Version → Endpoint → remove it, or make it faded and dashed with a red ✗ so it’s clear the request never reaches the Endpoint.",
