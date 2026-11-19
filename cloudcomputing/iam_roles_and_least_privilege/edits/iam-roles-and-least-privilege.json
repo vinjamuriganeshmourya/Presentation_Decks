@@ -52,7 +52,7 @@
     },
     "mwm1nqv4qmwcuf": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T13",
       "author": "Pallavi",
       "text": "“Denied” label (with lock) under TerminateInstances → “Allowed (MFA present)”, and remove the lock icon.",
