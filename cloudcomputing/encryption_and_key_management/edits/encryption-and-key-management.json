@@ -12,7 +12,7 @@
     },
     "mwm396cejvwp34": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T14",
       "author": "Pallavi",
       "text": "Volume (hard-disk icon): replace the green unlocked padlock badge with a locked padlock.\nBucket (green bucket icon): replace the green unlocked padlock badge with a locked padlock.\nDatabase (blue database icon): replace the green unlocked padlock badge with a locked padlock.\n\nin visual",
