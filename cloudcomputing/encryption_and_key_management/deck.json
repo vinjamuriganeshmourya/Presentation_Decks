@@ -21,6 +21,13 @@
       "Encryption at Rest",
       "Key Management"
     ],
+    "agendaLabels": [
+      "Data\nStates",
+      "Cryptography Essentials",
+      "Encryption in Transit",
+      "Encryption at Rest",
+      "Key\nManagement"
+    ],
     "next": "Cloud Threats & Attacks"
   },
   "slides": [
