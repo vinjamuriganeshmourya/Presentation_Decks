@@ -84,7 +84,7 @@
     },
     "mwn66qnl0h5bfv": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T13",
       "author": "Pallavi",
       "text": "No key → red ✗ → “Denied (no MFA)”\nKey arrives → green ✓ → “Allowed (MFA present)”\n\nin visual change this, when it mark as red cross the text should be this",
