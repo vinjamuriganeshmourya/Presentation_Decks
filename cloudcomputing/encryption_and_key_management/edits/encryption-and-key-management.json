@@ -36,7 +36,7 @@
     },
     "mwm3k8s8ijooqp": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T22-B",
       "author": "Pallavi",
       "text": "“AWS-Owned” label → “AWS-Managed (aws/*)”",
