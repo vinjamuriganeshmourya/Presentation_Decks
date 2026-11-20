@@ -44,7 +44,7 @@
     },
     "mwoviwkz2bx3bo": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T15",
       "author": "Pallavi",
       "text": "Cloud-native design keeps requests independent so an elastic fleet can add or remove instances without losing user data. A stateless workload keeps no client data between calls; a stateful one must remember past interactions.\n\nreaplce the deifnation point",
