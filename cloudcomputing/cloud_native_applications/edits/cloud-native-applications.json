@@ -12,7 +12,7 @@
     },
     "mwotqjmlke8dbj": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05",
       "author": "Pallavi",
       "text": "reaplc the defination tpoint with\n\nApps once broke when moved between environments. The Twelve-Factor App, published by Heroku engineers in 2011, is a 12-rule checklist for portable, cloud-ready software",
