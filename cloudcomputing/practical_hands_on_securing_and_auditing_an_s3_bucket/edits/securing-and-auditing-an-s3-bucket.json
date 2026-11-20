@@ -3,7 +3,7 @@
   "slides": {
     "D-LAB": {
       "text": {
-        "Securing and Auditing an S3 Bucket": "Applying Least Privilege with AWS IAM"
+        "Securing and Auditing an S3 Bucket": "Securing and Encrypting Resources on AWS"
       }
     }
   },
