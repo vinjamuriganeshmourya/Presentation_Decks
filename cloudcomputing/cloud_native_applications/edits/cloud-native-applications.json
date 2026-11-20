@@ -20,7 +20,7 @@
     },
     "mwotr68v2az1b4": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05",
       "author": "Pallavi",
       "text": "repalce 1 and 2 point\n\nThe 12 factors cover code, dependencies, config, services, builds, processes, ports, scaling, shutdown, parity, logs and admin tasks",
