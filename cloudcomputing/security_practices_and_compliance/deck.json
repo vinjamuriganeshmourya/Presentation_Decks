@@ -1,0 +1,1430 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "Security Practices & Compliance",
+    "course": "Cloud Computing",
+    "htmlName": "security-practices-and-compliance",
+    "previous": {
+      "title": "Cloud Threats & Attacks",
+      "items": [
+        "Denial of Service",
+        "Data Breaches",
+        "Misconfiguration",
+        "Insider & Supply-Chain Threats",
+        "AI-Specific Threats"
+      ]
+    },
+    "agenda": [
+      "Defense in Depth in Practice",
+      "Configuration Hygiene",
+      "Logging, Auditing & Detection",
+      "Secrets Management",
+      "Compliance Frameworks"
+    ],
+    "agendaLabels": [
+      "Defense in Depth in Practice",
+      "Configuration Hygiene",
+      "Logging, Auditing & Detection",
+      "Secrets\nManagement",
+      "Compliance Frameworks"
+    ],
+    "next": "Securing and Auditing an S3 Bucket"
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "S-TITLE",
+      "layout": "title"
+    },
+    {
+      "id": "S-RECAP",
+      "layout": "recap",
+      "notes": "RECAP: Session 16 : Cloud Threats & Attacks\n1. Denial of Service: DoS vs DDoS; volumetric, protocol & application-layer attacks; mitigation: rate limiting, scrubbing & CDN absorption\n2. Data Breaches: Exposed credentials; insecure APIs; breach cost & business impact\n3. Misconfiguration: Public storage buckets; permissive security groups; default credentials\n4. Insider & Supply-Chain Threats: Malicious & accidental insiders; compromised dependencies & images; phishing, leaked keys & token theft\n5. AI-Specific Threats: Prompt injection; sensitive information disclosure; vector & embedding weaknesses; unbounded consumption as cost-based DoS"
+    },
+    {
+      "id": "S-AGENDA",
+      "layout": "agenda",
+      "notes": "Agenda for Today's Session\n1. Defense in Depth in Practice: Layered controls on a real deployment\n2. Configuration Hygiene: Baseline hardening & secure defaults; cloud security posture management (CSPM); automated scanning\n3. Logging, Auditing & Detection: Audit trails; log retention; security event alerting; managed threat detection\n4. Secrets Management: Secrets outside code & images; secret stores; rotation\n5. Compliance Frameworks: ISO 27001 & SOC 2; GDPR, HIPAA & DPDP Act 2023; data residency; shared responsibility for compliance"
+    },
+    {
+      "id": "D1",
+      "layout": "breaker",
+      "index": 1,
+      "notes": "Defense in Depth in Practice: Layered controls on a real deployment"
+    },
+    {
+      "id": "T01",
+      "layout": "points",
+      "kicker": "Layers On Deployment",
+      "title": "Five Controls Mapped",
+      "lead": "Defense in depth spreads protection across layers; applied to one running deployment, each layer becomes a specific AWS control instead of an abstract category",
+      "points": [
+        {
+          "text": "Network layer: VPC subnets and security groups filter traffic",
+          "icon": "i3d:firewall",
+          "at": 1
+        },
+        {
+          "text": "Identity layer: IAM roles grant only required permissions",
+          "icon": "i3d:idcard",
+          "at": 2
+        },
+        {
+          "text": "Data layer: encryption protects storage and transit paths",
+          "icon": "i3d:lock",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T01",
+        "props": {
+          "steps": 3,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Walk through the five layers on the diagram, naming the AWS service at each one. Ask: which layer would still catch an attacker who already holds a stolen access key?"
+    },
+    {
+      "id": "T01-B",
+      "layout": "points",
+      "kicker": "Layers On Deployment",
+      "title": "Five Controls Mapped",
+      "points": [
+        {
+          "text": "Application layer: input validation and web application firewall rules",
+          "icon": "i3d:webpage",
+          "at": 1
+        },
+        {
+          "text": "Monitoring layer: logging and alerting catch what slips through",
+          "icon": "i3d:eye",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T01",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Walk through the five layers on the diagram, naming the AWS service at each one. Ask: which layer would still catch an attacker who already holds a stolen access key?"
+    },
+    {
+      "id": "T02",
+      "layout": "table",
+      "kicker": "Deployment Walkthrough",
+      "title": "Controls & Containment",
+      "lead": "Consider a public web application: a load balancer in a public subnet forwards traffic to EC2 instances in a private subnet, which read from an RDS database",
+      "table": {
+        "type": "table",
+        "size": 17,
+        "columns": [
+          {
+            "label": "Layer",
+            "icon": "i3d:layers",
+            "weight": 0.45
+          },
+          {
+            "label": "Control On This Deployment",
+            "icon": "i3d:shield",
+            "weight": 1.6
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:firewall",
+            "cells": [
+              "Network",
+              "Security group allows port 80 only from the load balancer's security group"
+            ]
+          },
+          {
+            "icon": "i3d:idcard",
+            "cells": [
+              "Identity",
+              "EC2 role permits only `s3:GetObject` on one bucket and `rds-db:connect` as one database user on one RDS instance"
+            ]
+          },
+          {
+            "icon": "i3d:lock",
+            "cells": [
+              "Data",
+              "RDS storage and S3 objects encrypted with a customer managed KMS key (AES-256); TLS terminates at the load balancer"
+            ]
+          },
+          {
+            "icon": "i3d:webpage",
+            "cells": [
+              "Application",
+              "Web application firewall rule blocks SQL-injection patterns on path `/api/*`"
+            ]
+          },
+          {
+            "icon": "i3d:eye",
+            "cells": [
+              "Monitoring",
+              "CloudTrail records AWS API calls; VPC Flow Logs record IP traffic to and from network interfaces"
+            ]
+          }
+        ]
+      },
+      "notes": "Trace the request path on the diagram while reading each table row aloud, then stress that one compromise never equals total compromise. Ask why a stolen credential alone is never enough to reach the database directly."
+    },
+    {
+      "id": "T02-B",
+      "layout": "points",
+      "kicker": "Deployment Walkthrough",
+      "title": "Controls & Containment",
+      "lead": "A stolen EC2 credential passes the identity check, but the scoped role, encrypted data and flow logs still limit the damage and reveal it",
+      "points": [
+        {
+          "text": "Scoped IAM role stops the credential reaching unrelated resources",
+          "icon": "i3d:ban",
+          "at": 1
+        },
+        {
+          "text": "Reading S3 objects encrypted with SSE-KMS needs `kms:Decrypt` permission in addition to S3 permissions",
+          "icon": "i3d:key",
+          "at": 2
+        },
+        {
+          "text": "RDS decrypts storage transparently for database users",
+          "icon": "i3d:database",
+          "at": 2
+        },
+        {
+          "text": "But copying or restoring an encrypted snapshot still needs access to the KMS key",
+          "icon": "i3d:snapshot",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02B",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 560,
+      "notes": "Trace the request path on the diagram while reading each table row aloud, then stress that one compromise never equals total compromise. Ask why a stolen credential alone is never enough to reach the database directly."
+    },
+    {
+      "id": "T02-C",
+      "layout": "points",
+      "kicker": "Deployment Walkthrough",
+      "title": "Controls & Containment",
+      "lead": "A stolen EC2 credential passes the identity check, but the scoped role, encrypted data and flow logs still limit the damage and reveal it",
+      "points": [
+        {
+          "text": "Flow logs and CloudTrail expose the unusual access for review",
+          "icon": "i3d:search",
+          "at": 1
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02B",
+        "props": {
+          "steps": 1,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 560,
+      "notes": "Trace the request path on the diagram while reading each table row aloud, then stress that one compromise never equals total compromise. Ask why a stolen credential alone is never enough to reach the database directly."
+    },
+    {
+      "id": "D2",
+      "layout": "breaker",
+      "index": 2,
+      "notes": "Configuration Hygiene: Baseline hardening & secure defaults; cloud security posture management (CSPM); automated scanning"
+    },
+    {
+      "id": "T03",
+      "layout": "points",
+      "kicker": "Configuration Hygiene",
+      "title": "Four Core Practices",
+      "lead": "A cloud resource stays only as secure as its configuration; configuration hygiene keeps every setting at its safest state from launch onward and keeps it that way",
+      "points": [
+        {
+          "text": "Baseline hardening: removing unused ports, services and default accounts",
+          "icon": "i3d:wrench",
+          "at": 1
+        },
+        {
+          "text": "Secure defaults: provider pre-set safe settings, like blocked public access",
+          "icon": "i3d:toggle",
+          "at": 2
+        },
+        {
+          "text": "CSPM: continuous scanning of live configurations against a baseline",
+          "icon": "i3d:radar",
+          "at": 3
+        },
+        {
+          "text": "Automated scanning: tools flagging drift and vulnerabilities without manual checks",
+          "icon": "i3d:scan",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T03",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Introduce configuration hygiene as the umbrella for the next three ideas. Point out that most cloud breaches trace back to a misconfigured setting, not a broken algorithm. Ask which of these four is a one-time step versus an ongoing process."
+    },
+    {
+      "id": "T04",
+      "layout": "points",
+      "kicker": "Hardening & Defaults",
+      "title": "Closing Open Doors",
+      "lead": "A freshly launched server often carries extra open ports and sample logins; baseline hardening strips these out before the resource goes live. Secure defaults are the safe settings a cloud provider pre-selects, so less hardening work is left to the user",
+      "points": [
+        {
+          "text": "Disable unused ports, protocols and default service accounts at launch",
+          "icon": "i3d:door",
+          "at": 1
+        },
+        {
+          "text": "Replace default credentials and sample users before go-live",
+          "icon": "i3d:password",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T04",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain hardening using the house-locking picture before naming the term. Note AWS S3's block-public-access-by-default as a concrete secure default. Interview hook: ask why a secure default reduces human error compared to hardening alone."
+    },
+    {
+      "id": "T04-B",
+      "layout": "points",
+      "kicker": "Hardening & Defaults",
+      "title": "Closing Open Doors",
+      "points": [
+        {
+          "text": "Use hardened, pre-configured machine images as the launch baseline",
+          "icon": "i3d:image",
+          "at": 1
+        },
+        {
+          "text": "AWS S3 buckets default to private, blocking public access",
+          "icon": "i3d:bucket",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T04",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain hardening using the house-locking picture before naming the term. Note AWS S3's block-public-access-by-default as a concrete secure default. Interview hook: ask why a secure default reduces human error compared to hardening alone."
+    },
+    {
+      "id": "T04-AN",
+      "layout": "analogy",
+      "label": "Analogy: setting up a new phone securely",
+      "kicker": "Hardening & Defaults",
+      "title": "Closing Open Doors",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T04Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T04Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: Setting up a new phone securely by changing default passwords, disabling unnecessary permissions and enabling security settings before using it: just as hardening removes unnecessary access and applies safe settings before a server goes live.\n\nExplain hardening using the house-locking picture before naming the term. Note AWS S3's block-public-access-by-default as a concrete secure default. Interview hook: ask why a secure default reduces human error compared to hardening alone."
+    },
+    {
+      "id": "T05",
+      "layout": "points",
+      "kicker": "CSPM Explained",
+      "title": "Continuous Config Checks",
+      "lead": "Hardening fixes settings once at launch, but configurations drift afterward as teams change them. Cloud Security Posture Management (CSPM) continuously scans live cloud resources against a defined secure baseline and flags any drift",
+      "points": [
+        {
+          "text": "Flags drift: an opened port or edited bucket policy",
+          "icon": "i3d:flag",
+          "at": 1
+        },
+        {
+          "text": "Spans multiple accounts and services from one dashboard",
+          "icon": "i3d:dashboard",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T05",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Introduce CSPM as the ongoing partner to one-time hardening. Mention AWS Security Hub by name as the console location. Exam hook: ask how CSPM differs from a one-time hardening checklist."
+    },
+    {
+      "id": "T05-B",
+      "layout": "points",
+      "kicker": "CSPM Explained",
+      "title": "Continuous Config Checks",
+      "points": [
+        {
+          "text": "AWS Security Hub CSPM (earlier called AWS Security Hub) checks settings and gathers findings in one console",
+          "icon": "img:images/aws-security-hub.svg",
+          "at": 1
+        },
+        {
+          "text": "Prioritises findings by risk severity for faster remediation",
+          "icon": "i3d:alert",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T05",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 640,
+      "notes": "Introduce CSPM as the ongoing partner to one-time hardening. Mention AWS Security Hub by name as the console location. Exam hook: ask how CSPM differs from a one-time hardening checklist."
+    },
+    {
+      "id": "T05-AN",
+      "layout": "analogy",
+      "label": "Analogy: car's regular service inspection",
+      "kicker": "CSPM Explained",
+      "title": "Continuous Config Checks",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T05Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T05Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A car's regular service inspection that checks brakes, tyres and engine condition every few weeks instead of only checking the car when it is purchased: just as CSPM continuously checks cloud configurations for security issues.\n\nIntroduce CSPM as the ongoing partner to one-time hardening. Mention AWS Security Hub by name as the console location. Exam hook: ask how CSPM differs from a one-time hardening checklist."
+    },
+    {
+      "id": "T06",
+      "layout": "points",
+      "kicker": "Automated Scanning",
+      "title": "Tools And Triggers",
+      "lead": "Automated scanning runs checks without manual review and covers two different jobs: AWS Config evaluates resource configurations against rules, while Amazon Inspector scans EC2 instances, Lambda functions and container images in Amazon ECR for known software vulnerabilities",
+      "points": [
+        {
+          "text": "Pre-deployment scanning: Amazon Inspector scans container images in Amazon ECR for known vulnerabilities before they run",
+          "icon": "img:images/aws-inspector.svg",
+          "at": 1
+        },
+        {
+          "text": "Runtime scanning: Amazon Inspector scans running instances for known vulnerabilities",
+          "icon": "i3d:server",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T06",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 640,
+      "notes": "Distinguish static scanning before deployment from runtime scanning after it, naming Amazon Inspector and AWS Config as the actual services. Point to AWS Config's timeline view if screen-sharing. Interview hook: ask why both pre-deploy and runtime scanning are needed together."
+    },
+    {
+      "id": "T06-B",
+      "layout": "points",
+      "kicker": "Automated Scanning",
+      "title": "Tools And Triggers",
+      "points": [
+        {
+          "text": "AWS Config evaluates resources against rules and records history",
+          "icon": "img:images/aws-config.svg",
+          "at": 1
+        },
+        {
+          "text": "Scheduled or event-triggered scans catch drift faster than manual review",
+          "icon": "i3d:calendar",
+          "at": 2
+        },
+        {
+          "text": "Findings feed back into the hardened baseline for the next build",
+          "icon": "i3d:refresh",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T06",
+        "props": {
+          "steps": 3,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Distinguish static scanning before deployment from runtime scanning after it, naming Amazon Inspector and AWS Config as the actual services. Point to AWS Config's timeline view if screen-sharing. Interview hook: ask why both pre-deploy and runtime scanning are needed together."
+    },
+    {
+      "id": "D3",
+      "layout": "breaker",
+      "index": 3,
+      "notes": "Logging, Auditing & Detection: Audit trails; log retention; security event alerting; managed threat detection"
+    },
+    {
+      "id": "T08",
+      "layout": "points",
+      "kicker": "Logging Detection Map",
+      "title": "Four Pillars",
+      "lead": "Preventive controls still fail sometimes, so cloud security also depends on seeing what actually happened and reacting fast",
+      "points": [
+        {
+          "text": "Audit trails: a timestamped record of every account action",
+          "icon": "i3d:trail",
+          "at": 1
+        },
+        {
+          "text": "Log retention: how long those records stay available",
+          "icon": "i3d:hourglass",
+          "at": 2
+        },
+        {
+          "text": "Security event alerting: notification when a log entry matters",
+          "icon": "i3d:bell",
+          "at": 3
+        },
+        {
+          "text": "Managed threat detection: provider-run scanning for attack patterns",
+          "icon": "i3d:radar",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T08",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Frame detection as the half of defense in depth that reacts once a preventive control fails. Ask: why is a log nobody reads worth nothing?"
+    },
+    {
+      "id": "T09",
+      "layout": "points",
+      "kicker": "Trails And Retention",
+      "title": "Keeping Logs Longer",
+      "lead": "CloudTrail's console view only shows recent calls, so a separate mechanism is needed to keep evidence for audits months or years later",
+      "points": [
+        {
+          "text": "CloudTrail Event History holds 90 days of management events for each AWS Region",
+          "icon": "img:images/aws-cloudtrail.svg",
+          "at": 1
+        },
+        {
+          "text": "A trail delivers events to an S3 bucket every few minutes for long-term storage",
+          "icon": "i3d:bucket",
+          "at": 2
+        },
+        {
+          "text": "S3 lifecycle rules set the retention period to meet policy",
+          "icon": "i3d:calendar",
+          "at": 3
+        },
+        {
+          "text": "Log file integrity validation detects tampering of stored files",
+          "icon": "i3d:digest",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T09",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Point out that a trail is what turns a temporary log into durable evidence for compliance. Mention integrity validation as an interviewer favourite question."
+    },
+    {
+      "id": "T10",
+      "layout": "points",
+      "kicker": "Security Event Alerting",
+      "title": "Notify, Not Just Store",
+      "lead": "A stored log only helps if someone is told when it matters, so logs are watched and converted into active notifications",
+      "points": [
+        {
+          "text": "Metric filters scan log data for a defined pattern",
+          "icon": "i3d:filter",
+          "at": 1
+        },
+        {
+          "text": "A matching pattern increments a custom numeric metric",
+          "icon": "i3d:counter",
+          "at": 2
+        },
+        {
+          "text": "Alarm threshold triggers on a count, e.g. 5 hits in 5 minutes",
+          "icon": "img:images/res-cloudwatch-alarm.svg",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T10",
+        "props": {
+          "steps": 3,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain the filter-to-alarm chain as the mechanism, not just the names. Ask: what is the difference between a metric filter and an EventBridge rule?"
+    },
+    {
+      "id": "T10-B",
+      "layout": "points",
+      "kicker": "Security Event Alerting",
+      "title": "Notify, Not Just Store",
+      "lead": "CloudTrail records AWS account activity and API actions; CloudWatch monitors resources and collects their metrics and logs: alarms and rules draw on these two different kinds of data",
+      "points": [
+        {
+          "text": "EventBridge rules react to a specific API call directly",
+          "icon": "img:images/aws-eventbridge.svg",
+          "at": 1
+        },
+        {
+          "text": "An SNS topic delivers the alert to email or chat",
+          "icon": "img:images/aws-sns.svg",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T10",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain the filter-to-alarm chain as the mechanism, not just the names. Ask: what is the difference between a metric filter and an EventBridge rule?"
+    },
+    {
+      "id": "T11",
+      "layout": "points",
+      "kicker": "Managed Threat Detection",
+      "title": "Automated Anomaly Scan",
+      "lead": "Watching every log line by hand for attack patterns does not scale, so a managed service does that scanning continuously. Amazon GuardDuty, a managed threat detection service, analyses CloudTrail, network flow and DNS logs for malicious signals",
+      "points": [
+        {
+          "text": "Learns normal account behaviour to flag anomalies",
+          "icon": "i3d:chart",
+          "at": 1
+        },
+        {
+          "text": "Detects compromised credentials and unusual API calls",
+          "icon": "i3d:key",
+          "at": 2
+        },
+        {
+          "text": "Flags cryptomining and reconnaissance-style activity",
+          "icon": "i3d:coin",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T11",
+        "props": {
+          "steps": 3,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Stress this is detection, not prevention: it flags, a human or automation still responds. Likely interview question: how does GuardDuty differ from CloudTrail?"
+    },
+    {
+      "id": "T11-B",
+      "layout": "points",
+      "kicker": "Managed Threat Detection",
+      "title": "Automated Anomaly Scan",
+      "points": [
+        {
+          "text": "Reports severity-rated findings, not raw log lines",
+          "icon": "i3d:list",
+          "at": 1
+        },
+        {
+          "text": "Needs no agents or servers to operate",
+          "icon": "img:images/aws-guardduty.svg",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T11",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Stress this is detection, not prevention: it flags, a human or automation still responds. Likely interview question: how does GuardDuty differ from CloudTrail?"
+    },
+    {
+      "id": "T11-AN",
+      "layout": "analogy",
+      "label": "Analogy: bank's fraud system",
+      "kicker": "Managed Threat Detection",
+      "title": "Automated Anomaly Scan",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T11Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T11Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A bank's fraud system watches every transaction and flags only an unusual withdrawal: just as managed threat detection scans account activity and surfaces only what looks malicious.\n\nStress this is detection, not prevention: it flags, a human or automation still responds. Likely interview question: how does GuardDuty differ from CloudTrail?"
+    },
+    {
+      "id": "S-QUIZ-1",
+      "layout": "quiz",
+      "section": "Logging, Auditing & Detection",
+      "label": "Quiz Time",
+      "notes": "Quiz on Defense in Depth, Configuration Hygiene and Logging, Auditing & Detection. Q1. Which layers still limit and reveal a stolen EC2 credential? Answer: The scoped role, encrypted data and flow logs (with CloudTrail). Q2. Why does a secure default reduce human error compared to hardening alone? Answer: The provider pre-selects the safe setting, so less hardening work is left to the user. Q3. How does CSPM differ from a one-time hardening checklist? Answer: It continuously scans live configurations against a secure baseline and flags drift. Q4. Why are both pre-deploy and runtime scanning needed? Answer: Pre-deployment scanning checks container images before they run; runtime scanning checks running instances. Q5. What is the difference between a metric filter and an EventBridge rule? Answer: A metric filter turns matching log lines into a metric an alarm counts; an EventBridge rule reacts to a specific API call directly. Q6. How does GuardDuty differ from CloudTrail? Answer: CloudTrail records API calls; GuardDuty analyses CloudTrail, flow and DNS logs and reports severity-rated findings."
+    },
+    {
+      "id": "D4",
+      "layout": "breaker",
+      "index": 4,
+      "notes": "Secrets Management: Secrets outside code & images; secret stores; rotation"
+    },
+    {
+      "id": "T13",
+      "layout": "points",
+      "kicker": "Why Secrets Need Stores",
+      "title": "Secrets Outside Code",
+      "lead": "Hardcoding a database password or API key inside application code or a container image leaves it exposed to anyone who reads the repository or pulls the image. A secret is any credential, key or token an application needs at runtime that a human should never see in plain text",
+      "points": [
+        {
+          "text": "Even after deletion, git history retains a recoverable copy",
+          "icon": "i3d:branch",
+          "at": 1
+        },
+        {
+          "text": "Baked-in secret exposed through image layers or docker history",
+          "icon": "i3d:container",
+          "at": 2
+        },
+        {
+          "text": "Leaked key gets scanned and exploited within minutes publicly",
+          "icon": "i3d:bug",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T13",
+        "props": {
+          "steps": 3,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Stress that git history and image layers keep deleted secrets recoverable, which is why rotation (next slide) matters even after cleanup. Ask: why is an API key inside a Dockerfile worse than one in an environment variable?"
+    },
+    {
+      "id": "T13-B",
+      "layout": "points",
+      "kicker": "Why Secrets Need Stores",
+      "title": "Secrets Outside Code",
+      "points": [
+        {
+          "text": "Secret store holds the value, not the application",
+          "icon": "i3d:vault",
+          "at": 1
+        },
+        {
+          "text": "Application fetches the value via an API call at runtime",
+          "icon": "i3d:code",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T13",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Stress that git history and image layers keep deleted secrets recoverable, which is why rotation (next slide) matters even after cleanup. Ask: why is an API key inside a Dockerfile worse than one in an environment variable?"
+    },
+    {
+      "id": "T13-AN",
+      "layout": "analogy",
+      "label": "Analogy: locker key never printed in the passbook",
+      "kicker": "Why Secrets Need Stores",
+      "title": "Secrets Outside Code",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T13Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T13Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A bank does not print a locker's key inside the passbook anyone can read; the key is handed over separately on a verified request, exactly as a secret store releases a credential only to an authorised application at runtime.\n\nStress that git history and image layers keep deleted secrets recoverable, which is why rotation (next slide) matters even after cleanup. Ask: why is an API key inside a Dockerfile worse than one in an environment variable?"
+    },
+    {
+      "id": "T14",
+      "layout": "table",
+      "kicker": "Secret Store Mechanics",
+      "title": "Managed Secret Services",
+      "lead": "A secret store is a managed service that keeps credentials encrypted at rest and releases them only to callers an access policy explicitly permits, separating a secret's lifecycle from the application's own code",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Feature",
+            "icon": "i3d:list",
+            "weight": 0.7
+          },
+          {
+            "label": "Secrets Manager",
+            "icon": "img:images/aws-secrets-manager.svg",
+            "weight": 1.1
+          },
+          {
+            "label": "Parameter Store",
+            "icon": "img:images/res-systems-manager-parameter-store.svg",
+            "weight": 1.1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:refresh",
+            "cells": [
+              "Built-in rotation",
+              "Configurable automatic rotation, using Lambda",
+              "No built-in rotation; custom automation is possible"
+            ]
+          },
+          {
+            "icon": "i3d:lock",
+            "cells": [
+              "Encryption",
+              "KMS, always on",
+              "KMS, optional"
+            ]
+          },
+          {
+            "icon": "i3d:target",
+            "cells": [
+              "Typical use",
+              "DB credentials, API keys",
+              "Config values, flags"
+            ]
+          },
+          {
+            "icon": "i3d:coin",
+            "cells": [
+              "Pricing model",
+              "Per secret per month, plus API calls",
+              "Standard tier free; Advanced tier paid"
+            ]
+          }
+        ]
+      },
+      "notes": "Point to the table row on rotation, since manual rotation in Parameter Store is the gap Secrets Manager closes automatically. Mention Secrets Manager as the service named for this exact purpose in interviews."
+    },
+    {
+      "id": "T14-B",
+      "layout": "points",
+      "kicker": "Secret Store Mechanics",
+      "title": "Managed Secret Services",
+      "points": [
+        {
+          "text": "Application calls an SDK or API, never reads a plaintext file",
+          "icon": "i3d:code",
+          "at": 1
+        },
+        {
+          "text": "Access is gated by IAM, same deny-by-default evaluation as any call",
+          "icon": "i3d:gate",
+          "at": 2
+        },
+        {
+          "text": "Each secret value is versioned after a change",
+          "icon": "i3d:version",
+          "at": 3
+        },
+        {
+          "text": "The prior version stays retrievable for rollback",
+          "icon": "i3d:snapshot",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T14B",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Point to the table row on rotation, since manual rotation in Parameter Store is the gap Secrets Manager closes automatically. Mention Secrets Manager as the service named for this exact purpose in interviews."
+    },
+    {
+      "id": "T15",
+      "layout": "points",
+      "kicker": "Secret Rotation",
+      "title": "Rotation Lifecycle",
+      "lead": "Rotation replaces a secret's value on a schedule so a leaked credential has a short useful life, without any application code change because the store always returns the current version",
+      "points": [
+        {
+          "text": "Rotation function generates a new credential and updates the target service",
+          "icon": "img:images/res-lambda-function.svg",
+          "at": 1
+        },
+        {
+          "text": "Store saves the new version and marks the old one as previous",
+          "icon": "i3d:version",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T15",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain rotation as the reason a secret store beats a static .env file even after the secret is moved out of code. Interview hook: ask what happens to an in-flight request if rotation runs mid-call."
+    },
+    {
+      "id": "T15-B",
+      "layout": "points",
+      "kicker": "Secret Rotation",
+      "title": "Rotation Lifecycle",
+      "points": [
+        {
+          "text": "Application gets the latest version on its next fetch",
+          "icon": "i3d:download",
+          "at": 1
+        },
+        {
+          "text": "A cached copy must be refreshed to use it",
+          "icon": "i3d:refresh",
+          "at": 1
+        },
+        {
+          "text": "If rotation fails, the store keeps the old version as current",
+          "icon": "i3d:alert",
+          "at": 2
+        },
+        {
+          "text": "But the database may already use the new password, so the failure must be fixed quickly",
+          "icon": "i3d:database",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T15",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 560,
+      "notes": "Explain rotation as the reason a secret store beats a static .env file even after the secret is moved out of code. Interview hook: ask what happens to an in-flight request if rotation runs mid-call."
+    },
+    {
+      "id": "D5",
+      "layout": "breaker",
+      "index": 5,
+      "notes": "Compliance Frameworks: ISO 27001 & SOC 2; GDPR, HIPAA & DPDP Act 2023; data residency; shared responsibility for compliance"
+    },
+    {
+      "id": "T16",
+      "layout": "points",
+      "kicker": "Compliance Landscape",
+      "title": "Five Pillars Mapped",
+      "lead": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators, applicable equally on AWS, Azure or GCP, demand formal, independent proof",
+      "points": [
+        {
+          "text": "ISO 27001 & SOC 2: independent security audits; ISO 27001 gives a certificate, SOC 2 gives an audit report",
+          "icon": "i3d:certificate",
+          "at": 1
+        },
+        {
+          "text": "GDPR & HIPAA: EU personal-data rules and US health-data rules",
+          "icon": "i3d:health",
+          "at": 2
+        },
+        {
+          "text": "DPDP Act 2023: India's law on digital personal data",
+          "icon": "i3d:gavel",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T16",
+        "props": {
+          "steps": 3,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 560,
+      "notes": "Frame this as the audit-and-law layer sitting on top of the technical controls this deployment already applies. Stress that no framework replaces good configuration; it only verifies it. Ask which framework applies to which region."
+    },
+    {
+      "id": "T16-B",
+      "layout": "points",
+      "kicker": "Compliance Landscape",
+      "title": "Five Pillars Mapped",
+      "points": [
+        {
+          "text": "Data residency: rules on where data is stored and processed",
+          "icon": "i3d:pin",
+          "at": 1
+        },
+        {
+          "text": "Shared responsibility: provider certifies infrastructure, customer proves configuration",
+          "icon": "i3d:scale",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T16",
+        "props": {
+          "steps": 2,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Frame this as the audit-and-law layer sitting on top of the technical controls this deployment already applies. Stress that no framework replaces good configuration; it only verifies it. Ask which framework applies to which region."
+    },
+    {
+      "id": "T17",
+      "layout": "points",
+      "kicker": "Security Assurance Standards",
+      "title": "Two Audit Standards",
+      "lead": "Enterprises buying cloud services need independent proof a vendor truly secures data, not marketing claims. ISO 27001 certifies the security management system; SOC 2 audits controls against trust criteria",
+      "points": [
+        {
+          "text": "ISO 27001: issued by accredited certification bodies worldwide",
+          "icon": "i3d:stamp",
+          "at": 1
+        },
+        {
+          "text": "SOC 2 Type I: controls assessed at one point in time",
+          "icon": "i3d:clock",
+          "at": 2
+        },
+        {
+          "text": "SOC 2 Type II: same controls tested over a set period, usually 3 to 12 months",
+          "icon": "i3d:calendar",
+          "at": 3
+        },
+        {
+          "text": "AWS publishes both reports through AWS Artifact for customers",
+          "icon": "img:images/aws-artifact.svg",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T17",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain that ISO 27001 is a pass/fail certification while SOC 2 is a detailed report. Point out AWS Artifact as the actual console location for downloading these. Exam hook: ask which one has a Type I and Type II distinction."
+    },
+    {
+      "id": "T17-AN",
+      "layout": "analogy",
+      "label": "Analogy: restaurant's hygiene certificate",
+      "kicker": "Security Assurance Standards",
+      "title": "Two Audit Standards",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "J_T17Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "J_T17Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A restaurant's hygiene certificate assures diners of safe food without them inspecting the kitchen themselves: just as ISO 27001 and SOC 2 assure customers of a cloud vendor's security practices without customers auditing every control themselves.\n\nExplain that ISO 27001 is a pass/fail certification while SOC 2 is a detailed report. Point out AWS Artifact as the actual console location for downloading these. Exam hook: ask which one has a Type I and Type II distinction."
+    },
+    {
+      "id": "T18",
+      "layout": "table",
+      "kicker": "ISO Vs SOC2",
+      "title": "Standard Comparison",
+      "lead": "Both give independent proof of security controls, but enterprises often ask for both, since each answers a different audit question for a different audience",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Aspect",
+            "icon": "i3d:list",
+            "weight": 0.7
+          },
+          {
+            "label": "ISO 27001",
+            "icon": "i3d:certificate",
+            "weight": 1.1
+          },
+          {
+            "label": "SOC 2",
+            "icon": "i3d:report",
+            "weight": 1.1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:target",
+            "cells": [
+              "Scope",
+              "Information security management system",
+              "Trust service criteria"
+            ]
+          },
+          {
+            "icon": "i3d:globe",
+            "cells": [
+              "Origin",
+              "International (ISO/IEC)",
+              "United States (AICPA)"
+            ]
+          },
+          {
+            "icon": "i3d:doc",
+            "cells": [
+              "Output",
+              "Certificate after a successful audit",
+              "Detailed audit report"
+            ]
+          },
+          {
+            "icon": "i3d:refresh",
+            "cells": [
+              "Renewal",
+              "Periodic surveillance audits",
+              "Type II usually renewed yearly"
+            ]
+          }
+        ],
+        "highlight": [
+          2
+        ]
+      },
+      "notes": "Walk through each row once, stressing that ISO 27001 is binary while SOC 2 is descriptive. Point to the Output row when explaining why vendors often hold both. Exam hook: expect a direct 'ISO 27001 vs SOC 2' interview question."
+    },
+    {
+      "id": "T19",
+      "layout": "points",
+      "kicker": "Data Privacy Laws",
+      "title": "GDPR, HIPAA And DPDP",
+      "lead": "Storing customer data is no longer a private business choice; governments set binding rules on its handling. GDPR (General Data Protection Regulation) protects EU residents' data; the Digital Personal Data Protection (DPDP) Act 2023 is India's equivalent law",
+      "points": [
+        {
+          "text": "GDPR grants rights: access, correction, erasure and data portability",
+          "icon": "i3d:flag-eu",
+          "at": 1
+        },
+        {
+          "text": "GDPR mandates breach notification within 72 hours of discovery",
+          "icon": "i3d:clock",
+          "at": 2
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T19",
+        "props": {
+          "steps": 2,
+          "part": 1
+        }
+      },
+      "figH": 300,
+      "pointsW": 540,
+      "notes": "Explain GDPR first as the globally referenced law, then introduce DPDP as India's version using the same consent idea. Mention the 72-hour breach window as a commonly tested number, and that AWS offers the HIPAA BAA through AWS Artifact. Exam hook: ask what DPDP calls the data controller equivalent."
+    },
+    {
+      "id": "T19-B",
+      "layout": "points",
+      "kicker": "Data Privacy Laws",
+      "title": "GDPR, HIPAA And DPDP",
+      "lead": "HIPAA (Health Insurance Portability and Accountability Act) is the US law protecting health information",
+      "points": [
+        {
+          "text": "DPDP Act names the data handler a data fiduciary, not a controller",
+          "icon": "i3d:flag-in",
+          "at": 1
+        },
+        {
+          "text": "DPDP Act requires clear consent, except for certain legitimate uses the Act lists",
+          "icon": "i3d:consent",
+          "at": 2
+        },
+        {
+          "text": "HIPAA: covers US health data",
+          "icon": "i3d:flag-us",
+          "at": 3
+        },
+        {
+          "text": "On AWS it needs a signed Business Associate Addendum and HIPAA-eligible services",
+          "icon": "i3d:doc",
+          "at": 3
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T19",
+        "props": {
+          "steps": 3,
+          "part": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Explain GDPR first as the globally referenced law, then introduce DPDP as India's version using the same consent idea. Mention the 72-hour breach window as a commonly tested number, and that AWS offers the HIPAA BAA through AWS Artifact. Exam hook: ask what DPDP calls the data controller equivalent."
+    },
+    {
+      "id": "T19-AN",
+      "layout": "analogy",
+      "label": "Analogy: library rules",
+      "kicker": "Data Privacy Laws",
+      "title": "GDPR, HIPAA And DPDP",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "J_T19Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "J_T19Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A library allows members to access, borrow or renew books under clearly defined rules, while keeping their personal details secure: just as data privacy laws define how organisations can collect, use and protect personal information.\n\nExplain GDPR first as the globally referenced law, then introduce DPDP as India's version using the same consent idea. Mention the 72-hour breach window as a commonly tested number, and that AWS offers the HIPAA BAA through AWS Artifact. Exam hook: ask what DPDP calls the data controller equivalent."
+    },
+    {
+      "id": "T20",
+      "layout": "points",
+      "kicker": "Residency And Rules",
+      "title": "Cross-Border Data Flow",
+      "lead": "Data residency sets where data is stored and processed; GDPR and the DPDP Act layer further rules on moving that data across borders",
+      "points": [
+        {
+          "text": "GDPR restricts transfers outside the EU without adequate safeguards",
+          "icon": "i3d:ban",
+          "at": 1
+        },
+        {
+          "text": "Standard Contractual Clauses (SCCs) are a common GDPR safeguard",
+          "icon": "i3d:policy",
+          "at": 2
+        },
+        {
+          "text": "DPDP Act allows government to restrict transfers to specific countries",
+          "icon": "i3d:gate",
+          "at": 3
+        },
+        {
+          "text": "Residency rules apply alongside, not instead of, security controls",
+          "icon": "i3d:shield",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T20",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 540,
+      "notes": "Clarify that residency is a location rule while the SCC is the legal paperwork that permits an exception. Note that choosing a Region does not by itself satisfy either law's other obligations. Exam hook: ask what an SCC is for."
+    },
+    {
+      "id": "T21",
+      "layout": "points",
+      "kicker": "Compliance Responsibility",
+      "title": "Who Proves What",
+      "lead": "Compliance follows the same split as security: the provider proves its infrastructure, while the customer proves its own configuration and usage",
+      "points": [
+        {
+          "text": "Provider holds certifications and audit reports for its data centres, hardware and in-scope services",
+          "icon": "i3d:building",
+          "at": 1
+        },
+        {
+          "text": "Customer must configure workloads to meet the chosen framework's controls",
+          "icon": "i3d:gear",
+          "at": 2
+        },
+        {
+          "text": "AWS Artifact supplies ISO 27001 and SOC 2 reports on demand",
+          "icon": "img:images/aws-artifact.svg",
+          "at": 3
+        },
+        {
+          "text": "Auditors examine customer logs, encryption settings and access policies directly",
+          "icon": "i3d:search",
+          "at": 4
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T21",
+        "props": {
+          "steps": 4,
+          "part": 1
+        }
+      },
+      "figH": 330,
+      "pointsW": 560,
+      "notes": "Tie this back to the earlier split between securing the cloud and securing in the cloud, now applied to passing an audit. Stress that holding a certified provider never excuses a misconfigured bucket. Exam hook: ask who is responsible if an audit fails due to a customer's open bucket."
+    },
+    {
+      "id": "S-QUIZ",
+      "layout": "quiz",
+      "notes": "Quiz on Secrets Management and Compliance Frameworks. Q1. Why is an API key inside a Dockerfile worse than one in an environment variable? Answer: It is baked into the image and stays exposed through image layers or docker history. Q2. Which secret store has built-in automatic rotation? Answer: AWS Secrets Manager, using Lambda. Q3. When does an application start using a rotated secret? Answer: On its next fetch; a cached copy must be refreshed. Q4. Which of ISO 27001 and SOC 2 has a Type I and Type II distinction? Answer: SOC 2. Q5. What does the DPDP Act call the data controller equivalent? Answer: A data fiduciary. Q6. What is an SCC for? Answer: A common GDPR safeguard for transferring data outside the EU. Q7. Who is responsible if an audit fails due to a customer's open bucket? Answer: The customer, who must prove its own configuration."
+    },
+    {
+      "id": "S-TAKEAWAYS",
+      "layout": "takeaways",
+      "notes": "Key Takeaways\n1. Defense in Depth in Practice: Layered controls on a real deployment\n2. Configuration Hygiene: Baseline hardening & secure defaults; cloud security posture management (CSPM); automated scanning\n3. Logging, Auditing & Detection: Audit trails; log retention; security event alerting; managed threat detection\n4. Secrets Management: Secrets outside code & images; secret stores; rotation\n5. Compliance Frameworks: ISO 27001 & SOC 2; GDPR, HIPAA & DPDP Act 2023; data residency; shared responsibility for compliance"
+    },
+    {
+      "id": "S-NEXT",
+      "layout": "next",
+      "title": "Securing and Auditing an S3 Bucket",
+      "size": 72
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}

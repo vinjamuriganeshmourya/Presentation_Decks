@@ -1,0 +1,534 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "Securing and Auditing an S3 Bucket",
+    "course": "Cloud Computing",
+    "htmlName": "securing-and-auditing-an-s3-bucket",
+    "labDeck": true
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "D-LAB",
+      "layout": "breaker",
+      "index": 6,
+      "lab": true,
+      "kicker": "Practical Hands-On",
+      "title": "Securing and Auditing an S3 Bucket"
+    },
+    {
+      "id": "P22",
+      "layout": "lead",
+      "kicker": "The Practical Task",
+      "title": "What Gets Built",
+      "lead": "This practical builds one S3 bucket and applies hygiene, encryption, access and audit controls across its full lifecycle, part by part",
+      "figure": {
+        "type": "custom",
+        "name": "E_P22",
+        "props": {
+          "steps": 7,
+          "items": [
+            "Create a bucket with SSE-S3 default encryption",
+            "Upload a file and verify it inherited encryption",
+            "Attach a policy denying any non-HTTPS request",
+            "Check Object Ownership (Bucket owner enforced, ACLs disabled) and Block Public Access settings",
+            "Run a security audit against a fixed checklist",
+            "Rescan every setting to confirm the secure end state",
+            "Review CloudTrail events, then clean up the demo resources"
+          ]
+        }
+      },
+      "figW": 1100,
+      "figH": 344
+    },
+    {
+      "id": "P23",
+      "layout": "table",
+      "kicker": "Bucket Creation",
+      "title": "Encryption Enabled",
+      "lead": "The bucket is created in Mumbai with Bucket owner enforced ownership, all four Block Public Access settings on, and default encryption set to SSE-S3, so every new upload is encrypted automatically",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Setting",
+            "icon": "i3d:gear",
+            "weight": 1
+          },
+          {
+            "label": "Value",
+            "icon": "i3d:tag",
+            "weight": 1.2
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:bucket",
+            "cells": [
+              "Bucket",
+              "`s17-security-lab-unique123`"
+            ]
+          },
+          {
+            "icon": "i3d:pin",
+            "cells": [
+              "Region",
+              "Mumbai (ap-south-1)"
+            ]
+          },
+          {
+            "icon": "i3d:lock",
+            "cells": [
+              "Default encryption",
+              "SSE-S3"
+            ]
+          },
+          {
+            "icon": "i3d:crown",
+            "cells": [
+              "Object Ownership",
+              "Bucket owner enforced"
+            ]
+          }
+        ]
+      },
+      "notes": "Practical parts 1 and 2: create the bucket with these settings, then upload a file."
+    },
+    {
+      "id": "P23-B",
+      "layout": "screenshot",
+      "kicker": "Bucket Creation",
+      "title": "Encryption Enabled",
+      "step": {
+        "text": "Server-side encryption settings showing SSE-S3 active",
+        "icon": "i3d:lock"
+      },
+      "image": "images/tr23-sse-settings.png",
+      "rings": [
+        [
+          80,
+          652,
+          1944,
+          96,
+          "band"
+        ]
+      ],
+      "notes": "Practical part 1: the bucket's default encryption is SSE-S3."
+    },
+    {
+      "id": "P23-C",
+      "layout": "screenshot",
+      "kicker": "Bucket Creation",
+      "title": "Encryption Enabled",
+      "step": {
+        "text": "Upload succeeded for security-demo.txt (102.0 B)",
+        "icon": "i3d:upload"
+      },
+      "image": "images/tr23-upload-status.png",
+      "rings": [
+        [
+          40,
+          128,
+          340,
+          52
+        ],
+        [
+          48,
+          1248,
+          1520,
+          48
+        ]
+      ],
+      "notes": "Practical part 2: upload a file and verify it inherited encryption."
+    },
+    {
+      "id": "P24",
+      "layout": "table",
+      "kicker": "HTTPS-Only Access",
+      "title": "Deny Insecure Transport",
+      "lead": "A bucket policy named DenyInsecureTransport rejects any request made without TLS, the secure transport protocol; it only blocks insecure requests and never grants access by itself",
+      "table": {
+        "type": "table",
+        "size": 17,
+        "columns": [
+          {
+            "label": "Policy Element",
+            "icon": "i3d:policy",
+            "weight": 1.25
+          },
+          {
+            "label": "Meaning",
+            "icon": "i3d:search",
+            "weight": 1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:ban",
+            "cells": [
+              "`Effect: Deny`",
+              "Rejects requests matching the statement"
+            ]
+          },
+          {
+            "icon": "i3d:users",
+            "cells": [
+              "`Principal: *`",
+              "Applies to all principals"
+            ]
+          },
+          {
+            "icon": "i3d:asterisk",
+            "cells": [
+              "`Action: s3:*`",
+              "Covers S3 actions"
+            ]
+          },
+          {
+            "icon": "i3d:bucket",
+            "cells": [
+              "`Resource: arn:aws:s3:::s17-security-lab-unique123` and `arn:aws:s3:::s17-security-lab-unique123/*`",
+              "Covers the bucket and every object in it"
+            ]
+          },
+          {
+            "icon": "i3d:lock",
+            "cells": [
+              "`aws:SecureTransport: false`",
+              "Matches requests without secure transport"
+            ]
+          }
+        ]
+      },
+      "notes": "Practical part 3: attach the DenyInsecureTransport bucket policy."
+    },
+    {
+      "id": "P24-B",
+      "layout": "screenshot",
+      "kicker": "HTTPS-Only Access",
+      "title": "Deny Insecure Transport",
+      "step": {
+        "text": "Saved policy DenyInsecureTransport: Deny, Principal *, s3:*, aws:SecureTransport false",
+        "icon": "i3d:policy"
+      },
+      "image": "images/tr24-bucket-policy.png",
+      "rings": [
+        [
+          156,
+          686,
+          800,
+          186,
+          "band"
+        ],
+        [
+          190,
+          1182,
+          520,
+          44,
+          "band"
+        ]
+      ],
+      "notes": "Practical part 3: the saved bucket policy."
+    },
+    {
+      "id": "P25",
+      "layout": "table",
+      "kicker": "Access Audit",
+      "title": "Ownership, ACL, Access",
+      "lead": "The audit checks Object Ownership, the access control list and Block Public Access against a fixed checklist, recording each as secure, an issue needing correction, or not applicable",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Security Check",
+            "icon": "i3d:checklist",
+            "weight": 1
+          },
+          {
+            "label": "Where To Check",
+            "icon": "i3d:pin",
+            "weight": 1.2
+          },
+          {
+            "label": "Secure Configuration",
+            "icon": "i3d:shield",
+            "weight": 1.1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:globe",
+            "cells": [
+              "Public access",
+              "Permissions → Block Public Access",
+              "All four enabled"
+            ]
+          },
+          {
+            "icon": "i3d:crown",
+            "cells": [
+              "Object ownership",
+              "Permissions → Object Ownership",
+              "Bucket owner enforced"
+            ]
+          },
+          {
+            "icon": "i3d:list",
+            "cells": [
+              "ACL access",
+              "Permissions → ACL",
+              "ACLs disabled"
+            ]
+          }
+        ]
+      },
+      "notes": "Practical parts 4 and 5: audit Object Ownership, the ACL and Block Public Access against the checklist."
+    },
+    {
+      "id": "P25-B",
+      "layout": "screenshot",
+      "kicker": "Access Audit",
+      "title": "Ownership, ACL, Access",
+      "step": {
+        "text": "Object Ownership: Bucket owner enforced (ACLs disabled)",
+        "icon": "i3d:crown"
+      },
+      "image": "images/tr25-object-ownership.png",
+      "rings": [
+        [
+          88,
+          302,
+          370,
+          46,
+          "band"
+        ],
+        [
+          88,
+          358,
+          1820,
+          34,
+          "band"
+        ]
+      ],
+      "notes": "Practical parts 4 and 5: audit Object Ownership, the ACL and Block Public Access against the checklist."
+    },
+    {
+      "id": "P25-C",
+      "layout": "screenshot",
+      "kicker": "Access Audit",
+      "title": "Ownership, ACL, Access",
+      "step": {
+        "text": "ACL panel: grantees are listed, but bucket owner enforced means no ACL permission applies",
+        "icon": "i3d:list"
+      },
+      "image": "images/tr25-acl-panel.png",
+      "rings": [
+        [
+          184,
+          292,
+          1428,
+          96
+        ]
+      ],
+      "notes": "Practical parts 4 and 5: audit Object Ownership, the ACL and Block Public Access against the checklist."
+    },
+    {
+      "id": "P25-D",
+      "layout": "screenshot",
+      "kicker": "Access Audit",
+      "title": "Ownership, ACL, Access",
+      "step": {
+        "text": "Block all public access checked (all four settings on)",
+        "icon": "i3d:ban"
+      },
+      "image": "images/tr25-block-public-access.png",
+      "rings": [
+        [
+          88,
+          450,
+          414,
+          48,
+          "band"
+        ]
+      ],
+      "notes": "Practical parts 4 and 5: audit Object Ownership, the ACL and Block Public Access against the checklist."
+    },
+    {
+      "id": "P26",
+      "layout": "table",
+      "kicker": "Rescan And Record",
+      "title": "Confirm The End State",
+      "lead": "A rescan repeats each check after remediation to confirm the final state; it can validly find a setting was already secure, needing no further change",
+      "table": {
+        "type": "table",
+        "size": 18,
+        "columns": [
+          {
+            "label": "Check",
+            "icon": "i3d:checklist",
+            "weight": 1.1
+          },
+          {
+            "label": "Expected Result",
+            "icon": "i3d:target",
+            "weight": 1.1
+          },
+          {
+            "label": "Actual Result",
+            "icon": "i3d:check",
+            "weight": 0.8
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:ban",
+            "cells": [
+              "Block Public Access",
+              "All four enabled",
+              "Confirmed"
+            ]
+          },
+          {
+            "icon": "i3d:lock",
+            "cells": [
+              "Default encryption",
+              "SSE-S3 enabled",
+              "Verified"
+            ]
+          },
+          {
+            "icon": "i3d:policy",
+            "cells": [
+              "HTTPS-only bucket policy",
+              "Deny statement present",
+              "Verified"
+            ]
+          },
+          {
+            "icon": "i3d:crown",
+            "cells": [
+              "Object Ownership",
+              "Bucket owner enforced",
+              "Verified"
+            ]
+          },
+          {
+            "icon": "i3d:list",
+            "cells": [
+              "ACLs",
+              "Disabled",
+              "Verified"
+            ]
+          }
+        ]
+      },
+      "notes": "Practical part 6: rescan every setting and record the result."
+    },
+    {
+      "id": "P27",
+      "layout": "table",
+      "kicker": "Audit Trail Check",
+      "title": "Result And Cleanup",
+      "lead": "CloudTrail Event history records who performed an action, what it was and when; it is sufficient here, so no new trail or long-term storage needs configuring",
+      "table": {
+        "type": "table",
+        "size": 19,
+        "columns": [
+          {
+            "label": "Service",
+            "icon": "i3d:cloud",
+            "weight": 0.8
+          },
+          {
+            "label": "Main Purpose",
+            "icon": "i3d:target",
+            "weight": 1.6
+          }
+        ],
+        "rows": [
+          {
+            "icon": "img:images/aws-cloudtrail.svg",
+            "cells": [
+              "CloudTrail",
+              "Records AWS account activity and API actions"
+            ]
+          },
+          {
+            "icon": "img:images/aws-cloudwatch.svg",
+            "cells": [
+              "CloudWatch",
+              "Monitors resources and collects metrics and logs"
+            ]
+          }
+        ]
+      },
+      "note": {
+        "text": "This demo used the root user only for brevity; real work uses an IAM user with least privilege",
+        "tone": "info"
+      },
+      "notes": "Practical part 7: review the CloudTrail event, then clean up."
+    },
+    {
+      "id": "P27-B",
+      "layout": "screenshot",
+      "kicker": "Audit Trail Check",
+      "title": "Result And Cleanup",
+      "step": {
+        "text": "CloudTrail CreateBucket event: event name, source, user, Region",
+        "icon": "img:images/aws-cloudtrail.svg"
+      },
+      "image": "images/tr27-cloudtrail-createbucket.png",
+      "rings": [
+        [
+          88,
+          368,
+          340,
+          340
+        ],
+        [
+          2136,
+          256,
+          200,
+          92
+        ]
+      ],
+      "note": {
+        "text": "Also look for PutBucketPolicy, PutBucketEncryption and PutPublicAccessBlock events if recorded",
+        "tone": "info"
+      },
+      "notes": "Practical part 7: review the CloudTrail event, then clean up."
+    },
+    {
+      "id": "P27-C",
+      "layout": "lead",
+      "kicker": "Audit Trail Check",
+      "title": "Result And Cleanup",
+      "lead": "Cleanup: delete security-demo.txt, then the bucket; leave every other bucket and CloudTrail resource untouched",
+      "figure": {
+        "type": "custom",
+        "name": "E_P27C",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figW": 1080,
+      "figH": 300,
+      "notes": "Practical part 7: review the CloudTrail event, then clean up."
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}
