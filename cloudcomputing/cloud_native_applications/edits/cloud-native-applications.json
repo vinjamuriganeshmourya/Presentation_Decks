@@ -60,7 +60,7 @@
     },
     "mwovwh9bh7xkuv": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T21-B",
       "author": "Pallavi",
       "text": "only the Miss arrow in the top cache diagram changes: remove Cache → Database and draw it from Application → Database, keeping the “Miss” label",
