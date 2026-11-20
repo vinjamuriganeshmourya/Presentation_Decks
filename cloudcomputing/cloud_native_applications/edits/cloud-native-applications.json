@@ -4,7 +4,7 @@
   "threads": {
     "mwotot8iqlxhzx": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T04",
       "author": "Pallavi",
       "text": "Merge bullets 1 and 2 into one card\n\nImmutable infrastructure replaces running instances with newly built and tested ones instead of modifying them in place",
