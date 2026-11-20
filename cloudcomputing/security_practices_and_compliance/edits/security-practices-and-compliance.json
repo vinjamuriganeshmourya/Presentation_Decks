@@ -41,6 +41,14 @@
       "author": "Pallavi",
       "text": "Move the Application arrow so it ends at Version A (“Current”) instead of Version B (“New”). Nothing else needs to change.",
       "at": 1795167551643
+    },
+    "mwosknwxbjdian": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T16",
+      "author": "Pallavi",
+      "text": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nHardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nchange the defination point to this",
+      "at": 1795167826768
     }
   }
 }
