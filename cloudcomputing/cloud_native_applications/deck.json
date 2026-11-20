@@ -174,7 +174,8 @@
    "pointsW": 500,
    "note": {
     "text": "For variable demand, right-sized elastic fleets usually cost less than one large fixed server, since idle capacity is released when demand drops",
-    "tone": "info"
+    "tone": "info",
+    "bg": "blue"
    },
    "notes": "\"Emphasise that elasticity is a design choice, not just an AWS feature: the application must tolerate instances appearing and disappearing. Point to the Auto Scaling Groups console as where this is configured. Exam hook: why a stateful component cannot scale elastically without extra work.\""
   },
