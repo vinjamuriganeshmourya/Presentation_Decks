@@ -428,8 +428,8 @@
     if (l) for (k in l) if (hasOwn(l, k)) put(out, k, l[k])
     return out
   }
-  function txSync(root, id, skip) {
-    var map = txMap(id)
+  function txSync(root, id, skip, given) {
+    var map = given || txMap(id)
     keyed(root).forEach(function (h) {
       if (h.el === skip) return
       var want = map[h.key] != null ? map[h.key] : h.orig
@@ -567,6 +567,59 @@
     })
   }
 
+  /* GRID THUMBNAILS ("Jump to a slide", the four-box button / G). Each card renders its slide afresh, without
+     the deck's EditLayer, so it showed the original words, never the saved or unsaved text. Every thumbnail
+     that mounts or changes gets the same text the slide itself shows: in edit mode saved + draft (txMap), for
+     viewers the saved text. Only the thumbnail's own DOM is touched; the slide on screen is left to the
+     layers above. A card's number is its place in the full slide list (`__DECK__.all`). */
+  function thumbMap(id) {
+    if (EDIT) return TX.data ? txMap(id) : null
+    var t = boot.state ? textEditsOf(boot.state) : null
+    return (t && t[id]) || null
+  }
+  function thumbSync(th) {
+    var d = deckApi()
+    if (!d || !d.all) return
+    var card = th.closest('div[role="button"]')
+    var num = card && card.querySelector(':scope > span > span.font-mono')
+    if (!num || !/^\d{1,3}$/.test(num.textContent.trim())) return
+    var s = d.all[parseInt(num.textContent, 10) - 1]
+    if (!s) return
+    var map = thumbMap(s.id)
+    var empty = !map || !Object.keys(map).length
+    if (empty && !THUMB_TOUCHED.has(th)) return /* no text for this slide and never written to: nothing to do */
+    THUMB_TOUCHED.add(th) /* once written to, a later reset (undo) puts the original words back */
+    txSync(th.querySelector('section') || th, s.id, null, map || Object.create(null))
+  }
+  var THUMB_TOUCHED = new WeakSet()
+  function thumbStart() {
+    var pending = new Set()
+    var raf = 0
+    function collect(n) {
+      if (!n || n.nodeType !== 1) n = n && n.parentElement
+      if (!n) return
+      var up = n.closest('.deck-thumb')
+      if (up) return pending.add(up)
+      if (n.classList.contains('deck-thumb')) return pending.add(n)
+      var inner = n.querySelectorAll('.deck-thumb')
+      for (var i = 0; i < inner.length; i++) pending.add(inner[i])
+    }
+    new MutationObserver(function (records) {
+      for (var i = 0; i < records.length; i++) {
+        collect(records[i].target)
+        var added = records[i].addedNodes
+        for (var j = 0; j < added.length; j++) collect(added[j])
+      }
+      if (!pending.size || raf) return
+      raf = requestAnimationFrame(function () {
+        raf = 0
+        var list = Array.from(pending)
+        pending.clear()
+        list.forEach(function (th) { if (th.isConnected) thumbSync(th) })
+      })
+    }).observe(document.body, { subtree: true, childList: true, characterData: true })
+  }
+
   Promise.all([fetchBaked(BOOT_TIMEOUT), fetchLive(BOOT_TIMEOUT)])
     .then(function (res) {
       var baked = res[0]
@@ -588,6 +641,7 @@
           var draft = jget(LS.draft, 'local', {}) || {}
           txStart({ base: function () { return boot.state }, local: function () { return draft } })
         }
+        thumbStart()
         startDeck()
         return whenDeck()
       })
