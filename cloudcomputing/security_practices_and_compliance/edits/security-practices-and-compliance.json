@@ -33,6 +33,14 @@
       "author": "Pallavi",
       "text": "repalce the defination point with\n\n\"Watching every log line by hand doesn’t scale, so Amazon GuardDuty, a managed threat detection service, continuously analyses CloudTrail, network flow and DNS logs for malicious signals.\"",
       "at": 1795167037160
+    },
+    "mwosermfap4zaa": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T15-B",
+      "author": "Pallavi",
+      "text": "Move the Application arrow so it ends at Version A (“Current”) instead of Version B (“New”). Nothing else needs to change.",
+      "at": 1795167551643
     }
   }
 }
