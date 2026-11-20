@@ -4,7 +4,7 @@
   "threads": {
     "mworx0sjr1d86j": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T06",
       "author": "Pallavi",
       "text": "Diagram label: change “Static Scan” to “Image Scan”.",
