@@ -820,12 +820,6 @@
    "notes": "\"Explain synchronous calls as a phone call where the caller waits, asynchronous as leaving a message read later. Point to API Gateway and SQS as the concrete AWS services for each pattern. Ask when to choose async over sync: decoupling and resilience to downstream failures.\""
   },
   {
-   "id": "S-QUIZ-1",
-   "layout": "quiz",
-   "label": "Quiz Time",
-   "notes": "Quiz on Cloud-Native Principles, The Twelve-Factor App and Monolith vs Microservices. Q1. Name the three core principles of cloud-native design. Answer: Elasticity, failure tolerance and ease of change. Q2. Why are stateful components harder to scale? Answer: They must manage shared or persistent state. Q3. Which factor keeps every environment-specific value outside the code? Answer: Config. Q4. Where does a twelve-factor app write its log events? Answer: To standard output, as a stream. Q5. In a synchronous call, what does the caller do? Answer: It waits for the response."
-  },
-  {
    "id": "D4",
    "layout": "breaker",
    "index": 4,
