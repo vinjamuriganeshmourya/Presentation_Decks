@@ -57,6 +57,14 @@
       "author": "Pallavi",
       "text": "Miss arrow: remove the Cache → Database arrow and draw it from Application → Database, keeping the “Miss” label.\nOptional: add an arrow from Application → Cache labelled “Store” to show the app saving the result after a miss.",
       "at": 1795173340789
+    },
+    "mwovwh9bh7xkuv": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21-B",
+      "author": "Pallavi",
+      "text": "only the Miss arrow in the top cache diagram changes: remove Cache → Database and draw it from Application → Database, keeping the “Miss” label",
+      "at": 1795173416897
     }
   }
 }
