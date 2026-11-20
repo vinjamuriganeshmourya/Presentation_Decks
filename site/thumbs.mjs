@@ -99,6 +99,58 @@ try {
         await page.waitForFunction((n) => window.__DECK__.current === n, at, { timeout: 10000 })
       }
       await page.waitForTimeout(2500) /* the move's transition, fonts and pictures */
+      /* ?still is a harness flag, and under it the deck ignores the injected state, saved text included, so the
+         card showed the original words. Put the saved text on the slide here, keyed exactly as the deck's
+         EditLayer and overlay.js key it (the element's original words, ` @2` for a repeat). */
+      await page.evaluate(({ at, edits }) => {
+        const s = window.__DECK__.slides[at - 1]
+        const map = s && edits[s.id]
+        if (!map || !Object.keys(map).length) return
+        const spans = document.querySelectorAll('span[data-edit-layer]')
+        let w = null
+        for (let i = spans.length - 1; i >= 0 && !w; i--) {
+          const p = spans[i].parentElement
+          if (p && !p.hasAttribute('data-motion-pop-id')) w = p
+        }
+        const root = w ? w.querySelector('section') || w : document.querySelector('.slide-stage')
+        if (!root) return
+        const SKIP = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'NOSCRIPT'])
+        const ownText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())
+        const hosts = []
+        const walk = (el) => {
+          if (el instanceof SVGElement || SKIP.has(el.tagName)) return
+          if (el.getAttribute('role') === 'dialog' || el.hasAttribute('data-edit-layer')) return
+          if (ownText(el)) return void hosts.push(el)
+          for (const c of el.children) walk(c)
+        }
+        for (const c of root.children) walk(c)
+        const frag = (html) => {
+          const t = document.createElement('template')
+          t.innerHTML = html
+          for (const bad of t.content.querySelectorAll('script,style,iframe,object,embed,link,meta,base')) bad.remove()
+          return t.content
+        }
+        const nodes = (r) => {
+          const out = []
+          const tw = document.createTreeWalker(r, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)
+          for (let n = tw.nextNode(); n; n = tw.nextNode()) out.push(n)
+          return out
+        }
+        const seen = new Map()
+        for (const el of hosts) {
+          const words = (frag(el.innerHTML).textContent || '').replace(/\s+/g, ' ').trim()
+          const n = (seen.get(words) || 0) + 1
+          seen.set(words, n)
+          const html = map[n > 1 ? `${words} @${n}` : words]
+          if (typeof html !== 'string') continue
+          const next = frag(html)
+          const a = nodes(el)
+          const b = nodes(next)
+          const same = a.length === b.length && a.every((x, i) => x.nodeType === b[i].nodeType && (x.nodeType !== 1 || x.tagName === b[i].tagName))
+          if (same) a.forEach((x, i) => { if (x.nodeType === 3) x.nodeValue = b[i].nodeValue })
+          else el.replaceChildren(next)
+        }
+      }, { at, edits: site.textEdits || {} })
       const total = await page.evaluate((hidden) => {
         /* keep only the slide: hide every sibling along the stage's ancestor chain (controls, bars, toasts) */
         const stage = document.querySelector('.slide-stage')
