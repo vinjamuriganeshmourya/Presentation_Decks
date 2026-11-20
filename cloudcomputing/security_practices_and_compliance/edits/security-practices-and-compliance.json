@@ -44,7 +44,7 @@
     },
     "mwosknwxbjdian": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T16",
       "author": "Pallavi",
       "text": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nHardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nchange the defination point to this",
