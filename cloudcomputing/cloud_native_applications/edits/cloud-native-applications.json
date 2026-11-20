@@ -33,6 +33,14 @@
       "author": "Pallavi",
       "text": "3 and 4 point\n\nFive matter most for cloud-native: config, backing services, processes, disposability and logs",
       "at": 1795169823604
+    },
+    "mwotxdilf13539": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T08",
+      "author": "Pallavi",
+      "text": "reaplc the defiantion point with\n\nA disposable process can’t rely on a local log file, which disappears with it. Twelve-factor treats logs as a time-ordered event stream written to standard output.",
+      "at": 1795170099372
     }
   }
 }
