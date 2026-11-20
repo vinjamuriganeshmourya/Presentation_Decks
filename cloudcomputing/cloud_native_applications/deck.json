@@ -246,12 +246,7 @@
    "lead": "Cloud-native systems expect frequent deployment, so they replace running instances with a new machine image rather than editing a live server, keeping every environment reproducible",
    "points": [
     {
-     "text": "Immutable infrastructure replaces running instances with newly built and tested instances",
-     "icon": "i3d:image",
-     "at": 1
-    },
-    {
-     "text": "Instead of modifying them in place",
+     "text": "Immutable infrastructure replaces running instances with newly built and tested ones instead of modifying them in place",
      "icon": "i3d:image",
      "at": 1
     },
@@ -292,25 +287,15 @@
    "layout": "points",
    "kicker": "Twelve-Factor App",
    "title": "A Portability Checklist",
-   "lead": "Cloud applications once broke when moved between environments, so a common checklist emerged for portable, cloud-ready design. The Twelve-Factor App is a methodology of 12 rules, published by Heroku engineers in 2011, for software that runs reliably on any cloud platform",
+   "lead": "Apps once broke when moved between environments. The Twelve-Factor App, published by Heroku engineers in 2011, is a 12-rule checklist for portable, cloud-ready software",
    "points": [
     {
-     "text": "The twelve factors cover codebase, dependencies, config, backing services, build-release-run, processes",
+     "text": "The 12 factors cover code, dependencies, config, services, builds, processes, ports, scaling, shutdown, parity, logs and admin tasks",
      "icon": "i3d:list",
      "at": 1
     },
     {
-     "text": "Port binding, concurrency, disposability, dev/prod parity, logs and admin processes",
-     "icon": "i3d:list",
-     "at": 1
-    },
-    {
-     "text": "Five factors matter most for cloud-native design",
-     "icon": "i3d:checklist",
-     "at": 2
-    },
-    {
-     "text": "Config, backing services, processes, disposability and logs",
+     "text": "Five matter most for cloud-native: config, backing services, processes, disposability and logs",
      "icon": "i3d:checklist",
      "at": 2
     }
@@ -516,7 +501,7 @@
    "layout": "points",
    "kicker": "Logs As Streams",
    "title": "No Local Log Files",
-   "lead": "A process that can be disposed of anytime cannot depend on a local log file, which disappears with it. The twelve-factor rule instead treats logs as a continuous, time-ordered stream of events written to standard output",
+   "lead": "A disposable process can't rely on a local log file, which disappears with it. Twelve-factor treats logs as a time-ordered event stream written to standard output",
    "points": [
     {
      "text": "Application writes log events to standard output instead of managing local log files",
@@ -850,7 +835,7 @@
    "layout": "points",
    "kicker": "Stateless Vs Stateful",
    "title": "Two Workload Types",
-   "lead": "Cloud-native design treats every incoming request as independent wherever possible, because an elastic fleet must add or remove instances without losing anything a user needs. A stateless workload keeps no client-specific data between calls; a stateful workload must retain memory of what happened before",
+   "lead": "Cloud-native design keeps requests independent so an elastic fleet can add or remove instances without losing user data. A stateless workload keeps no client data between calls; a stateful one must remember past interactions",
    "points": [
     {
      "text": "Stateless examples: web front ends, API tiers, Lambda functions",

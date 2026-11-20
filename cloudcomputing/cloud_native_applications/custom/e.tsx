@@ -22,7 +22,7 @@ import ec2Mark from '../images/res-ec2-instance.svg'
  *   slide 42 E_T19   626 x 400, from 2: Retry, Circuit Breaker, Fallback fill their slots (3)
  *   slide 43 E_T20   586 x 360  one large server -> three behind a load balancer; one fails, a new one beside it; shared state (3)
  *   slide 44 E_T20B  606 x 380  Elastic Load Balancing + Auto Scaling group adding an instance; instance-hour coins beside a shield (2)
- *   slide 45 E_T21   606 x 360  cache-aside lane (Hit back, Miss to the database) over a producer -> queue -> consumer lane (2)
+ *   slide 45 E_T21   606 x 360  cache-aside lane (Hit back, Miss from the application to the database, Store into the cache) over a producer -> queue -> consumer lane (2)
  *   slide 46 E_T21   606 x 380, from 2: ElastiCache and SQS marks on the cache and queue; backend reads drop (2)
  */
 
@@ -326,11 +326,12 @@ const E_T20B: Fig = (p) => {
 
 /*
  * 606 wide; H = 360 (T21) or 380 (T21-B). Two lane cards x 20..586, each L = (H - 60) / 2 tall. Top: Application (90),
- * Cache (303), Database (516): the request on y c-13, the Hit back on y c+13, the Miss on to the database on y c.
+ * Cache (303), Database (516): the request on y c-20, the Hit back on y c, the Store on y c+20; the Miss runs from the
+ * Application over the cache to the Database on y MY (review 2026-11-20: the Miss is the application's, not the cache's).
  * Bottom: Producer (90) -> the queue (a tube of message slots, x 196..410) -> Consumer (516), each side at its own pace.
  * Presses: 1 cache-aside, 2 the queue lane | 3 the ElastiCache and SQS marks, 4 backend reads drop, producers keep sending.
  */
-const D = { W: 606, NS: 52, AX: 90, CX: 303, DX: 516, TX0: 196, TX1: 410, TH: 56, PER: 4.8 }
+const D = { W: 606, NS: 52, AX: 90, CX: 303, DX: 516, TX0: 196, TX1: 410, TH: 56, PER: 4.8, MY: 34, G: 20 }
 const D_SLOTS = [0, 1, 2, 3, 4]
 
 const E_T21: Fig = (p) => {
@@ -341,9 +342,7 @@ const E_T21: Fig = (p) => {
   const qTop = 40 + L
   const qY = qTop + L / 2 - 10
   const h = D.NS / 2
-  const req: Pt[] = [[D.AX + h, tY - 13], [D.CX - h, tY - 13]]
-  const hit: Pt[] = [[D.CX - h, tY + 13], [D.AX + h, tY + 13]]
-  const miss: Pt[] = [[D.CX + h, tY], [D.DX - h, tY]]
+  const { req, hit, store, miss } = cachePaths(tY)
   const prod: Pt[] = [[D.AX + h, qY], [D.TX0, qY]]
   const cons: Pt[] = [[D.TX1, qY], [D.DX - h, qY]]
   const R = rides(H)
@@ -357,12 +356,14 @@ const E_T21: Fig = (p) => {
       <Panel x={20} y={20} w={D.W - 40} h={L} />
       <Panel x={20} y={qTop} w={D.W - 40} h={L} />
 
-      {/* cache-aside: check the cache first; a hit comes straight back, a miss goes on to the database */}
+      {/* cache-aside: check the cache first; a hit comes straight back, on a miss the application reads the database and stores the result in the cache */}
       <W pts={req} head={9} lit={lit1} />
       <W pts={hit} head={9} lit={lit1} />
+      <W pts={store} head={9} lit={lit1} />
       <W pts={miss} head={9} lit={lit1} />
-      <div style={{ ...box((D.AX + D.CX) / 2 - 30, tY + 18, 60, 18), zIndex: 3, ...tag(14, colors.brandDark) }}>Hit</div>
-      <div style={{ ...box((D.CX + D.DX) / 2 - 30, tY - 26, 60, 18), zIndex: 3, ...tag(14, colors.brandDark) }}>Miss</div>
+      <div style={{ ...box(PILL.hitX - 20, tY - 9, 40, 18), zIndex: 4, ...PILL.style }}>Hit</div>
+      <div style={{ ...box(PILL.storeX - 28, tY + D.G - 9, 56, 18), zIndex: 4, ...PILL.style }}>Store</div>
+      <div style={{ ...box((D.CX + D.DX) / 2 - 30, D.MY + 5, 60, 18), zIndex: 3, ...tag(14, colors.brandDark) }}>Miss</div>
       <Node x={D.AX} y={tY} icon="webpage" label="Application" lit={lit1} d={0.2}>
         <Corner x={2} y={2} icon="search" size={26} loop="tilt" />
       </Node>
@@ -386,6 +387,7 @@ const E_T21: Fig = (p) => {
           <Token cls={R.hit} />
           <Token cls={R.req2} />
           <Token cls={R.miss} />
+          <Token cls={R.store} />
           {R.prod.map((c) => <Token key={c} cls={c} size={9} />)}
           {R.cons.map((c) => <Token key={c} cls={c} size={9} />)}
         </>
@@ -413,6 +415,19 @@ function QueueTube({ y, lit, live, mark }: { y: number; lit: boolean; live: bool
   )
 }
 
+/* the cache lane's wires for a lane centre tY: request and Store go right, Hit comes back between them; the Miss leaves
+   the Application's top, runs over the cache on y MY and drops into the Database's top */
+function cachePaths(tY: number) {
+  const h = D.NS / 2
+  const req: Pt[] = [[D.AX + h, tY - D.G], [D.CX - h, tY - D.G]]
+  const hit: Pt[] = [[D.CX - h, tY], [D.AX + h, tY]]
+  const store: Pt[] = [[D.AX + h, tY + D.G], [D.CX - h, tY + D.G]]
+  const miss: Pt[] = [[D.AX, tY - h], [D.AX, D.MY], [D.DX, D.MY], [D.DX, tY - h]]
+  return { req, hit, store, miss }
+}
+/* the Hit and Store tags sit on their wires as white pills, staggered so the two never touch */
+const PILL = { hitX: 168, storeX: 236, style: { ...tag(14, colors.brandDark), background: '#FFFFFF', borderRadius: 6 } as CSSProperties }
+
 /* the rides depend on the lane height, so they are made per height (once each) */
 const RIDES: Record<number, ReturnType<typeof makeRides>> = {}
 function makeRides(H: number) {
@@ -421,11 +436,13 @@ function makeRides(H: number) {
   const qY = 40 + L + L / 2 - 10
   const h = D.NS / 2
   const k = `t21h${H}`
+  const cp = cachePaths(tY)
   return {
-    req: K.ride(`${k}r1`, [[D.AX + h, tY - 13], [D.CX - h, tY - 13]], 0.1, 0.8, D.PER),
-    hit: K.ride(`${k}h`, [[D.CX - h, tY + 13], [D.AX + h, tY + 13]], 1.0, 1.7, D.PER),
-    req2: K.ride(`${k}r2`, [[D.AX + h, tY - 13], [D.CX - h, tY - 13]], 2.4, 3.1, D.PER),
-    miss: K.ride(`${k}m`, [[D.CX + h, tY], [D.DX - h, tY]], 3.3, 4.1, D.PER),
+    req: K.ride(`${k}r1`, cp.req, 0.1, 0.8, D.PER),
+    hit: K.ride(`${k}h`, cp.hit, 1.0, 1.7, D.PER),
+    req2: K.ride(`${k}r2`, cp.req, 2.1, 2.7, D.PER),
+    miss: K.ride(`${k}m`, cp.miss, 2.8, 3.9, D.PER),
+    store: K.ride(`${k}s`, cp.store, 4.0, 4.6, D.PER),
     prod: [0, 1, 2].map((i) => K.ride(`${k}p${i}`, [[D.AX + h, qY], [D.TX0, qY]], 0.1 + i * 0.45, 0.6 + i * 0.45, D.PER)),
     cons: [0, 1].map((i) => K.ride(`${k}c${i}`, [[D.TX1, qY], [D.DX - h, qY]], 0.6 + i * 2.2, 1.6 + i * 2.2, D.PER)),
   }

@@ -9,8 +9,9 @@ import * as d from './d'
 import * as h from './h'
 import * as i from './i'
 import * as j from './j'
+import { FeedbackCard } from '@/decks/figures/variants'
 
 export const figures = { ...stubs.figures, ...a.figures, ...b.figures, ...c.figures, ...d.figures, ...h.figures, ...i.figures, ...j.figures }
 export const css = [icons3dCss, figkitCss, a.css ?? '', b.css ?? '', c.css ?? '', d.css ?? '', h.css ?? '', i.css ?? '', j.css ?? ''].join('\n')
-/** No whole-slide components in this deck. */
-export const slides = {}
+/** The feedback frame (user, 2026-11-20): the engine's feedback title card, placed after the takeaways. */
+export const slides = { FeedbackCard }

@@ -1331,6 +1331,13 @@
    "notes": "Key Takeaways\n1. Denial of Service: DoS vs DDoS; volumetric, protocol & application-layer attacks; mitigation: rate limiting, scrubbing & CDN absorption\n2. Data Breaches: Exposed credentials; insecure APIs; breach cost & business impact\n3. Misconfiguration: Public storage buckets; permissive security groups; default credentials\n4. Insider & Supply-Chain Threats: Malicious & accidental insiders; compromised dependencies & images; phishing, leaked keys & token theft\n5. AI-Specific Threats: Prompt injection; sensitive information disclosure; vector & embedding weaknesses; unbounded consumption as cost-based DoS"
   },
   {
+   "id": "S-FEEDBACK",
+   "layout": "custom",
+   "component": "FeedbackCard",
+   "label": "Feedback",
+   "transition": "zoom"
+  },
+  {
    "id": "S-NEXT",
    "layout": "next",
    "title": "Security Practices & Compliance"
