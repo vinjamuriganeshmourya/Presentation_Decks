@@ -326,6 +326,9 @@ const R_W1: Pt[] = [[R_AX + R.CW, R.LY], [R.LX - R.LS / 2, R.LY]]
 const R_W2: Pt[] = [[R.LX + R.LS / 2, R.LY], [R_BX, R.LY]]
 const R_WDB: Pt[] = [[R.LX, R.LY + R.LS / 2], [R.LX, R.DBY - R.DBS / 2]]
 const R_WAPP: Pt[] = [[R.APX, R.APY - R.APS / 2], [R.APX, PAD + R.CH]]
+/* review 2026-11-20: once rotation has failed the application's arrow ends at Version A (the store's current version),
+   routed under the database and up into A's bottom edge */
+const R_WAPPA: Pt[] = [[R.APX, R.APY + R.APS / 2], [R.APX, R.H - 16], [R_AX + R.CW - 24, R.H - 16], [R_AX + R.CW - 24, PAD + R.CH]]
 const R_RIDE1 = K.ride('r1', [R_W1[0], R_W1[1], R_W2[0], [R_BX - 8, R.LY]], 0.1, 1.4, 3.6)
 const R_RIDEDB = K.ride('rdb', [R_WDB[0], [R.LX, R.DBY - R.DBS / 2 - 8]], 1.5, 2.4, 3.6)
 const R_RIDEAPP = K.ride('rapp', [[R.APX, PAD + R.CH], [R.APX, R.APY - R.APS / 2 - 8]], 0.4, 1.4, 2.8)
@@ -400,7 +403,8 @@ function T15Fig({ s, part }: { s: number; part: number }) {
       </Node>
 
       {/* part 2: the application fetches the current version; its cached copy refreshes */}
-      <Wire pts={R_WAPP} on={fetch} head={9} lit={fetchLit} delay={200} opacity={showFail ? 0.35 : 1} />
+      <Wire pts={R_WAPP} on={fetch && !showFail} head={9} lit={fetchLit} delay={200} />
+      <Wire pts={R_WAPPA} on={fetch && showFail} head={9} delay={200} />
       <RideIcon cls={R_RIDEAPP} on={fetch && !showFail} name="password" />
       <Node x={R.APX} y={R.APY} label="Application" size={R.APS} on={fetch} side="left" w={150} lit={fetchLit}>
         <Plinth size={R.APS} lit={fetchLit}><Pair main="code" over="refresh" size={34} k={0.55} loop="bob" overLoop="spin" /></Plinth>

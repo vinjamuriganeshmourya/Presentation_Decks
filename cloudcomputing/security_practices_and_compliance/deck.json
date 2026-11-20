@@ -28,7 +28,7 @@
       "Secrets\nManagement",
       "Compliance Frameworks"
     ],
-    "next": "Securing and Auditing an S3 Bucket"
+    "next": "Cloud-Native Application Design"
   },
   "slides": [
     {
@@ -468,7 +468,7 @@
           "at": 1
         },
         {
-          "text": "Runtime scanning: Amazon Inspector scans running instances for known vulnerabilities",
+          "text": "Runtime scanning: Amazon Inspector scans running EC2 instances and Lambda functions for known vulnerabilities",
           "icon": "i3d:server",
           "at": 2
         }
@@ -675,7 +675,7 @@
       "layout": "points",
       "kicker": "Managed Threat Detection",
       "title": "Automated Anomaly Scan",
-      "lead": "Watching every log line by hand for attack patterns does not scale, so a managed service does that scanning continuously. Amazon GuardDuty, a managed threat detection service, analyses CloudTrail, network flow and DNS logs for malicious signals",
+      "lead": "Watching every log line by hand doesn't scale, so Amazon GuardDuty, a managed threat detection service, continuously analyses CloudTrail, network flow and DNS logs for malicious signals",
       "points": [
         {
           "text": "Learns normal account behaviour to flag anomalies",
@@ -1039,7 +1039,7 @@
       "layout": "points",
       "kicker": "Compliance Landscape",
       "title": "Five Pillars Mapped",
-      "lead": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators, applicable equally on AWS, Azure or GCP, demand formal, independent proof",
+      "lead": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP",
       "points": [
         {
           "text": "ISO 27001 & SOC 2: independent security audits; ISO 27001 gives a certificate, SOC 2 gives an audit report",
@@ -1121,7 +1121,7 @@
           "at": 3
         },
         {
-          "text": "AWS publishes both reports through AWS Artifact for customers",
+          "text": "AWS publishes the ISO 27001 certificate and SOC 2 reports through AWS Artifact for customers",
           "icon": "img:images/aws-artifact.svg",
           "at": 4
         }
@@ -1232,7 +1232,7 @@
       "layout": "points",
       "kicker": "Data Privacy Laws",
       "title": "GDPR, HIPAA And DPDP",
-      "lead": "Storing customer data is no longer a private business choice; governments set binding rules on its handling. GDPR (General Data Protection Regulation) protects EU residents' data; the Digital Personal Data Protection (DPDP) Act 2023 is India's equivalent law",
+      "lead": "Storing customer data comes with binding legal rules\nGDPR protects EU residents' data, and India's Digital Personal Data Protection (DPDP) Act 2023 is its equivalent",
       "points": [
         {
           "text": "GDPR grants rights: access, correction, erasure and data portability",
@@ -1413,7 +1413,7 @@
     {
       "id": "S-NEXT",
       "layout": "next",
-      "title": "Securing and Auditing an S3 Bucket",
+      "title": "Cloud-Native Application Design",
       "size": 72
     },
     {

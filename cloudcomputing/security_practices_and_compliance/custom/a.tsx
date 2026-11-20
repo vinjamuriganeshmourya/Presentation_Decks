@@ -499,7 +499,7 @@ const A_T05: Fig = (p) => {
 /* ================================================================== slides 19, 20 · A_T06 · the scanning pipeline */
 
 /*
- * 526 x 330. The pipeline along y 84: Commit -> Static Scan (Inspector) -> Deploy -> Runtime Scan (Inspector) -> AWS
+ * 526 x 330. The pipeline along y 84: Commit -> Image Scan (Inspector) -> Deploy -> Runtime Scan (Inspector) -> AWS
  * Config, nodes at x 50 / 156 / 263 / 370 / 476. Under them (y 186): the ECR image under the static scan, EC2 and
  * Lambda under the runtime scan, Config's history under Config. Part 1: press 1 the pre-deploy scan, press 2 the
  * runtime scan. Part 2: press 1 Config and its history, press 2 schedule and event triggers on both scans, press 3
@@ -532,7 +532,7 @@ const A_T06: Fig = (p) => {
       {[0, 1, 2, 3].map((i) => <Wire key={i} pts={[[L6.X[i] + 27, L6.Y], [L6.X[i + 1] - 27, L6.Y]]} />)}
 
       <Node x={L6.X[0]} y={L6.Y} size={L6.T} label="Commit" w={96}><Plinth size={L6.T}><Ico3D name="code" size={38} loop="bob" /></Plinth></Node>
-      <Node x={sx} y={L6.Y} size={L6.T} label="Static Scan" w={104} lit={lit(0)}>
+      <Node x={sx} y={L6.Y} size={L6.T} label="Image Scan" w={104} lit={lit(0)}>
         <MarkTile src={inspMark} size={L6.T} lit={lit(0)} />
         <Corner name="clock" on={on(3)} pos="tl" />
         <Corner name="bolt" on={on(3)} pos="tr" d={0.4} />
