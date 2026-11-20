@@ -41,6 +41,14 @@
       "author": "Pallavi",
       "text": "reaplc the defiantion point with\n\nA disposable process can’t rely on a local log file, which disappears with it. Twelve-factor treats logs as a time-ordered event stream written to standard output.",
       "at": 1795170099372
+    },
+    "mwoviwkz2bx3bo": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T15",
+      "author": "Pallavi",
+      "text": "Cloud-native design keeps requests independent so an elastic fleet can add or remove instances without losing user data. A stateless workload keeps no client data between calls; a stateful one must remember past interactions.\n\nreaplce the deifnation point",
+      "at": 1795172783434
     }
   }
 }
