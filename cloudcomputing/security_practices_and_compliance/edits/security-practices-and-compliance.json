@@ -52,7 +52,7 @@
     },
     "mwosmsc5su55fr": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T17",
       "author": "Pallavi",
       "text": "AWS publishes the ISO 27001 certificate and SOC 2 reports through AWS Artifact for customers\n\nreplace the last bullet point",
