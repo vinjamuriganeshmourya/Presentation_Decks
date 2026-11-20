@@ -52,7 +52,7 @@
     },
     "mwovuumkjcs2hl": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T21",
       "author": "Pallavi",
       "text": "Miss arrow: remove the Cache → Database arrow and draw it from Application → Database, keeping the “Miss” label.\nOptional: add an arrow from Application → Cache labelled “Store” to show the app saving the result after a miss.",
