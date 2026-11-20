@@ -12,7 +12,7 @@
     },
     "mworxf3esi2c6r": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T06",
       "author": "Pallavi",
       "text": "Second bullet: change “Amazon Inspector scans running instances for known vulnerabilities” to \n\n“Amazon Inspector scans running EC2 instances and Lambda functions for known vulnerabilities”.",
