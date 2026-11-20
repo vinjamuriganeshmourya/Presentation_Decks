@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "Merge bullets 1 and 2 into one card\n\nImmutable infrastructure replaces running instances with newly built and tested ones instead of modifying them in place",
       "at": 1795169699914
+    },
+    "mwotqjmlke8dbj": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05",
+      "author": "Pallavi",
+      "text": "reaplc the defination tpoint with\n\nApps once broke when moved between environments. The Twelve-Factor App, published by Heroku engineers in 2011, is a 12-rule checklist for portable, cloud-ready software",
+      "at": 1795169780711
     }
   }
 }
