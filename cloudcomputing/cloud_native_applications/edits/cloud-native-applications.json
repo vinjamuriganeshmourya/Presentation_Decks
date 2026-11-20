@@ -28,7 +28,7 @@
     },
     "mwotrgprnyu79p": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T05",
       "author": "Pallavi",
       "text": "3 and 4 point\n\nFive matter most for cloud-native: config, backing services, processes, disposability and logs",
