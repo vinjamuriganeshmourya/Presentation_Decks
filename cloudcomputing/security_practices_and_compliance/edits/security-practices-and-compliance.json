@@ -49,6 +49,14 @@
       "author": "Pallavi",
       "text": "Hardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nHardened configurations and clean audit logs satisfy internal security goals, but external auditors and regulators demand formal, independent proof, whether the workload runs on AWS, Azure or GCP\nchange the defination point to this",
       "at": 1795167826768
+    },
+    "mwosmsc5su55fr": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T17",
+      "author": "Pallavi",
+      "text": "AWS publishes the ISO 27001 certificate and SOC 2 reports through AWS Artifact for customers\n\nreplace the last bullet point",
+      "at": 1795167925794
     }
   }
 }
