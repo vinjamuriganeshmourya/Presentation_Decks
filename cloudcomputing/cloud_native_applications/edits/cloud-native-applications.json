@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "repalce 1 and 2 point\n\nThe 12 factors cover code, dependencies, config, services, builds, processes, ports, scaling, shutdown, parity, logs and admin tasks",
       "at": 1795169810017
+    },
+    "mwotrgprnyu79p": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T05",
+      "author": "Pallavi",
+      "text": "3 and 4 point\n\nFive matter most for cloud-native: config, backing services, processes, disposability and logs",
+      "at": 1795169823604
     }
   }
 }
