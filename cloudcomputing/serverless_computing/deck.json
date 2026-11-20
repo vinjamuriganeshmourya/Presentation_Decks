@@ -766,7 +766,7 @@
       "lead": "Every Function as a Service (FaaS) platform bounds how long, how much memory, how much data, and how much local disk a function may use, since unmetered execution would inflate cost indefinitely",
       "points": [
         {
-          "text": "Ephemeral storage: temporary local disk (/tmp), lost when the environment is torn down",
+          "text": "Execution timeout: maximum wall-clock time one invocation may run",
           "icon": "HardDrive"
         },
         {
@@ -1055,29 +1055,6 @@
       "pointsW": 480,
       "figH": 340,
       "notes": "Contrast with FaaS: FaaS still runs an application's own code per trigger, BaaS has no custom code at all. Ask: is a managed database call BaaS or FaaS?"
-    },
-    {
-      "id": "T19-AN",
-      "layout": "analogy",
-      "label": "Analogy: plugging into the power grid",
-      "kicker": "Backend As Service",
-      "title": "BaaS Defined",
-      "h": 390,
-      "everyday": {
-        "type": "custom",
-        "name": "I_T19Everyday",
-        "props": {
-          "steps": 0
-        }
-      },
-      "concept": {
-        "type": "custom",
-        "name": "I_T19Concept",
-        "props": {
-          "steps": 0
-        }
-      },
-      "notes": "TR analogy: Plugging into the power grid instead of running a generator: a household draws electricity through a socket without owning a power station, just as an application calls a managed database, login check or file store without owning or running that backend."
     },
     {
       "id": "T20",

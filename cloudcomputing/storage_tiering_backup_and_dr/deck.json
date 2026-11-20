@@ -1,0 +1,3194 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Storage Tiering, Backup & DR",
+  "course": "Cloud Computing",
+  "htmlName": "storage-tiering-backup-and-dr",
+  "previous": {
+   "title": "Block, File & Object Storage",
+   "items": [
+    "Block Storage",
+    "File Storage",
+    "Object Storage",
+    "Object Storage Mechanics",
+    "Choosing a Storage Type"
+   ]
+  },
+  "agenda": [
+   "Durability & Availability",
+   "Replication & Consistency",
+   "Storage Classes & Tiering",
+   "Lifecycle Policies",
+   "Backup & Disaster Recovery"
+  ],
+  "next": "Elastic Compute Instances"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "custom",
+   "component": "S_Agenda",
+   "label": "Agenda",
+   "props": {
+    "agenda": [
+     "Durability & Availability",
+     "Replication & Consistency",
+     "Storage Classes & Tiering",
+     "Lifecycle Policies",
+     "Backup & Disaster Recovery"
+    ]
+   }
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "Durability Vs Availability",
+   "title": "Two Separate Guarantees",
+   "lead": "Cloud storage carries two risks: data loss forever, or the service simply not responding right now\nDurability covers survival of data over time; availability covers whether the service responds to requests",
+   "points": [
+    {
+     "text": "Durability measures whether stored bytes survive hardware failure, corruption or disasters over time",
+     "icon": "Vault",
+     "at": 1
+    },
+    {
+     "text": "Availability measures whether the storage service answers a read or write request now",
+     "icon": "Clock",
+     "at": 2
+    }
+   ],
+   "pointsW": 566,
+   "figH": 330,
+   "figure": {
+    "type": "custom",
+    "name": "G_T01A",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Open by separating the two fears: losing data forever versus not reaching it right now. Say the locker example aloud before naming the terms. Interviewers often test this exact distinction, so stress that durability is about loss and availability is about uptime.",
+   "figPad": 18
+  },
+  {
+   "id": "T01-B",
+   "layout": "points",
+   "kicker": "Durability Vs Availability",
+   "title": "Two Separate Guarantees",
+   "points": [
+    {
+     "text": "An object can be perfectly durable yet briefly unreachable during maintenance or an outage",
+     "icon": "CloudOff",
+     "at": 1
+    },
+    {
+     "text": "A highly available service can still lose data permanently if its durability safeguards fail",
+     "icon": "TriangleAlert",
+     "at": 2
+    }
+   ],
+   "pointsW": 566,
+   "figH": 330,
+   "figure": {
+    "type": "custom",
+    "name": "G_T01B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Open by separating the two fears: losing data forever versus not reaching it right now. Say the locker example aloud before naming the terms. Interviewers often test this exact distinction, so stress that durability is about loss and availability is about uptime.",
+   "figPad": 18
+  },
+  {
+   "id": "T01-AN",
+   "layout": "analogy",
+   "label": "Analogy: a bank account and an ATM",
+   "kicker": "Durability Vs Availability",
+   "title": "Two Separate Guarantees",
+   "h": 430,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T01Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T01Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: Your money in a bank account stays safe even when the nearby ATM is out of service. The money not being lost is durability; the ATM working right now to give you cash is availability. In the same way, a storage service can keep data perfectly safe while being briefly unreachable."
+  },
+  {
+   "id": "T02",
+   "layout": "points",
+   "kicker": "Provider Guarantees",
+   "title": "Durability And Uptime",
+   "lead": "Providers protect data with redundancy and promise uptime through a Service Level Agreement (SLA), so the two guarantees are engineered and stated differently",
+   "points": [
+    {
+     "text": "Durability: checksums detect corruption",
+     "icon": "ShieldCheck",
+     "at": 1
+    },
+    {
+     "text": "And erasure coding spreads data fragments across at least three Availability Zones",
+     "icon": "Split",
+     "at": 2
+    },
+    {
+     "text": "S3 Standard is designed for 99.999999999% (eleven nines) yearly durability",
+     "icon": "Percent",
+     "at": 3
+    },
+    {
+     "text": "A loss probability, not a zero-loss promise",
+     "icon": "Info",
+     "at": 4
+    }
+   ],
+   "pointsW": 560,
+   "figH": 340,
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 4
+    }
+   },
+   "notes": "Explain eleven nines as roughly one object in a hundred billion lost per year, not zero loss. Then convert the 99.9% SLA into about 8.76 hours of downtime yearly. Stress that design targets and SLA numbers differ, and that SLA breaches pay credits, not cash. Exam angle: convert an SLA percentage into allowed downtime.",
+   "figPad": 18
+  },
+  {
+   "id": "T02-B",
+   "layout": "points",
+   "kicker": "Provider Guarantees",
+   "title": "Durability And Uptime",
+   "points": [
+    {
+     "text": "Availability: promised as monthly uptime in an SLA; missing it earns service credits, not a refund",
+     "icon": "CalendarClock"
+    },
+    {
+     "text": "S3 Standard is designed for 99.99% availability",
+     "icon": "Percent",
+     "at": 2
+    },
+    {
+     "text": "But its SLA promises 99.9%, about 8.76 hours of downtime a year",
+     "icon": "Clock",
+     "at": 2
+    }
+   ],
+   "pointsW": 557,
+   "figH": 380,
+   "figure": {
+    "type": "custom",
+    "name": "A_T02B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Explain eleven nines as roughly one object in a hundred billion lost per year, not zero loss. Then convert the 99.9% SLA into about 8.76 hours of downtime yearly. Stress that design targets and SLA numbers differ, and that SLA breaches pay credits, not cash. Exam angle: convert an SLA percentage into allowed downtime."
+  },
+  {
+   "id": "T04",
+   "layout": "table",
+   "kicker": "Provider Guarantees",
+   "title": "Durability Vs Availability Numbers",
+   "lead": "AWS publishes separate durability and availability numbers because each guards against a different failure\nThe storage class chosen decides which guarantee weakens for a lower price",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Storage Class",
+      "icon": "Layers",
+      "weight": 1
+     },
+     {
+      "label": "Durability (Designed For)",
+      "icon": "Vault",
+      "weight": 1.35
+     },
+     {
+      "label": "Availability (Designed For)",
+      "icon": "Clock",
+      "weight": 1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "img:images/aws-s3-standard.svg",
+      "cells": [
+       "S3 Standard",
+       "99.999999999% (11 nines)",
+       "99.99%"
+      ]
+     },
+     {
+      "icon": "img:images/aws-s3-standard-ia.svg",
+      "cells": [
+       "S3 Standard-IA",
+       "99.999999999% (11 nines)",
+       "99.9%"
+      ]
+     },
+     {
+      "icon": "img:images/aws-s3-one-zone-ia.svg",
+      "cells": [
+       "S3 One Zone-IA",
+       "99.999999999% (11 nines), single AZ",
+       "99.5%"
+      ]
+     }
+    ],
+    "rowIcon": 26,
+    "headIcon": 20
+   },
+   "notes": "Point out that durability barely changes across classes, while the availability SLA drops for the single-AZ option. Ask students why durability stays high even in one AZ — it measures bit-level survival, not reachability. This table reappears when comparing storage classes on cost."
+  },
+  {
+   "id": "T05",
+   "layout": "points",
+   "kicker": "Where Guarantees Live",
+   "title": "Checking The Documents",
+   "lead": "Every AWS storage service publishes its durability design and availability SLA on a public page, and the console shows which storage class an object uses",
+   "points": [
+    {
+     "text": "AWS publishes a separate SLA per service, listing uptime commitment and credit percentages",
+     "icon": "FileText"
+    },
+    {
+     "text": "Elastic Block Store (EBS) volumes and other storage services also have published guarantees",
+     "icon": "HardDrive"
+    },
+    {
+     "text": "Checking the written guarantee first avoids assuming a stronger promise than exists",
+     "icon": "SearchCheck"
+    }
+   ],
+   "pointsW": 528,
+   "figH": 360,
+   "figure": {
+    "type": "custom",
+    "name": "G_T05",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Show where the storage class field sits in the S3 console, linking it to the durability and SLA promise. Mention these are legal SLA pages, not marketing claims. Note the promise still needs a mechanism to be kept.",
+   "figPad": 18
+  },
+  {
+   "id": "T05-B",
+   "layout": "lead",
+   "kicker": "Where Guarantees Live",
+   "title": "Checking The Documents",
+   "lead": "These published numbers describe only the promise; replication across facilities is the mechanism that actually keeps data meeting it",
+   "figW": 900,
+   "figH": 300,
+   "figure": {
+    "type": "diagram",
+    "w": 900,
+    "h": 300,
+    "boxes": [
+     {
+      "id": "f1",
+      "label": "Facility 1",
+      "kind": "zone",
+      "icon": "Building2",
+      "x": 430,
+      "y": 40,
+      "w": 180,
+      "h": 200
+     },
+     {
+      "id": "f2",
+      "label": "Facility 2",
+      "kind": "zone",
+      "icon": "Building2",
+      "x": 700,
+      "y": 40,
+      "w": 180,
+      "h": 200
+     }
+    ],
+    "nodes": [
+     {
+      "id": "doc",
+      "x": 150,
+      "y": 130,
+      "icon": "FileText",
+      "shape": "tile",
+      "size": 70,
+      "label": "Published Numbers"
+     },
+     {
+      "id": "o1",
+      "x": 520,
+      "y": 140,
+      "icon": "img:images/data-storage-3d.png",
+      "shape": "bare",
+      "size": 62,
+      "label": "Copy"
+     },
+     {
+      "id": "o2",
+      "x": 790,
+      "y": 140,
+      "icon": "img:images/data-storage-3d.png",
+      "shape": "bare",
+      "size": 62,
+      "label": "Copy"
+     }
+    ],
+    "chips": [
+     {
+      "id": "cp",
+      "x": 150,
+      "y": 250,
+      "text": "The Promise",
+      "icon": "Handshake",
+      "tone": "brand"
+     },
+     {
+      "id": "cm",
+      "x": 655,
+      "y": 280,
+      "text": "The Mechanism: Replication Across Facilities",
+      "icon": "img:images/data-replication-3d.png",
+      "tone": "good"
+     }
+    ],
+    "arrows": [
+     {
+      "from": "doc",
+      "to": "f1",
+      "label": "Kept By"
+     },
+     {
+      "from": "o1",
+      "to": "o2",
+      "two": true,
+      "label": "Replication"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "o1",
+       "o2"
+      ],
+      "dur": 2.6
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "doc",
+       "cp"
+      ],
+      "lit": [
+       "doc",
+       "cp"
+      ]
+     },
+     {
+      "show": [
+       "f1",
+       "f2",
+       "o1",
+       "o2",
+       "doc>f1",
+       "o1>o2",
+       "packet:0",
+       "cm"
+      ],
+      "lit": [
+       "cm"
+      ]
+     }
+    ]
+   },
+   "notes": "Show where the storage class field sits in the S3 console, linking it to the durability and SLA promise. Mention these are legal SLA pages, not marketing claims. Note the promise still needs a mechanism to be kept."
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "Replication Landscape",
+   "title": "Copies And Consistency",
+   "lead": "Providers also protect data by keeping multiple live copies, called replication\nConsistency models decide how soon every copy shows the same value",
+   "points": [
+    {
+     "text": "Within-region replication keeps extra copies across separate data centres in one region",
+     "icon": "img:images/data-replication-3d.png"
+    },
+    {
+     "text": "Cross-region replication copies data into an entirely different region for wider protection",
+     "icon": "Globe"
+    },
+    {
+     "text": "Consistency models define how quickly a written copy becomes visible to later readers",
+     "icon": "Timer"
+    }
+   ],
+   "pointsW": 528,
+   "figH": 380,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 380,
+    "boxes": [
+     {
+      "id": "ra",
+      "label": "Region A",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 6,
+      "y": 10,
+      "w": 380,
+      "h": 360
+     },
+     {
+      "id": "dc1",
+      "label": "Data Centre 1",
+      "kind": "zone",
+      "icon": "Building2",
+      "x": 24,
+      "y": 60,
+      "w": 160,
+      "h": 180
+     },
+     {
+      "id": "dc2",
+      "label": "Data Centre 2",
+      "kind": "zone",
+      "icon": "Building2",
+      "x": 208,
+      "y": 60,
+      "w": 160,
+      "h": 180
+     },
+     {
+      "id": "rb",
+      "label": "Region B",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 430,
+      "y": 60,
+      "w": 184,
+      "h": 180
+     }
+    ],
+    "nodes": [
+     {
+      "id": "o1",
+      "x": 104,
+      "y": 160,
+      "icon": "img:images/data-storage-3d.png",
+      "shape": "bare",
+      "size": 60,
+      "label": "Copy",
+      "loop": "ripple"
+     },
+     {
+      "id": "o2",
+      "x": 288,
+      "y": 160,
+      "icon": "img:images/data-storage-3d.png",
+      "shape": "bare",
+      "size": 60,
+      "label": "Copy",
+      "loop": "ripple"
+     },
+     {
+      "id": "o3",
+      "x": 522,
+      "y": 160,
+      "icon": "img:images/data-storage-3d.png",
+      "shape": "bare",
+      "size": 60,
+      "label": "Cross-Region Copy",
+      "loop": "ripple"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 196,
+      "y": 278,
+      "text": "Synced Copies",
+      "icon": "RefreshCw",
+      "tone": "good"
+     },
+     {
+      "id": "c3",
+      "x": 196,
+      "y": 326,
+      "text": "Consistency: The Gap Between Copies",
+      "icon": "Timer",
+      "tone": "brand"
+     }
+    ],
+    "arrows": [
+     {
+      "from": "o1",
+      "to": "o2",
+      "two": true
+     },
+     {
+      "from": "o2",
+      "to": "o3",
+      "dashed": true,
+      "label": "Cross-Region"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "o1",
+       "o2"
+      ],
+      "dur": 2.2
+     },
+     {
+      "path": [
+       "o2",
+       "o3"
+      ],
+      "dur": 3.4
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "dc1",
+       "dc2",
+       "o1",
+       "o2",
+       "o1>o2",
+       "packet:0",
+       "c1"
+      ],
+      "lit": [
+       "o1",
+       "o2",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "rb",
+       "o3",
+       "o2>o3",
+       "packet:1"
+      ],
+      "lit": [
+       "o3"
+      ]
+     },
+     {
+      "show": [
+       "c3"
+      ],
+      "lit": [
+       "c3"
+      ]
+     }
+    ]
+   },
+   "notes": "Set up replication as the next layer above durability and availability. Say plainly that more copies mean more protection, but copies can disagree for a short while. Point out the two scopes shown before moving into each one.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Replication Mechanics",
+   "title": "Sync Vs Async Copies",
+   "lead": "Replication keeps a duplicate of changing data, copied either synchronously or asynchronously",
+   "points": [
+    {
+     "text": "Synchronous replication confirms a write only after the standby copy also has it",
+     "icon": "CheckCheck",
+     "at": 1
+    },
+    {
+     "text": "Amazon RDS Multi-AZ uses synchronous replication for its standby copy within a region",
+     "icon": "img:images/aws-rds.svg",
+     "at": 2
+    },
+    {
+     "text": "Asynchronous replication confirms the write first, then copies it to the other side",
+     "icon": "Send",
+     "at": 3
+    },
+    {
+     "text": "Amazon S3 Cross-Region Replication (CRR) uses asynchronous replication, causing a short lag",
+     "icon": "img:images/aws-s3.svg",
+     "at": 4
+    }
+   ],
+   "pointsW": 1110,
+   "notes": "Open RDS Multi-AZ mentally as the within-region example before naming S3 CRR for cross-region. Stress that sync trades a little latency for safety, while async trades a little freshness for reach. Interview hook: ask why RDS Multi-AZ is synchronous but read replicas are not.",
+   "pointIcon": 24
+  },
+  {
+   "id": "T07-V",
+   "layout": "lead",
+   "kicker": "Replication Mechanics",
+   "title": "Sync Vs Async Copies",
+   "figure": {
+    "type": "custom",
+    "name": "G_T07Big",
+    "props": {
+     "steps": 4,
+     "scale": 1.12
+    }
+   },
+   "figW": 1000,
+   "figH": 460,
+   "notes": "Open RDS Multi-AZ mentally as the within-region example before naming S3 CRR for cross-region. Stress that sync trades a little latency for safety, while async trades a little freshness for reach. Interview hook: ask why RDS Multi-AZ is synchronous but read replicas are not."
+  },
+  {
+   "id": "T07-B",
+   "layout": "points",
+   "kicker": "Replication Mechanics",
+   "title": "Sync Vs Async Copies",
+   "points": [
+    {
+     "text": "Cross-region copies also place data physically closer to users worldwide",
+     "icon": "MapPin"
+    },
+    {
+     "text": "Amazon DynamoDB Global Tables replicate one table across chosen regions for reads and writes",
+     "icon": "img:images/aws-dynamodb.svg"
+    }
+   ],
+   "pointsW": 528,
+   "figH": 400,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 400,
+    "boxes": [
+     {
+      "id": "ra",
+      "label": "Region A",
+      "kind": "region",
+      "x": 6,
+      "y": 20,
+      "w": 188,
+      "h": 220
+     },
+     {
+      "id": "rb",
+      "label": "Region B",
+      "kind": "region",
+      "x": 216,
+      "y": 20,
+      "w": 188,
+      "h": 220
+     },
+     {
+      "id": "rc",
+      "label": "Region C",
+      "kind": "region",
+      "x": 426,
+      "y": 20,
+      "w": 188,
+      "h": 220
+     }
+    ],
+    "nodes": [
+     {
+      "id": "ta",
+      "x": 100,
+      "y": 130,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 58,
+      "label": "Table Copy",
+      "loop": "ripple"
+     },
+     {
+      "id": "tb",
+      "x": 310,
+      "y": 130,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 58,
+      "label": "Table Copy",
+      "loop": "ripple"
+     },
+     {
+      "id": "tc",
+      "x": 520,
+      "y": 130,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 58,
+      "label": "Table Copy",
+      "loop": "ripple"
+     },
+     {
+      "id": "ua",
+      "x": 100,
+      "y": 330,
+      "icon": "lib:build-boy-laptop",
+      "shape": "person",
+      "size": 84
+     },
+     {
+      "id": "ub",
+      "x": 310,
+      "y": 330,
+      "icon": "lib:coder",
+      "shape": "person",
+      "size": 84
+     },
+     {
+      "id": "uc",
+      "x": 520,
+      "y": 330,
+      "icon": "lib:student-laptop",
+      "shape": "person",
+      "size": 84
+     }
+    ],
+    "chips": [
+     {
+      "id": "gt",
+      "x": 310,
+      "y": 268,
+      "text": "Amazon DynamoDB Global Tables",
+      "icon": "img:images/aws-dynamodb.svg",
+      "tone": "brand"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "ua",
+      "to": "ta",
+      "two": true
+     },
+     {
+      "id": "a2",
+      "from": "ub",
+      "to": "tb",
+      "two": true
+     },
+     {
+      "id": "a3",
+      "from": "uc",
+      "to": "tc",
+      "two": true
+     },
+     {
+      "id": "r1",
+      "from": "ta",
+      "to": "tb",
+      "two": true,
+      "dashed": true
+     },
+     {
+      "id": "r2",
+      "from": "tb",
+      "to": "tc",
+      "two": true,
+      "dashed": true
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "ta",
+       "tb"
+      ],
+      "dur": 3
+     },
+     {
+      "path": [
+       "tb",
+       "tc"
+      ],
+      "dur": 3
+     },
+     {
+      "path": [
+       "ua",
+       "ta"
+      ],
+      "dur": 2.4,
+      "back": true
+     },
+     {
+      "path": [
+       "ub",
+       "tb"
+      ],
+      "dur": 2.6,
+      "back": true
+     },
+     {
+      "path": [
+       "uc",
+       "tc"
+      ],
+      "dur": 2.8,
+      "back": true
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "ua",
+       "ub",
+       "uc",
+       "a1",
+       "a2",
+       "a3",
+       "packet:2",
+       "packet:3",
+       "packet:4"
+      ],
+      "lit": [
+       "ta",
+       "tb",
+       "tc"
+      ]
+     },
+     {
+      "show": [
+       "r1",
+       "r2",
+       "packet:0",
+       "packet:1",
+       "gt"
+      ],
+      "lit": [
+       "gt"
+      ]
+     }
+    ]
+   },
+   "notes": "Open RDS Multi-AZ mentally as the within-region example before naming S3 CRR for cross-region. Stress that sync trades a little latency for safety, while async trades a little freshness for reach. Interview hook: ask why RDS Multi-AZ is synchronous but read replicas are not.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T08",
+   "layout": "points",
+   "kicker": "Consistency Models",
+   "title": "Strong Vs Eventual",
+   "lead": "A consistency model defines how soon readers see an updated value after a write\nCloud storage typically offers two models: strong consistency and eventual consistency",
+   "points": [
+    {
+     "text": "Strong consistency guarantees a read right after a write returns the latest value",
+     "icon": "Zap"
+    },
+    {
+     "text": "Eventual consistency allows a brief delay before all copies agree",
+     "icon": "Hourglass"
+    },
+    {
+     "text": "Eventual consistency trades instant freshness for lower latency and wider reach",
+     "icon": "Scale"
+    }
+   ],
+   "pointsW": 481,
+   "figH": 360,
+   "figure": {
+    "type": "custom",
+    "name": "A_T08",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Explain strong consistency first because it matches everyday expectation, then show why eventual consistency is accepted for speed and reach. Mention S3's strong consistency as a point most learners get wrong in interviews. Keep the chat board picture in mind while explaining the lag.",
+   "figPad": 18
+  },
+  {
+   "id": "T08-B",
+   "layout": "points",
+   "kicker": "Consistency Models",
+   "title": "Strong Vs Eventual",
+   "points": [
+    {
+     "text": "Amazon S3 gives strong read-after-write consistency for all object operations today",
+     "icon": "img:images/aws-s3.svg"
+    },
+    {
+     "text": "Amazon DynamoDB Global Tables default to eventual consistency for reads across regions",
+     "icon": "img:images/aws-dynamodb.svg"
+    },
+    {
+     "text": "DynamoDB still offers a strongly consistent read option within a single region",
+     "icon": "MapPin"
+    }
+   ],
+   "pointsW": 500,
+   "figH": 400,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 400,
+    "boxes": [
+     {
+      "id": "b1",
+      "label": "Amazon S3",
+      "kind": "plain",
+      "icon": "img:images/aws-s3.svg",
+      "x": 6,
+      "y": 6,
+      "w": 608,
+      "h": 116
+     },
+     {
+      "id": "b2",
+      "label": "DynamoDB Global Tables",
+      "kind": "plain",
+      "icon": "img:images/aws-dynamodb.svg",
+      "x": 6,
+      "y": 140,
+      "w": 608,
+      "h": 116
+     },
+     {
+      "id": "b3",
+      "label": "DynamoDB In A Single Region",
+      "kind": "plain",
+      "icon": "img:images/aws-dynamodb.svg",
+      "x": 6,
+      "y": 274,
+      "w": 608,
+      "h": 116
+     }
+    ],
+    "nodes": [
+     {
+      "id": "w1",
+      "x": 90,
+      "y": 72,
+      "icon": "PenLine",
+      "shape": "tile",
+      "size": 46,
+      "label": "Write"
+     },
+     {
+      "id": "o1",
+      "x": 250,
+      "y": 72,
+      "icon": "img:images/aws-s3-object.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Object"
+     },
+     {
+      "id": "r1",
+      "x": 410,
+      "y": 72,
+      "icon": "BookOpen",
+      "shape": "tile",
+      "size": 46,
+      "label": "Read",
+      "tone": "good"
+     },
+     {
+      "id": "ga",
+      "x": 120,
+      "y": 206,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Region A"
+     },
+     {
+      "id": "gb",
+      "x": 330,
+      "y": 206,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Region B",
+      "tone": "warn"
+     },
+     {
+      "id": "sa",
+      "x": 120,
+      "y": 340,
+      "icon": "img:images/aws-dynamodb-table.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Table"
+     },
+     {
+      "id": "sr",
+      "x": 330,
+      "y": 340,
+      "icon": "BookOpen",
+      "shape": "tile",
+      "size": 46,
+      "label": "Read",
+      "tone": "good"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 540,
+      "y": 72,
+      "text": "Latest Value",
+      "icon": "Check",
+      "tone": "good"
+     },
+     {
+      "id": "c2",
+      "x": 500,
+      "y": 206,
+      "text": "Eventual Across Regions",
+      "icon": "Hourglass",
+      "tone": "warn"
+     },
+     {
+      "id": "c3",
+      "x": 500,
+      "y": 340,
+      "text": "Strongly Consistent Read",
+      "icon": "Check",
+      "tone": "good"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "w1",
+      "to": "o1"
+     },
+     {
+      "id": "a2",
+      "from": "o1",
+      "to": "r1"
+     },
+     {
+      "id": "a3",
+      "from": "ga",
+      "to": "gb",
+      "dashed": true
+     },
+     {
+      "id": "a4",
+      "from": "sa",
+      "to": "sr"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "ga",
+       "gb"
+      ],
+      "dur": 4,
+      "tone": "accent"
+     },
+     {
+      "path": [
+       "w1",
+       "o1",
+       "r1"
+      ],
+      "dur": 3.2
+     },
+     {
+      "path": [
+       "sa",
+       "sr"
+      ],
+      "dur": 2.4,
+      "tone": "good"
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "b1",
+       "w1",
+       "o1",
+       "r1",
+       "a1",
+       "a2",
+       "c1",
+       "packet:1"
+      ],
+      "lit": [
+       "r1",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "b2",
+       "ga",
+       "gb",
+       "a3",
+       "packet:0",
+       "c2"
+      ],
+      "lit": [
+       "c2"
+      ]
+     },
+     {
+      "show": [
+       "b3",
+       "sa",
+       "sr",
+       "a4",
+       "c3",
+       "packet:2"
+      ],
+      "lit": [
+       "c3"
+      ]
+     }
+    ]
+   },
+   "notes": "Explain strong consistency first because it matches everyday expectation, then show why eventual consistency is accepted for speed and reach. Mention S3's strong consistency as a point most learners get wrong in interviews. Keep the chat board picture in mind while explaining the lag.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T08-AN",
+   "layout": "analogy",
+   "label": "Analogy: a principal's notice",
+   "kicker": "Consistency Models",
+   "title": "Strong Vs Eventual",
+   "h": 430,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T08Everyday",
+    "props": {
+     "steps": 2
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T08Concept",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "TR analogy: A school principal's notice appears instantly on the office board, but photocopies pinned on each wing's board take a few minutes to catch up — just as eventual consistency lets distant copies lag briefly before matching the original."
+  },
+  {
+   "id": "T09",
+   "layout": "custom",
+   "component": "B_T09Table",
+   "label": "Choosing The Right Fit",
+   "props": {
+    "id": "T09",
+    "kicker": "Replication Trade-Offs",
+    "title": "Choosing The Right Fit",
+    "lead": "Choosing replication scope and a consistency model builds on the durability and availability promise made earlier\nThe same balance of cost, latency and freshness carries into the next storage tier decision",
+    "table": {
+     "type": "table",
+     "size": 17,
+     "columns": [
+      {
+       "label": "Type",
+       "icon": "img:images/data-replication-3d.png",
+       "weight": 1.1
+      },
+      {
+       "label": "Scope",
+       "icon": "Globe",
+       "weight": 0.9
+      },
+      {
+       "label": "Mode",
+       "icon": "Send",
+       "weight": 1
+      },
+      {
+       "label": "Consistency",
+       "icon": "Timer",
+       "weight": 0.95
+      },
+      {
+       "label": "AWS Example",
+       "icon": "Cloud",
+       "weight": 1.15
+      }
+     ],
+     "rows": [
+      {
+       "icon": "img:images/aws-rds-multi-az.svg",
+       "cells": [
+        "Multi-AZ",
+        "Within region",
+        "Synchronous",
+        "Strong",
+        "Amazon RDS Multi-AZ"
+       ]
+      },
+      {
+       "icon": "img:images/aws-s3-replication.svg",
+       "cells": [
+        "Cross-Region Replication",
+        "Across regions",
+        "Asynchronous",
+        "Eventual (lag)",
+        "Amazon S3 CRR"
+       ]
+      },
+      {
+       "icon": "img:images/aws-dynamodb-table.svg",
+       "cells": [
+        "Global Tables",
+        "Across regions",
+        "Asynchronous, multi-write",
+        "Eventual, tunable",
+        "Amazon DynamoDB Global Tables"
+       ]
+      }
+     ],
+     "rowIcon": 26,
+     "headIcon": 20
+    }
+   },
+   "notes": "Walk the table row by row, linking scope, mode and consistency so the pattern stays visible rather than memorised. Note that the same trade-off reappears when choosing a storage tier. This slide is a recap table, not a new idea."
+  },
+  {
+   "id": "S-QUIZ1",
+   "layout": "quiz"
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3
+  },
+  {
+   "id": "T10",
+   "layout": "points",
+   "kicker": "Storage Tiers Landscape",
+   "title": "Hot Cool Archive",
+   "lead": "Storage tiering moves data across classes priced by access frequency, trading retrieval speed for cost\nCloud providers group these into hot, cool and archive tiers",
+   "points": [
+    {
+     "text": "Hot tier keeps frequently accessed data on costly, instantly available storage like Amazon S3 Standard",
+     "icon": "Flame"
+    },
+    {
+     "text": "Cool tier stores infrequently accessed data cheaper, with a small retrieval fee, like S3 Standard-IA",
+     "icon": "Snowflake"
+    },
+    {
+     "text": "Archive tier stores rarely accessed data cheapest, with retrieval delayed minutes to hours, like S3 Glacier",
+     "icon": "Archive"
+    }
+   ],
+   "pointsW": 604,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "B_Tiers",
+    "props": {
+     "steps": 3,
+     "mode": "landscape"
+    }
+   },
+   "notes": "Introduce tiering as grouping storage classes by access frequency, not data type. Mention all three tiers together, noting this mirrors the hot/cool/archive diagram. Flag that interviewers often ask which AWS class belongs to which tier.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T11",
+   "layout": "points",
+   "kicker": "Why Tiers Exist",
+   "title": "Retrieval Cost Trade-Off",
+   "lead": "Most data is read often soon after creation and rarely later, so paying premium rates forever wastes money\nTiering matches storage class to access pattern, so cost falls as access frequency drops",
+   "points": [
+    {
+     "text": "Retrieval time rises from milliseconds to hours, moving hot to archive",
+     "icon": "Timer"
+    },
+    {
+     "text": "Per-gigabyte storage price drops sharply moving from hot to archive",
+     "icon": "TrendingDown"
+    },
+    {
+     "text": "Retrieval fees per request or gigabyte rise from hot to archive",
+     "icon": "TrendingUp"
+    }
+   ],
+   "pointsW": 470,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "B_Tiers",
+    "props": {
+     "steps": 3,
+     "mode": "tradeoff"
+    }
+   },
+   "notes": "Explain the trade-off as an economic one: speed costs money, so storage should not pay for speed it never uses. Use the library analogy verbally, pointing at the three-tier diagram while narrating it. Mention this trade-off is a favourite interview question on storage cost optimisation.",
+   "figPad": 18
+  },
+  {
+   "id": "T11-AN",
+   "layout": "analogy",
+   "label": "Analogy: clothes and documents at home",
+   "kicker": "Why Tiers Exist",
+   "title": "Retrieval Cost Trade-Off",
+   "h": 430,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T11Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T11Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: At home, daily-wear clothes stay in the wardrobe for instant use, winter clothes go into a suitcase in the loft that takes a few minutes to bring down, and old documents go into a bank locker that needs a trip to fetch. In the same way, hot, cool and archive tiers trade instant access for lower storage cost."
+  },
+  {
+   "id": "T12",
+   "layout": "points",
+   "kicker": "Hot And Cool Tiers",
+   "title": "Standard And Infrequent",
+   "lead": "In Amazon S3, the hot tier is S3 Standard and the cool tier is S3 Standard-IA\nBoth store data in the same region but price it differently based on read frequency",
+   "points": [
+    {
+     "text": "S3 Standard offers millisecond retrieval with no retrieval fee",
+     "icon": "img:images/aws-s3-standard.svg",
+     "at": 1
+    },
+    {
+     "text": "S3 Standard-IA offers millisecond retrieval but charges a per-gigabyte retrieval fee",
+     "icon": "img:images/aws-s3-standard-ia.svg",
+     "at": 2
+    }
+   ],
+   "pointsW": 500,
+   "figH": 380,
+   "figure": {
+    "type": "custom",
+    "name": "G_T12A",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Show the storage class dropdown in the S3 console when uploading or editing an object. Cool-tier storage costs less per gigabyte, but the retrieval fee only pays off below roughly monthly access. Mention One Zone-IA's single-zone trade-off as a likely interview point.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T12-B",
+   "layout": "points",
+   "kicker": "Hot And Cool Tiers",
+   "title": "Standard And Infrequent",
+   "points": [
+    {
+     "text": "S3 One Zone-IA costs less than Standard-IA but keeps data in a single AZ",
+     "icon": "img:images/aws-s3-one-zone-ia.svg",
+     "at": 1
+    },
+    {
+     "text": "So losing that AZ means losing the data",
+     "icon": "TriangleAlert",
+     "at": 2
+    },
+    {
+     "text": "A hot-tier example is an active website asset; a cool-tier example is a monthly report",
+     "icon": "FileText",
+     "at": 3
+    }
+   ],
+   "pointsW": 500,
+   "figH": 380,
+   "figure": {
+    "type": "custom",
+    "name": "G_T12B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Show the storage class dropdown in the S3 console when uploading or editing an object. Cool-tier storage costs less per gigabyte, but the retrieval fee only pays off below roughly monthly access. Mention One Zone-IA's single-zone trade-off as a likely interview point.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T13",
+   "layout": "points",
+   "kicker": "Archive Tier Variants",
+   "title": "Glacier Retrieval Options",
+   "lead": "The archive tier itself splits into variants that trade retrieval speed for even lower cost, used for data kept mainly for compliance or long-term backup rather than active use",
+   "points": [
+    {
+     "text": "S3 Glacier Instant Retrieval: millisecond access, priced above deeper archive classes",
+     "icon": "img:images/aws-s3-glacier-instant-retrieval.svg"
+    },
+    {
+     "text": "S3 Glacier Flexible Retrieval returns data within minutes to a few hours",
+     "icon": "img:images/aws-s3-glacier-flexible-retrieval.svg"
+    },
+    {
+     "text": "S3 Glacier Deep Archive returns data within about twelve hours, the lowest-cost class",
+     "icon": "img:images/aws-s3-glacier-deep-archive.svg"
+    },
+    {
+     "text": "Archive classes charge for a minimum storage duration, even if deleted early",
+     "icon": "CalendarClock"
+    }
+   ],
+   "pointsW": 500,
+   "figH": 360,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 360,
+    "nodes": [
+     {
+      "id": "ar",
+      "x": 310,
+      "y": 66,
+      "icon": "img:images/aws-s3-glacier.svg",
+      "shape": "tile",
+      "size": 62,
+      "label": "Archive Tier",
+      "labelPos": "above"
+     },
+     {
+      "id": "v1",
+      "x": 106,
+      "y": 200,
+      "icon": "img:images/aws-s3-glacier-instant-retrieval.svg",
+      "shape": "tile",
+      "size": 60,
+      "label": "Instant Retrieval"
+     },
+     {
+      "id": "v2",
+      "x": 310,
+      "y": 200,
+      "icon": "img:images/aws-s3-glacier-flexible-retrieval.svg",
+      "shape": "tile",
+      "size": 60,
+      "label": "Flexible Retrieval"
+     },
+     {
+      "id": "v3",
+      "x": 514,
+      "y": 200,
+      "icon": "img:images/aws-s3-glacier-deep-archive.svg",
+      "shape": "tile",
+      "size": 60,
+      "label": "Deep Archive"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 106,
+      "y": 284,
+      "text": "Milliseconds",
+      "icon": "Zap",
+      "tone": "brand"
+     },
+     {
+      "id": "c2",
+      "x": 310,
+      "y": 284,
+      "text": "Minutes To A Few Hours",
+      "icon": "Timer",
+      "tone": "brand"
+     },
+     {
+      "id": "c3",
+      "x": 514,
+      "y": 284,
+      "text": "About Twelve Hours",
+      "icon": "Hourglass",
+      "tone": "brand"
+     },
+     {
+      "id": "c3b",
+      "x": 514,
+      "y": 120,
+      "text": "Lowest Cost",
+      "icon": "BadgeIndianRupee",
+      "tone": "good"
+     },
+     {
+      "id": "c4",
+      "x": 310,
+      "y": 336,
+      "text": "Minimum Storage Duration Charged",
+      "icon": "CalendarClock",
+      "tone": "warn"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "ar",
+      "to": "v1",
+      "bend": "h"
+     },
+     {
+      "id": "a2",
+      "from": "ar",
+      "to": "v2"
+     },
+     {
+      "id": "a3",
+      "from": "ar",
+      "to": "v3",
+      "bend": "h"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "ar",
+       "v1"
+      ],
+      "dur": 1.6
+     },
+     {
+      "path": [
+       "ar",
+       "v2"
+      ],
+      "dur": 2.6
+     },
+     {
+      "path": [
+       "ar",
+       "v3"
+      ],
+      "dur": 3.6
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "v1",
+       "a1",
+       "c1",
+       "packet:0"
+      ],
+      "lit": [
+       "v1",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "v2",
+       "a2",
+       "c2",
+       "packet:1"
+      ],
+      "lit": [
+       "v2",
+       "c2"
+      ]
+     },
+     {
+      "show": [
+       "v3",
+       "a3",
+       "c3",
+       "c3b",
+       "packet:2"
+      ],
+      "lit": [
+       "v3",
+       "c3",
+       "c3b"
+      ]
+     },
+     {
+      "show": [
+       "c4"
+      ],
+      "lit": [
+       "c4"
+      ]
+     }
+    ]
+   },
+   "notes": "Explain that archive variants are tiers within the archive tier, not a separate fourth tier. Show that the S3 console's lifecycle and storage-class settings choose the archive class. Exam hook: Deep Archive is cheapest but slowest; Instant Retrieval is fastest but costliest.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4
+  },
+  {
+   "id": "T15",
+   "layout": "points",
+   "kicker": "Lifecycle Policies",
+   "title": "Why They Exist",
+   "lead": "Tracking the age of millions of objects manually is impossible at scale\nA lifecycle policy is a rule set that automatically moves or deletes objects once they reach a set age",
+   "points": [
+    {
+     "text": "A rule applies to a bucket, prefix, or tag",
+     "icon": "Filter"
+    },
+    {
+     "text": "Each rule holds two kinds of action: tier transition or expiration",
+     "icon": "Split"
+    },
+    {
+     "text": "AWS Console: S3 bucket's Management tab, under Lifecycle rules, configures this",
+     "icon": "MousePointerClick"
+    },
+    {
+     "text": "Rules are evaluated on a daily cycle by the storage service itself",
+     "icon": "RefreshCw"
+    }
+   ],
+   "pointsW": 472,
+   "figH": 380,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 380,
+    "nodes": [
+     {
+      "id": "bk",
+      "x": 80,
+      "y": 170,
+      "icon": "img:images/aws-s3-bucket-with-objects.svg",
+      "shape": "tile",
+      "size": 64,
+      "label": "Bucket"
+     },
+     {
+      "id": "ru",
+      "x": 290,
+      "y": 170,
+      "icon": "ListChecks",
+      "shape": "tile",
+      "size": 60,
+      "label": "Lifecycle Rule"
+     },
+     {
+      "id": "tt",
+      "x": 520,
+      "y": 80,
+      "icon": "img:images/aws-s3-glacier.svg",
+      "shape": "tile",
+      "size": 58,
+      "label": "Tier Transition"
+     },
+     {
+      "id": "ex",
+      "x": 520,
+      "y": 262,
+      "icon": "Trash2",
+      "shape": "tile",
+      "size": 58,
+      "label": "Expiration",
+      "tone": "bad"
+     }
+    ],
+    "chips": [
+     {
+      "id": "f1",
+      "x": 58,
+      "y": 40,
+      "text": "Bucket",
+      "icon": "Box",
+      "w": 98
+     },
+     {
+      "id": "f2",
+      "x": 164,
+      "y": 40,
+      "text": "Prefix",
+      "icon": "FolderTree",
+      "w": 98
+     },
+     {
+      "id": "f3",
+      "x": 270,
+      "y": 40,
+      "text": "Tag",
+      "icon": "Tag",
+      "w": 98
+     },
+     {
+      "id": "g1",
+      "x": 520,
+      "y": 150,
+      "text": "Trigger: Set Age",
+      "icon": "CalendarClock",
+      "tone": "brand"
+     },
+     {
+      "id": "g2",
+      "x": 520,
+      "y": 332,
+      "text": "Trigger: Set Age",
+      "icon": "CalendarClock",
+      "tone": "brand"
+     },
+     {
+      "id": "cc",
+      "x": 200,
+      "y": 300,
+      "text": "Management Tab, Lifecycle Rules",
+      "icon": "MousePointerClick",
+      "tone": "brand"
+     },
+     {
+      "id": "cd",
+      "x": 290,
+      "y": 100,
+      "text": "Daily Cycle",
+      "icon": "RefreshCw",
+      "tone": "good"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a0",
+      "from": "bk",
+      "to": "ru"
+     },
+     {
+      "id": "a1",
+      "from": "ru",
+      "to": "tt",
+      "bend": "h"
+     },
+     {
+      "id": "a2",
+      "from": "ru",
+      "to": "ex",
+      "bend": "h"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "bk",
+       "ru"
+      ],
+      "dur": 2.2
+     },
+     {
+      "path": [
+       "ru",
+       "tt"
+      ],
+      "dur": 2.6
+     },
+     {
+      "path": [
+       "ru",
+       "ex"
+      ],
+      "dur": 2.6,
+      "tone": "bad"
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "f1",
+       "f2",
+       "f3"
+      ],
+      "lit": [
+       "f1",
+       "f2",
+       "f3",
+       "bk"
+      ]
+     },
+     {
+      "show": [
+       "tt",
+       "ex",
+       "a1",
+       "a2",
+       "g1",
+       "g2",
+       "packet:1",
+       "packet:2"
+      ],
+      "lit": [
+       "tt",
+       "ex"
+      ]
+     },
+     {
+      "show": [
+       "cc"
+      ],
+      "lit": [
+       "cc"
+      ]
+     },
+     {
+      "show": [
+       "cd",
+       "packet:0"
+      ],
+      "lit": [
+       "cd",
+       "ru"
+      ]
+     }
+    ]
+   },
+   "notes": "Explain lifecycle policies as the automation that removes manual tier management at scale. Mention the S3 Console location for configuring rules. Exam hook: lifecycle rules run automatically inside the storage service, with no application code involved.",
+   "figPad": 18
+  },
+  {
+   "id": "T15-AN",
+   "layout": "analogy",
+   "label": "Analogy: files in an office",
+   "kicker": "Lifecycle Policies",
+   "title": "Why They Exist",
+   "h": 430,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T15Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T15Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: In an office, active files stay on the desk, files older than six months are moved to the record room, and files older than seven years are shredded as per company policy, without anyone deciding each time. In the same way, a lifecycle policy automatically moves objects to cheaper tiers and deletes them once they reach a set age."
+  },
+  {
+   "id": "T16",
+   "layout": "points",
+   "kicker": "Tier Transitions",
+   "title": "Moving By Age",
+   "lead": "A transition rule moves an object to a cheaper class once it reaches a set age, keeping its key\nA minimum storage duration applies, since early moves can cost more than staying put",
+   "points": [
+    {
+     "text": "Transition age: S3 Standard moves to Standard-Infrequent Access (Standard-IA) after 30 days, for example",
+     "icon": "CalendarDays",
+     "at": 1
+    },
+    {
+     "text": "Further ageing can move the object again, to Glacier Flexible Retrieval or Deep Archive",
+     "icon": "ArrowDownRight",
+     "at": 2
+    }
+   ],
+   "pointsW": 585,
+   "figH": 360,
+   "figure": {
+    "type": "custom",
+    "name": "G_T16A",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Walk through the timeline bar showing objects cooling tier by tier. Key cost point: moving data out before the minimum storage duration can cost more than leaving it in place. Interview hook: ask why providers enforce this minimum duration.",
+   "figPad": 18
+  },
+  {
+   "id": "T16-B",
+   "layout": "points",
+   "kicker": "Tier Transitions",
+   "title": "Moving By Age",
+   "points": [
+    {
+     "text": "Early-move penalty: extra days are billed at the old class's rate, not the new one",
+     "icon": "TriangleAlert",
+     "at": 1
+    },
+    {
+     "text": "A single rule can chain several transitions in sequence on one filter",
+     "icon": "Link",
+     "at": 2
+    }
+   ],
+   "pointsW": 585,
+   "figH": 360,
+   "figure": {
+    "type": "custom",
+    "name": "G_T16B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Walk through the timeline bar showing objects cooling tier by tier. Key cost point: moving data out before the minimum storage duration can cost more than leaving it in place. Interview hook: ask why providers enforce this minimum duration.",
+   "figPad": 18
+  },
+  {
+   "id": "T17",
+   "layout": "points",
+   "kicker": "Expiration Rules",
+   "title": "Deleting By Age",
+   "lead": "An expiration rule deletes an object once it crosses a set age\nIn a versioned bucket, this only adds a delete marker, so a separate noncurrent-version rule is needed to remove old copies",
+   "points": [
+    {
+     "text": "Current-version age limits are usually set well beyond the last planned tier transition",
+     "icon": "FileClock"
+    },
+    {
+     "text": "Noncurrent-version expiration: clears older versions kept behind by bucket versioning",
+     "icon": "History"
+    },
+    {
+     "text": "Incomplete multipart upload cleanup: removes abandoned partial uploads after a few days",
+     "icon": "FileX"
+    },
+    {
+     "text": "Expiration frees storage cost entirely, unlike a transition, which only lowers it",
+     "icon": "Wallet"
+    }
+   ],
+   "pointsW": 510,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "B_T17",
+    "props": {
+     "steps": 4
+    }
+   },
+   "notes": "Separate expiration from transition: one removes cost entirely, the other only lowers it. Note that noncurrent-version expiration only matters once versioning is already switched on. Exam hook: ask what happens to old versions in a versioned bucket with no expiration rule set.",
+   "figPad": 18
+  },
+  {
+   "id": "T18",
+   "layout": "table",
+   "kicker": "Lifecycle Timeline",
+   "title": "One Object Traced",
+   "lead": "A 2 GB log file uploaded to S3 Standard moves to Standard-IA at day 30, Glacier at day 90, and expires at day 365, all under one combined lifecycle rule",
+   "table": {
+    "type": "table",
+    "size": 18,
+    "columns": [
+     {
+      "label": "Day",
+      "icon": "CalendarDays",
+      "weight": 0.5
+     },
+     {
+      "label": "Storage Class",
+      "icon": "Layers",
+      "weight": 1.2
+     },
+     {
+      "label": "Action",
+      "icon": "Activity",
+      "weight": 1.25
+     },
+     {
+      "label": "Retrieval Time",
+      "icon": "Timer",
+      "weight": 0.95
+     }
+    ],
+    "rows": [
+     {
+      "icon": "img:images/aws-s3-standard.svg",
+      "cells": [
+       "0",
+       "S3 Standard",
+       "Uploaded, hot access",
+       "Milliseconds"
+      ]
+     },
+     {
+      "icon": "img:images/aws-s3-standard-ia.svg",
+      "cells": [
+       "30",
+       "Standard-IA",
+       "Transitioned, infrequent access",
+       "Milliseconds"
+      ]
+     },
+     {
+      "icon": "img:images/aws-s3-glacier-flexible-retrieval.svg",
+      "cells": [
+       "90",
+       "Glacier Flexible Retrieval",
+       "Transitioned, archived",
+       "Minutes to hours"
+      ]
+     },
+     {
+      "icon": "Trash2",
+      "cells": [
+       "365",
+       "Deleted",
+       "Expired, permanently removed",
+       "Not retrievable"
+      ]
+     }
+    ],
+    "rowIcon": 26
+   },
+   "notes": "Trace the log file row by row, showing transition and expiration inside one combined rule. Note retrieval time rising as cost falls at each step. Interview hook: ask the restore cost if the file is read back on day 95."
+  },
+  {
+   "id": "T18-B",
+   "layout": "lead",
+   "kicker": "Lifecycle Timeline",
+   "title": "One Object Traced",
+   "lead": "Lifecycle policies manage cost across an object's working life, while backup and disaster-recovery planning protects against the one event a lifecycle rule never anticipates: unplanned data loss",
+   "figW": 980,
+   "figH": 300,
+   "figure": {
+    "type": "diagram",
+    "w": 980,
+    "h": 300,
+    "boxes": [
+     {
+      "id": "l1",
+      "label": "Lifecycle Policies",
+      "kind": "plain",
+      "icon": "ListChecks",
+      "x": 6,
+      "y": 6,
+      "w": 968,
+      "h": 136
+     },
+     {
+      "id": "l2",
+      "label": "Backup And Disaster-Recovery Planning",
+      "kind": "plain",
+      "icon": "LifeBuoy",
+      "x": 6,
+      "y": 158,
+      "w": 968,
+      "h": 136
+     }
+    ],
+    "nodes": [
+     {
+      "id": "n0",
+      "x": 290,
+      "y": 80,
+      "icon": "img:images/aws-s3-standard.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Day 0"
+     },
+     {
+      "id": "n1",
+      "x": 470,
+      "y": 80,
+      "icon": "img:images/aws-s3-standard-ia.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Day 30"
+     },
+     {
+      "id": "n2",
+      "x": 650,
+      "y": 80,
+      "icon": "img:images/aws-s3-glacier-flexible-retrieval.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Day 90"
+     },
+     {
+      "id": "n3",
+      "x": 830,
+      "y": 80,
+      "icon": "Trash2",
+      "shape": "tile",
+      "size": 52,
+      "label": "Day 365"
+     },
+     {
+      "id": "zz",
+      "x": 380,
+      "y": 232,
+      "icon": "Zap",
+      "shape": "tile",
+      "size": 52,
+      "label": "Unplanned Data Loss",
+      "labelPos": "right",
+      "tone": "bad",
+      "loop": "pulse"
+     }
+    ],
+    "chips": [
+     {
+      "id": "k1",
+      "x": 120,
+      "y": 92,
+      "text": "Manage Cost",
+      "icon": "Wallet",
+      "tone": "brand"
+     },
+     {
+      "id": "k2",
+      "x": 120,
+      "y": 244,
+      "text": "Protect",
+      "icon": "ShieldCheck",
+      "tone": "good"
+     },
+     {
+      "id": "k3",
+      "x": 760,
+      "y": 232,
+      "text": "Never Anticipated By A Lifecycle Rule",
+      "icon": "EyeOff",
+      "tone": "bad"
+     }
+    ],
+    "arrows": [
+     {
+      "from": "n0",
+      "to": "n1"
+     },
+     {
+      "from": "n1",
+      "to": "n2"
+     },
+     {
+      "from": "n2",
+      "to": "n3"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "n0",
+       "n1",
+       "n2",
+       "n3"
+      ],
+      "dur": 5
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "l1",
+       "n0",
+       "n1",
+       "n2",
+       "n3",
+       "n0>n1",
+       "n1>n2",
+       "n2>n3",
+       "packet:0",
+       "k1"
+      ],
+      "lit": [
+       "k1"
+      ]
+     },
+     {
+      "show": [
+       "l2",
+       "zz",
+       "k2",
+       "k3"
+      ],
+      "lit": [
+       "zz",
+       "k3"
+      ]
+     }
+    ]
+   },
+   "notes": "Trace the log file row by row, showing transition and expiration inside one combined rule. Note retrieval time rising as cost falls at each step. Interview hook: ask the restore cost if the file is read back on day 95."
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "Backup Strategies Overview",
+   "title": "Types Of Backups",
+   "lead": "Storage replication guards against disk failure but not deletion, corruption or ransomware\nA backup strategy keeps separate recoverable copies, trading storage and restore time for simplicity",
+   "points": [
+    {
+     "text": "Full backup copies all data every time, giving fastest restore but highest storage cost",
+     "icon": "Database",
+     "at": 1
+    },
+    {
+     "text": "Incremental backup copies only data changed since last backup, saving storage but slowing restores",
+     "icon": "Plus",
+     "at": 2
+    }
+   ],
+   "pointsW": 604,
+   "figH": 380,
+   "figure": {
+    "type": "custom",
+    "name": "G_T19",
+    "props": {
+     "steps": 2,
+     "rows": [
+      0,
+      1
+     ]
+    }
+   },
+   "notes": "Explain that replication guards against hardware failure, not accidental or malicious deletion. Mention that AWS Backup centralises scheduling across EBS, RDS and S3. Interviewers often ask the difference between incremental and differential backup, so stress that distinction.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T19-B",
+   "layout": "points",
+   "kicker": "Backup Strategies Overview",
+   "title": "Types Of Backups",
+   "points": [
+    {
+     "text": "Differential backup copies all changes since last full backup, balancing storage cost against restore speed",
+     "icon": "Layers",
+     "at": 1
+    },
+    {
+     "text": "Snapshot-based backup captures a point-in-time image of a volume or database for near-instant recovery",
+     "icon": "Camera",
+     "at": 2
+    }
+   ],
+   "pointsW": 604,
+   "figH": 380,
+   "figure": {
+    "type": "custom",
+    "name": "G_T19",
+    "props": {
+     "steps": 2,
+     "rows": [
+      2,
+      3
+     ]
+    }
+   },
+   "notes": "Explain that replication guards against hardware failure, not accidental or malicious deletion. Mention that AWS Backup centralises scheduling across EBS, RDS and S3. Interviewers often ask the difference between incremental and differential backup, so stress that distinction.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "RPO And RTO",
+   "title": "Measuring Recovery Targets",
+   "lead": "Disaster recovery answers two questions: how much data can be lost, and how long the system can stay down\nRecovery Point Objective (RPO) caps data loss; Recovery Time Objective (RTO) caps downtime",
+   "points": [
+    {
+     "text": "A four-hour RPO requires backups at least every four hours",
+     "icon": "img:images/aws-aws-backup-recovery-point-objective.svg"
+    },
+    {
+     "text": "A one-hour RTO requires full recovery within one hour of failure",
+     "icon": "img:images/aws-aws-backup-recovery-time-objective.svg"
+    },
+    {
+     "text": "Lower RPO and RTO values cost more, needing frequent backups and standby capacity",
+     "icon": "Wallet"
+    },
+    {
+     "text": "Payment and order databases target near-zero RPO and RTO; archives tolerate higher values",
+     "icon": "CreditCard"
+    }
+   ],
+   "pointsW": 540,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "G_T20",
+    "props": {
+     "steps": 4
+    }
+   },
+   "notes": "Walk through the two questions RPO and RTO answer before naming them. AWS Backup and monitoring dashboards report actual RPO and RTO against targets. Interviewers often ask for a one-line definition distinguishing RPO from RTO.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T20-AN",
+   "layout": "analogy",
+   "label": "Analogy: a shop owner's notebook",
+   "kicker": "RPO And RTO",
+   "title": "Measuring Recovery Targets",
+   "h": 430,
+   "everyday": {
+    "type": "custom",
+    "name": "F_T20Everyday",
+    "props": {
+     "steps": 3
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "F_T20Concept",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "TR analogy: A shop owner copies the day's sales into a notebook every evening. If the billing computer crashes, at most one day of sales records is lost (RPO), and the time taken to set up a new computer and start billing again is the downtime (RTO). In the same way, RPO limits how much data can be lost and RTO limits how long the system stays down."
+  },
+  {
+   "id": "T21",
+   "layout": "points",
+   "kicker": "DR Patterns Map",
+   "title": "Backup To Standby",
+   "lead": "Disaster recovery (DR) plans sit along a cost-versus-speed spectrum: spending more on standby infrastructure buys a faster recovery\nThree common patterns occupy different points on this spectrum",
+   "points": [
+    {
+     "text": "Backup-restore rebuilds infrastructure from scratch, the cheapest and slowest pattern",
+     "icon": "img:images/aws-aws-backup.svg",
+     "at": 1
+    },
+    {
+     "text": "Pilot light keeps a minimal core, like a database, always running",
+     "icon": "Flame",
+     "at": 2
+    },
+    {
+     "text": "Warm standby runs a scaled-down but fully functional copy continuously",
+     "icon": "ServerCog",
+     "at": 3
+    }
+   ],
+   "pointsW": 500,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "G_T21A",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Name all three patterns together first so the full spectrum is visible. Note that AWS builds these using AWS Backup, read replicas, Auto Scaling and Route 53 failover routing. Ask which pattern suits a database-only workload as a quick check.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T21-B",
+   "layout": "points",
+   "kicker": "DR Patterns Map",
+   "title": "Backup To Standby",
+   "points": [
+    {
+     "text": "Each pattern trades a higher standby cost for a lower recovery time objective",
+     "icon": "Scale",
+     "at": 1
+    }
+   ],
+   "pointsW": 500,
+   "figH": 370,
+   "figure": {
+    "type": "custom",
+    "name": "B_T21",
+    "props": {
+     "steps": 4
+    }
+   },
+   "notes": "Name all three patterns together first so the full spectrum is visible. Note that AWS builds these using AWS Backup, read replicas, Auto Scaling and Route 53 failover routing. Ask which pattern suits a database-only workload as a quick check.",
+   "figPad": 18
+  },
+  {
+   "id": "T22",
+   "layout": "points",
+   "kicker": "Backup Restore Mechanism",
+   "title": "Rebuild After Disaster",
+   "lead": "Backup-restore relies entirely on the backups built earlier: no standby servers run in the disaster recovery (DR) region until a disaster is actually declared",
+   "points": [
+    {
+     "text": "Snapshots and database dumps sit in a separate region, ready for restore",
+     "icon": "Camera",
+     "at": 1
+    },
+    {
+     "text": "After a disaster, new infrastructure is built from scratch and the latest backup restored onto it",
+     "icon": "Hammer",
+     "at": 2
+    }
+   ],
+   "pointsW": 557,
+   "figH": 400,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 400,
+    "boxes": [
+     {
+      "id": "pr",
+      "label": "Production Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 6,
+      "y": 10,
+      "w": 200,
+      "h": 380
+     },
+     {
+      "id": "dr",
+      "label": "DR Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 380,
+      "y": 10,
+      "w": 234,
+      "h": 380
+     }
+    ],
+    "nodes": [
+     {
+      "id": "pw",
+      "x": 106,
+      "y": 100,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Web Servers"
+     },
+     {
+      "id": "pa",
+      "x": 106,
+      "y": 200,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "App Servers"
+     },
+     {
+      "id": "pd",
+      "x": 106,
+      "y": 304,
+      "icon": "img:images/aws-rds.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Database"
+     },
+     {
+      "id": "bv",
+      "x": 440,
+      "y": 304,
+      "icon": "img:images/aws-aws-backup-backup-vault.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "AWS Backup",
+      "loop": "ripple"
+     },
+     {
+      "id": "s3",
+      "x": 556,
+      "y": 304,
+      "icon": "img:images/aws-s3.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Amazon S3"
+     },
+     {
+      "id": "nw",
+      "x": 497,
+      "y": 100,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Web Servers (Built After Disaster)"
+     },
+     {
+      "id": "na",
+      "x": 497,
+      "y": 200,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "App Servers (Built After Disaster)"
+     },
+     {
+      "id": "zz",
+      "x": 176,
+      "y": 76,
+      "icon": "Zap",
+      "shape": "disc",
+      "size": 38,
+      "tone": "bad",
+      "loop": "pulse"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 294,
+      "y": 268,
+      "text": "Snapshots And Dumps",
+      "icon": "Camera",
+      "tone": "brand"
+     },
+     {
+      "id": "cd",
+      "x": 294,
+      "y": 56,
+      "text": "Disaster Declared",
+      "icon": "Zap",
+      "tone": "bad"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "pd",
+      "to": "bv",
+      "dashed": true
+     },
+     {
+      "id": "a2",
+      "from": "bv",
+      "to": "na"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "pd",
+       "bv"
+      ],
+      "dur": 3
+     },
+     {
+      "path": [
+       "bv",
+       "na"
+      ],
+      "dur": 1.8,
+      "tone": "good"
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "bv",
+       "s3",
+       "a1",
+       "packet:0",
+       "c1"
+      ],
+      "lit": [
+       "bv",
+       "s3",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "zz",
+       "cd",
+       "nw",
+       "na",
+       "a2",
+       "packet:1"
+      ],
+      "lit": [
+       "nw",
+       "na",
+       "zz",
+       "cd"
+      ],
+      "dim": [
+       "pw",
+       "pa",
+       "pd"
+      ]
+     }
+    ]
+   },
+   "notes": "Stress that backup-restore spends nothing on standby compute, making it the slowest to recover. Name AWS Backup and cross-region S3 copies as the services behind it. Note the cost-versus-speed trade-off, since it recurs across every DR pattern.",
+   "figPad": 18
+  },
+  {
+   "id": "T22-B",
+   "layout": "points",
+   "kicker": "Backup Restore Mechanism",
+   "title": "Rebuild After Disaster",
+   "points": [
+    {
+     "text": "RTO is high, often hours, since compute, network and app setup follow the failure",
+     "icon": "Hourglass",
+     "at": 1
+    },
+    {
+     "text": "This pattern is cheapest; AWS Backup and S3 storage costs run even without failures",
+     "icon": "Wallet",
+     "at": 2
+    }
+   ],
+   "pointsW": 557,
+   "figH": 400,
+   "figure": {
+    "type": "custom",
+    "name": "G_T22B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "notes": "Stress that backup-restore spends nothing on standby compute, making it the slowest to recover. Name AWS Backup and cross-region S3 copies as the services behind it. Note the cost-versus-speed trade-off, since it recurs across every DR pattern.",
+   "figPad": 18
+  },
+  {
+   "id": "T23",
+   "layout": "points",
+   "kicker": "Pilot Light Mechanism",
+   "title": "Core Always Running",
+   "lead": "Pilot light keeps only the smallest essential core, typically a database, continuously replicating into the disaster recovery (DR) region, while the compute layers above it stay switched off until needed",
+   "points": [
+    {
+     "text": "A replicated database, such as a read replica, stays live and synced with production",
+     "icon": "img:images/aws-rds.svg"
+    },
+    {
+     "text": "Application and web servers exist only as stopped machine images",
+     "icon": "img:images/aws-ec2-ami.svg"
+    },
+    {
+     "text": "Failover starts the stopped servers and redirects traffic, cutting recovery time to minutes",
+     "icon": "img:images/aws-route-53.svg"
+    },
+    {
+     "text": "Running cost stays lower than warm standby since only the core runs continuously",
+     "icon": "Wallet"
+    }
+   ],
+   "pointsW": 528,
+   "figH": 400,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 400,
+    "boxes": [
+     {
+      "id": "pr",
+      "label": "Production Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 6,
+      "y": 10,
+      "w": 200,
+      "h": 380
+     },
+     {
+      "id": "dr",
+      "label": "DR Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 414,
+      "y": 10,
+      "w": 200,
+      "h": 380
+     }
+    ],
+    "nodes": [
+     {
+      "id": "pw",
+      "x": 106,
+      "y": 100,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Web Servers"
+     },
+     {
+      "id": "pa",
+      "x": 106,
+      "y": 200,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "App Servers"
+     },
+     {
+      "id": "pd",
+      "x": 106,
+      "y": 304,
+      "icon": "img:images/aws-rds.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Database"
+     },
+     {
+      "id": "dd",
+      "x": 514,
+      "y": 304,
+      "icon": "img:images/aws-rds.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Read Replica",
+      "loop": "pulse"
+     },
+     {
+      "id": "dw",
+      "x": 514,
+      "y": 100,
+      "icon": "img:images/aws-ec2-ami.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Stopped Image",
+      "tone": "muted"
+     },
+     {
+      "id": "da",
+      "x": 514,
+      "y": 200,
+      "icon": "img:images/aws-ec2-ami.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Stopped Image",
+      "tone": "muted"
+     },
+     {
+      "id": "r5",
+      "x": 310,
+      "y": 100,
+      "icon": "img:images/aws-route-53.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Route 53",
+      "loop": "ripple"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 310,
+      "y": 268,
+      "text": "Live And Synced",
+      "icon": "RefreshCw",
+      "tone": "good"
+     },
+     {
+      "id": "c3",
+      "x": 310,
+      "y": 40,
+      "text": "Recovery In Minutes",
+      "icon": "Timer",
+      "tone": "brand"
+     },
+     {
+      "id": "c4",
+      "x": 310,
+      "y": 200,
+      "text": "Only The Core Runs",
+      "icon": "Wallet",
+      "tone": "good"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "pd",
+      "to": "dd"
+     },
+     {
+      "id": "a3",
+      "from": "r5",
+      "to": "dw"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "pd",
+       "dd"
+      ],
+      "dur": 2.4
+     },
+     {
+      "path": [
+       "r5",
+       "dw"
+      ],
+      "dur": 2
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "dd",
+       "a1",
+       "packet:0",
+       "c1"
+      ],
+      "lit": [
+       "dd",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "dw",
+       "da"
+      ],
+      "lit": [
+       "dw",
+       "da"
+      ]
+     },
+     {
+      "show": [
+       "r5",
+       "a3",
+       "c3",
+       "packet:1"
+      ],
+      "lit": [
+       "r5",
+       "c3",
+       "dw",
+       "da"
+      ],
+      "dim": [
+       "pw",
+       "pa",
+       "pd"
+      ]
+     },
+     {
+      "show": [
+       "c4"
+      ],
+      "lit": [
+       "c4",
+       "dd"
+      ]
+     }
+    ]
+   },
+   "notes": "Pilot light keeps only the core data layer alive, not the full application stack. AWS mechanics: an always-on database replica with stopped EC2 images ready to launch. Interviews often ask how pilot light differs from warm standby in what stays running.",
+   "figPad": 18,
+   "pointIcon": 24
+  },
+  {
+   "id": "T24",
+   "layout": "points",
+   "kicker": "Warm Standby Mechanism",
+   "title": "Scaled-Down Full Copy",
+   "lead": "Warm standby runs a complete, scaled-down copy of the production system in the DR region, kept ready to serve traffic at lower cost",
+   "points": [
+    {
+     "text": "Every tier, web, application and database, runs continuously at reduced capacity in DR",
+     "icon": "Layers",
+     "at": 1
+    },
+    {
+     "text": "Failover usually scales the standby to full capacity and redirects traffic within minutes",
+     "icon": "img:images/aws-ec2-auto-scaling.svg",
+     "at": 2
+    }
+   ],
+   "pointsW": 528,
+   "figH": 400,
+   "figure": {
+    "type": "diagram",
+    "w": 620,
+    "h": 400,
+    "boxes": [
+     {
+      "id": "pr",
+      "label": "Production Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 6,
+      "y": 10,
+      "w": 200,
+      "h": 380
+     },
+     {
+      "id": "dr",
+      "label": "DR Region",
+      "kind": "region",
+      "icon": "img:images/aws-region.svg",
+      "x": 414,
+      "y": 10,
+      "w": 200,
+      "h": 380
+     },
+     {
+      "id": "asg",
+      "label": "Auto Scaling Group",
+      "kind": "zone",
+      "icon": "img:images/aws-auto-scaling-group.svg",
+      "x": 418,
+      "y": 52,
+      "w": 192,
+      "h": 196
+     }
+    ],
+    "nodes": [
+     {
+      "id": "pw",
+      "x": 106,
+      "y": 100,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Web Servers"
+     },
+     {
+      "id": "pa",
+      "x": 106,
+      "y": 200,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "App Servers"
+     },
+     {
+      "id": "pd",
+      "x": 106,
+      "y": 304,
+      "icon": "img:images/aws-rds.svg",
+      "shape": "tile",
+      "size": 52,
+      "label": "Database"
+     },
+     {
+      "id": "dw",
+      "x": 514,
+      "y": 110,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 40,
+      "label": "Web",
+      "loop": "pulse"
+     },
+     {
+      "id": "da",
+      "x": 514,
+      "y": 192,
+      "icon": "img:images/custom-server.svg",
+      "shape": "tile",
+      "size": 40,
+      "label": "App",
+      "loop": "pulse"
+     },
+     {
+      "id": "dd",
+      "x": 514,
+      "y": 304,
+      "icon": "img:images/aws-rds.svg",
+      "shape": "tile",
+      "size": 40,
+      "label": "Database",
+      "loop": "pulse"
+     },
+     {
+      "id": "r5",
+      "x": 310,
+      "y": 100,
+      "icon": "img:images/aws-route-53.svg",
+      "shape": "tile",
+      "size": 46,
+      "label": "Route 53"
+     }
+    ],
+    "chips": [
+     {
+      "id": "c1",
+      "x": 514,
+      "y": 366,
+      "text": "Reduced Capacity",
+      "icon": "Minimize2",
+      "tone": "brand"
+     },
+     {
+      "id": "c2",
+      "x": 310,
+      "y": 40,
+      "text": "Scale Up And Redirect",
+      "icon": "Maximize2",
+      "tone": "brand"
+     }
+    ],
+    "arrows": [
+     {
+      "id": "a1",
+      "from": "pd",
+      "to": "dd"
+     },
+     {
+      "id": "a2",
+      "from": "r5",
+      "to": "asg"
+     }
+    ],
+    "packets": [
+     {
+      "path": [
+       "pd",
+       "dd"
+      ],
+      "dur": 2.4
+     }
+    ],
+    "steps": [
+     {
+      "show": [
+       "asg",
+       "dw",
+       "da",
+       "dd",
+       "a1",
+       "packet:0",
+       "c1"
+      ],
+      "lit": [
+       "dw",
+       "da",
+       "dd",
+       "c1"
+      ]
+     },
+     {
+      "show": [
+       "r5",
+       "a2",
+       "c2"
+      ],
+      "lit": [
+       "r5",
+       "c2",
+       "asg"
+      ],
+      "dim": [
+       "pw",
+       "pa",
+       "pd"
+      ]
+     }
+    ]
+   },
+   "notes": "Contrast warm standby with pilot light: here every tier runs, not just the database. Mention Auto Scaling groups at low minimum capacity and failover routing as the AWS mechanics. Ask what happens if scaled-down capacity cannot absorb full production load after failover.",
+   "pointIcon": 24
+  },
+  {
+   "id": "T24-B",
+   "layout": "points",
+   "kicker": "Warm Standby Mechanism",
+   "title": "Scaled-Down Full Copy",
+   "points": [
+    {
+     "text": "RTO is lower than pilot light since the whole stack is live",
+     "icon": "Timer",
+     "at": 1
+    },
+    {
+     "text": "RPO is similar, as both replicate data continuously",
+     "icon": "RefreshCw",
+     "at": 2
+    },
+    {
+     "text": "Running cost is higher since compute runs continuously across every tier, not just the core",
+     "icon": "Wallet",
+     "at": 3
+    }
+   ],
+   "pointsW": 528,
+   "figH": 400,
+   "figure": {
+    "type": "custom",
+    "name": "G_T24B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "notes": "Contrast warm standby with pilot light: here every tier runs, not just the database. Mention Auto Scaling groups at low minimum capacity and failover routing as the AWS mechanics. Ask what happens if scaled-down capacity cannot absorb full production load after failover.",
+   "figPad": 18
+  },
+  {
+   "id": "T25",
+   "layout": "custom",
+   "component": "B_TargetTable",
+   "label": "Choosing A Pattern",
+   "props": {
+    "id": "T25",
+    "kicker": "Matching RPO RTO",
+    "title": "Choosing A Pattern",
+    "lead": "An order-processing database allows at most 5 minutes of data loss and must recover within 10 minutes of a regional outage\nChecking these targets against the three patterns shows which one qualifies",
+    "note": "Warm standby is the only pattern whose typical figures comfortably clear both the 5-minute RPO and the 10-minute RTO target, at the cost of running a scaled-down full stack continuously"
+   },
+   "notes": "Walk through the table to show why only warm standby clears both targets. Stress that these RPO and RTO figures are business decisions, not fixed technical constants. Interview questions often give an RPO/RTO pair and ask which DR pattern fits, as practised here."
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz"
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways"
+  },
+  {
+   "id": "S-FEEDBACK",
+   "layout": "custom",
+   "component": "S_Feedback",
+   "label": "Feedback",
+   "transition": "zoom"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Elastic Compute Instances"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}
