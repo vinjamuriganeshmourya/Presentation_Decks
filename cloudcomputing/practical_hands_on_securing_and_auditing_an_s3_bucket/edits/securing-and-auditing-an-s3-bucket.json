@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/practical_hands_on_securing_and_auditing_an_s3_bucket/securing-and-auditing-an-s3-bucket",
+  "slides": {},
+  "threads": {
+    "mwot3iuuze99su": {
+      "replies": {},
+      "resolved": false,
+      "slide": "D-LAB",
+      "author": "Pallavi",
+      "text": "Applying Least Privilege with AWS IAM\n\nchange the name to this",
+      "at": 1795168706726
+    }
+  }
+}
