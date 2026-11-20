@@ -49,6 +49,14 @@
       "author": "Pallavi",
       "text": "Cloud-native design keeps requests independent so an elastic fleet can add or remove instances without losing user data. A stateless workload keeps no client data between calls; a stateful one must remember past interactions.\n\nreaplce the deifnation point",
       "at": 1795172783434
+    },
+    "mwovuumkjcs2hl": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21",
+      "author": "Pallavi",
+      "text": "Miss arrow: remove the Cache → Database arrow and draw it from Application → Database, keeping the “Miss” label.\nOptional: add an arrow from Application → Cache labelled “Store” to show the app saving the result after a miss.",
+      "at": 1795173340789
     }
   }
 }
