@@ -33,6 +33,19 @@ const ASG = '#ED7100'
 const ASG_INK = '#B45200'
 const RIM = 'inset 0 0 0 1.5px #D3DEF6, 0 10px 20px -12px rgba(31,64,140,0.5)'
 const LIT = `inset 0 0 0 2.5px ${ORANGE}, 0 10px 22px -12px rgba(255,138,61,0.7)`
+/** the lit ring in the deck blue (slide 9 only, user 2026-11-20: no orange highlight there) */
+const BLUE_LIT = `inset 0 0 0 2.5px ${BLUE}, 0 10px 22px -12px rgba(45,99,251,0.7)`
+
+/** a Panel whose lit ring and glow are the deck blue, not the engine's orange */
+function BluePanel({ lit, ...p }: Parameters<typeof Panel>[0]) {
+  const instant = useInstant()
+  return (
+    <Panel {...p}>
+      <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: 18, pointerEvents: 'none', boxShadow: lit ? `0 0 0 3px ${BLUE}, 0 10px 22px -12px ${BLUE}` : '0 0 0 0 transparent', transition: instant ? 'none' : `box-shadow 420ms ${EASE}` }} />
+      {p.children}
+    </Panel>
+  )
+}
 
 const stepOf = (p: Record<string, unknown>) => Number(p.step ?? 0)
 const box = (x: number, y: number, w: number, h: number, extra?: CSSProperties): CSSProperties => ({ position: 'absolute', left: x, top: y, width: w, height: h, ...extra })
@@ -54,8 +67,10 @@ function useBuild(p: Record<string, unknown>, period: number) {
 }
 
 /** a 3D icon (or an official mark) on its plinth with its tag under (or above) it; the TILE is centred on (x, y) */
-function Node({ x, y, label, icon, mark, size = 52, k = 0.74, on = true, lit = false, warm = false, loop = 'bob', d = 0, t, badge, w = 120, tagSize = 14, dim = false, up = false, delay = 0, z = 3, wrap, cls, children }: { x: number; y: number; label?: string; icon?: Ico3DName; mark?: string; size?: number; k?: number; on?: boolean; lit?: boolean; warm?: boolean; loop?: Loop; d?: number; t?: number; badge?: Badge; w?: number; tagSize?: number; dim?: boolean; up?: boolean; delay?: number; z?: number; wrap?: number; cls?: string; children?: ReactNode }) {
+function Node({ x, y, label, icon, mark, size = 52, k = 0.74, on = true, lit: litIn = false, blue = false, warm = false, loop = 'bob', d = 0, t, badge, w = 120, tagSize = 14, dim = false, up = false, delay = 0, z = 3, wrap, cls, children }: { x: number; y: number; label?: string; icon?: Ico3DName; mark?: string; size?: number; k?: number; on?: boolean; lit?: boolean; blue?: boolean; warm?: boolean; loop?: Loop; d?: number; t?: number; badge?: Badge; w?: number; tagSize?: number; dim?: boolean; up?: boolean; delay?: number; z?: number; wrap?: number; cls?: string; children?: ReactNode }) {
   const instant = useInstant()
+  /* blue: the lit ring drawn in the deck blue instead of the engine's orange (slide 9, user 2026-11-20) */
+  const lit = litIn && !blue
   const tile = mark ? <MarkTile src={mark} size={size} lit={lit} /> : (
     <Plinth size={size} lit={lit} warm={warm}>
       <Ico3D name={icon ?? 'doc'} size={Math.round(size * k)} loop={loop} d={d} t={t} badge={badge} />
@@ -66,6 +81,7 @@ function Node({ x, y, label, icon, mark, size = 52, k = 0.74, on = true, lit = f
     <Show on={on} delay={delay} style={{ position: 'absolute', left: x - w / 2, width: w, zIndex: z, display: 'flex', flexDirection: up ? 'column-reverse' : 'column', alignItems: 'center', ...(up ? { bottom: `calc(100% - ${y + size / 2}px)` } : { top: y - size / 2 }) }}>
       <div className={cls} style={{ position: 'relative', width: size, height: size, display: 'grid', placeItems: 'center' }}>
         <div style={{ display: 'grid', placeItems: 'center', opacity: dim ? 0.42 : 1, filter: dim ? 'grayscale(1)' : undefined, transition: instant ? 'none' : `opacity 520ms ${EASE}, filter 520ms ${EASE}` }}>{tile}</div>
+        {blue && <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: Math.round(size * 0.28), pointerEvents: 'none', boxShadow: litIn ? BLUE_LIT : '0 0 0 0 transparent', transition: instant ? 'none' : `box-shadow 420ms ${EASE}` }} />}
         {children}
       </div>
       {lab}
@@ -351,25 +367,25 @@ const A_T02B: Fig = (p) => {
   const run = live && done
   return (
     <Frame w={C.W} h={C.H}>
-      <Panel x={C.LX} y={C.Y} w={C.CW} h={C.CH} lit={hot === 0} />
-      <Panel x={C.RX} y={C.Y} w={C.CW} h={C.CH} lit={hot === 1} />
+      <BluePanel x={C.LX} y={C.Y} w={C.CW} h={C.CH} lit={hot === 0} />
+      <BluePanel x={C.RX} y={C.Y} w={C.CW} h={C.CH} lit={hot === 1} />
       <span style={{ ...box(C.LX, C.HY - 11, C.CW, 22), ...heading(17), textAlign: 'center', zIndex: 3 }}>Stateless</span>
       <span style={{ ...box(C.RX, C.HY - 11, C.CW, 22), ...heading(17), textAlign: 'center', zIndex: 3 }}>Stateful</span>
 
       {/* stateless: any copy serves */}
       <Node x={C_LC} y={C.UY} icon="users" size={C.US} on={s(1)} d={0.2} />
-      {C_IX.map((x, i) => <W key={x} pts={cWire(x)} on={s(1)} lit={hot === 0} head={8} delay={i * 120} />)}
-      <Junction x={C_LC} y={C.BUS} on={s(1)} lit={hot === 0} />
+      {C_IX.map((x, i) => <W key={x} pts={cWire(x)} on={s(1)} head={8} delay={i * 120} />)}
+      <Junction x={C_LC} y={C.BUS} on={s(1)} />
       {C_IX.map((x, i) => (
-        <Node key={x} x={x} y={C.RY} icon="server" size={C.NS} on={s(1)} lit={hot === 0} d={i * 0.3} delay={150 + i * 150} cls={run && i > 0 ? `t18a-l t18a-c${i}` : undefined} />
+        <Node key={x} x={x} y={C.RY} icon="server" size={C.NS} on={s(1)} lit={hot === 0} blue d={i * 0.3} delay={150 + i * 150} cls={run && i > 0 ? `t18a-l t18a-c${i}` : undefined} />
       ))}
 
       {/* stateful: the copy needs the state brought along */}
       <Node x={C_RC} y={C.UY} icon="users" size={C.US} on={s(2)} d={0.5} />
-      <W pts={C_WDB} on={s(2)} lit={hot === 1} head={8} />
-      <W pts={C_WSYNC} on={s(2)} lit={hot === 1} head={8} delay={200} />
-      <Node x={C.DX} y={C.RY} icon="database" size={C.NS} w={100} label="Database" on={s(2)} lit={hot === 1} d={0.2} />
-      <Node x={C.CX2} y={C.RY} icon="database" size={C.NS} w={100} label="Copy" on={s(2)} lit={hot === 1} d={0.7} delay={150} cls={run ? 't18a-l t18a-wait' : undefined} />
+      <W pts={C_WDB} on={s(2)} head={8} />
+      <W pts={C_WSYNC} on={s(2)} head={8} delay={200} />
+      <Node x={C.DX} y={C.RY} icon="database" size={C.NS} w={100} label="Database" on={s(2)} lit={hot === 1} blue d={0.2} />
+      <Node x={C.CX2} y={C.RY} icon="database" size={C.NS} w={100} label="Copy" on={s(2)} lit={hot === 1} blue d={0.7} delay={150} cls={run ? 't18a-l t18a-wait' : undefined} />
       <Corner x={(C.DX + C.CX2) / 2} y={C.RY} icon="hourglass" size={30} on={s(2)} loop="tilt" />
 
       {C_REQ.map((c, i) => <Token key={i} cls={c} on={s(1) && !(run && i > 0)} size={9} />)}
