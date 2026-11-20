@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/cloud_native_applications/cloud-native-applications",
+  "slides": {},
+  "threads": {
+    "mwotot8iqlxhzx": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T04",
+      "author": "Pallavi",
+      "text": "Merge bullets 1 and 2 into one card\n\nImmutable infrastructure replaces running instances with newly built and tested ones instead of modifying them in place",
+      "at": 1795169699914
+    }
+  }
+}
