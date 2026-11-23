@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "Replace the Database icon and label with an App Pod icon labeled \"App Pod\".\nReplace the Cache icon and label with an API Pod icon labeled \"API Pod\".",
       "at": 1795420263263
+    },
+    "mwsz037c3bwelo": {
+      "replies": {},
+      "resolved": false,
+      "slide": "S-TAKEAWAYS",
+      "author": "Pallavi",
+      "text": "add feedback slide",
+      "at": 1795420488610
     }
   }
 }
