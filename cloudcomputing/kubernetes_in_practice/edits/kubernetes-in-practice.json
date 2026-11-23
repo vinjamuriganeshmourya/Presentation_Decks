@@ -4,7 +4,7 @@
   "threads": {
     "mwt23pgvcup5m1": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T13-B",
       "author": "Pallavi",
       "text": "Change initialDelaySeconds: → initialDelaySeconds: 5",
