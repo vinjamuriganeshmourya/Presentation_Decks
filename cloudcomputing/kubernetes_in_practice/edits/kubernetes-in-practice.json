@@ -20,7 +20,7 @@
     },
     "mwt2aue5rcmuzj": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T17-B",
       "author": "Pallavi",
       "text": "kubectl rollout undo --to-revision=N → kubectl rollout undo deployment/web-deployment --to-revision=N",
