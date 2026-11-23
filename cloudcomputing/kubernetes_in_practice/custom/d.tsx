@@ -248,7 +248,7 @@ const gcur = (() => {
  * 566 x 368. Left: the code panel (x 20..350, y 20..348): a title row (the Pod mark, `Pod Manifest`), a hairline, then
  * the livenessProbe block, 16 px Fira Code, ligatures off (rule 40), 32 px lines from y 104. Point N lights its own
  * field line blue and brings its icon tile in at the panel's right end (clock, alert, hourglass, the point icons).
- * `initialDelaySeconds` is shown with no value (YAML null, i.e. left at the default): the TR gives no number.
+ * `initialDelaySeconds` is shown as 5 (review 2026-11-23).
  * Right: the check itself: the kubelet (x 418, y 104) sends the HTTP GET (the globe, T13's HTTP GET row icon) down to
  * the container (y 264); a check pops on
  * the container every period, the loop the plan asks for.
@@ -261,7 +261,7 @@ const B_LINES: { indent: number; key: string; val?: string; field?: number }[] =
   { indent: 2, key: 'port', val: '8080' },
   { indent: 1, key: 'periodSeconds', val: '10', field: 0 },
   { indent: 1, key: 'failureThreshold', val: '3', field: 1 },
-  { indent: 1, key: 'initialDelaySeconds', field: 2 },
+  { indent: 1, key: 'initialDelaySeconds', val: '5', field: 2 },
 ]
 const B_ICON = ['clock', 'alert', 'hourglass']
 const B_WIRE: Pt[] = [[B.KX, B.KY + B.TS / 2], [B.KX, B.CY - B.TS / 2]]

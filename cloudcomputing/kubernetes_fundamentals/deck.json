@@ -653,9 +653,6 @@
    "lead": "When a container inside a pod exits, the restart policy decides what the kubelet does next, and the right choice depends on whether the workload is long-running or one-off",
    "table": {
     "type": "table",
-    "ringCol": [
-     0
-    ],
     "columns": [
      {
       "label": "Policy",
@@ -1205,6 +1202,13 @@
    "id": "S-TAKEAWAYS",
    "layout": "takeaways",
    "notes": "Key Takeaways\n1. Need for Orchestration: Limits of manual container management at scale\n2. Kubernetes Architecture: Control plane: API server, scheduler, controller manager & etcd; nodes: kubelet, runtime & kube-proxy\n3. Pods: The smallest deployable unit; multi-container pods; pod lifecycle & restart policy\n4. Deployments & ReplicaSets: Declarative desired state; replica management; self-healing\n5. Services: ClusterIP, NodePort & LoadBalancer; service discovery & stable networking"
+  },
+  {
+   "id": "S-FEEDBACK",
+   "layout": "custom",
+   "component": "FeedbackCard",
+   "label": "Feedback",
+   "transition": "zoom"
   },
   {
    "id": "S-NEXT",

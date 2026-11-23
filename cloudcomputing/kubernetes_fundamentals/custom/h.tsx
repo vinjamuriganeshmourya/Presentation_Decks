@@ -1528,6 +1528,13 @@ const BB = { x0: 1.84, x1: 2.62, y0: 1.32, y1: 1.94 } // the blackboard in room 
 const PUPIL_X = [1.93, 2.41]
 const PUPIL_Z = 0.62
 const PDESK_Z = 0.92
+/* slide 15 everyday, review 2026-11-23: the pupils sit facing their board, seen from behind; each desk is in front of
+   its pupil (board side), a chair under the pupil (camera side). The concept card keeps PUPIL_Z. */
+const SEAT_Z = 0.74
+const SDESK_Z = 0.42
+const SEAT_H = 0.42 // the chair seat's top
+const SEAT_SINK = 0.06 // a seated pupil's sprite drops so the hips meet the seat
+const CROP_Y = 375 // the rig row the seated pupil's picture stops at (just under the hips, inside the seat)
 const BELL = new THREE.Vector3(0.6, 2.3, BACK + 0.06)
 
 const T03 = {
@@ -1731,6 +1738,31 @@ const STAFF_ID = (strap: string) => (
   </g>
 )
 /** a pupil's school tie */
+/** a pupil seen from BEHIND (the rig has no back view): the back of the head in the pupil's own hair over the face,
+    the hair falling to the nape, and the shirt's back (a collar band and a yoke seam) in place of its front */
+const FROM_BEHIND = (k: Skin): Skin => {
+  const p = k.palette
+  return {
+    ...k,
+    faceExtras: undefined,
+    hairFront: (
+      <>
+        <path d={k.head} fill={p.skin} />
+        <path d="M-53 12 C-54 30 -40 44 -20 49 C-7 52 7 52 20 49 C40 44 54 30 53 12 C40 20 22 24 0 24 C-22 24 -40 20 -53 12 Z" fill={p.hair} />
+        <path d="M-53 14 C-62 -19 -53 -58 -25 -72 C-9 -79 11 -79 27 -72 C55 -58 62 -19 53 14 C40 22 22 26 0 26 C-22 26 -40 22 -53 14 Z" fill={p.hair} />
+        {k.hairBack}
+        <path d="M-30 30 C-18 37 18 37 30 30" fill="none" stroke={p.hairShade} strokeWidth={2.4} strokeLinecap="round" opacity={0.35} />
+      </>
+    ),
+    top: (
+      <g data-part="shirt-back">
+        <path d="M 176 200 C 186 210 214 210 224 200 L 226 208 C 214 219 186 219 174 208 Z" fill={p.topLight} />
+        <path d="M 160 236 C 182 242 218 242 240 236" fill="none" stroke={p.topShade} strokeWidth={1.6} opacity={0.7} />
+        <path d="M 200 242 L 200 352" stroke={p.topShade} strokeWidth={1.2} opacity={0.45} />
+      </g>
+    ),
+  }
+}
 const SCHOOL_TIE = (
   <g data-part="school-tie">
     <path d="M 194 208 L 206 208 L 203 220 L 209 268 L 200 280 L 191 268 L 197 220 Z" fill="#1F2E63" />
@@ -1847,10 +1879,17 @@ function setupT03Everyday(kit: StageKit): Update {
     scene.add(picture(lt.tex, bbW, bbH, [cx, (BB.y0 + BB.y1) / 2, BACK + 0.033]))
     for (const px of PUPIL_X) {
       const x = sx * px
-      scene.add(box(0.44, 0.05, 0.36, wood, [x, 0.62, PDESK_Z], 0.015))
-      scene.add(box(0.4, 0.5, 0.03, mat("#7A5634", { roughness: 0.6 }), [x, 0.35, PDESK_Z + 0.16]))
-      for (const dx of [-0.18, 0.18]) scene.add(box(0.03, 0.6, 0.3, mat('#8C96A8', { metalness: 0.4, roughness: 0.4 }), [x + dx, 0.3, PDESK_Z]))
-      scene.add(flat(box(0.18, 0.012, 0.13, mat('#FFFFFF', { roughness: 0.6 }), [x - 0.06, 0.651, PDESK_Z + 0.02])))
+      /* the desk, turned to face the board: its front panel on the board side */
+      scene.add(box(0.44, 0.05, 0.36, wood, [x, 0.62, SDESK_Z], 0.015))
+      scene.add(box(0.4, 0.5, 0.03, mat("#7A5634", { roughness: 0.6 }), [x, 0.35, SDESK_Z - 0.16]))
+      for (const dx of [-0.18, 0.18]) scene.add(box(0.03, 0.6, 0.3, mat('#8C96A8', { metalness: 0.4, roughness: 0.4 }), [x + dx, 0.3, SDESK_Z]))
+      scene.add(flat(box(0.18, 0.012, 0.13, mat('#FFFFFF', { roughness: 0.6 }), [x - 0.06, 0.651, SDESK_Z + 0.04])))
+      /* the pupil's chair, in the desk's wood and steel, its back toward the camera */
+      const steel = mat('#8C96A8', { metalness: 0.4, roughness: 0.4 })
+      scene.add(box(0.36, 0.035, 0.3, wood, [x, SEAT_H - 0.0175, SEAT_Z], 0.01))
+      for (const dx of [-0.15, 0.15]) for (const dz of [-0.12, 0.12]) scene.add(box(0.025, SEAT_H - 0.035, 0.025, steel, [x + dx, (SEAT_H - 0.035) / 2, SEAT_Z + dz]))
+      for (const dx of [-0.15, 0.15]) scene.add(box(0.025, 0.24, 0.025, steel, [x + dx, SEAT_H + 0.12, SEAT_Z + 0.135]))
+      scene.add(box(0.36, 0.17, 0.03, mat("#7A5634", { roughness: 0.6 }), [x, SEAT_H + 0.155, SEAT_Z + 0.15], 0.012))
     }
     return lt
   })
@@ -1866,10 +1905,10 @@ function setupT03Everyday(kit: StageKit): Update {
   const pupilCfg = (base: CharacterConfig, name: string, skin: CharacterConfig['skinTone'], hair: CharacterConfig['hair'], girl: boolean) =>
     who(base, { name, skinTone: skin, hair, outfit: { top: 'shirt', topColor: '#F7F8FA', bottom: girl ? 'skirt' : 'shorts', bottomColor: '#1F2E63', shoeColor: '#1E1E24' }, accessories: { glasses: 'none', beard: 'none', watch: false, earrings: false, bindi: false, belt: false } })
   const pupils = [
-    body(pupilCfg(CAST_PRESETS.ananya, 'Pupil', 'fair', { style: 'ponytail', color: 'black' }, true), [-PUPIL_X[1], 0, PUPIL_Z], 1.16),
-    body(pupilCfg(CAST_PRESETS.kabir, 'Pupil', 'medium', { style: 'curly', color: 'black' }, false), [-PUPIL_X[0], 0, PUPIL_Z], 1.2),
-    body(pupilCfg(CAST_PRESETS.rohan, 'Pupil', 'dusky', { style: 'short', color: 'black' }, false), [PUPIL_X[0], 0, PUPIL_Z], 1.18),
-    body(pupilCfg(CAST_PRESETS.riya, 'Pupil', 'wheatish', { style: 'braid', color: 'black' }, true), [PUPIL_X[1], 0, PUPIL_Z], 1.15),
+    body(pupilCfg(CAST_PRESETS.ananya, 'Pupil', 'fair', { style: 'ponytail', color: 'black' }, true), [-PUPIL_X[1], 0, SEAT_Z], 1.16),
+    body(pupilCfg(CAST_PRESETS.kabir, 'Pupil', 'medium', { style: 'curly', color: 'black' }, false), [-PUPIL_X[0], 0, SEAT_Z], 1.2),
+    body(pupilCfg(CAST_PRESETS.rohan, 'Pupil', 'dusky', { style: 'short', color: 'black' }, false), [PUPIL_X[0], 0, SEAT_Z], 1.18),
+    body(pupilCfg(CAST_PRESETS.riya, 'Pupil', 'wheatish', { style: 'braid', color: 'black' }, true), [PUPIL_X[1], 0, SEAT_Z], 1.15),
   ]
 
   /* the principal: his right hand takes a card from the tray and pins it; at the end both come down */
@@ -1957,16 +1996,17 @@ function setupT03Everyday(kit: StageKit): Update {
     const w = side < 0 ? T03.walkA : T03.walkB
     const b = side < 0 ? T03.backA : T03.backB
     const draws = side < 0 ? T03.drawA : T03.drawB
+    /* seen from behind: the head tips a little toward the teacher, rises to the board, dips to write each drawing down */
     const there = hold(c, w[1] - 0.6, w[1], b[0], b[0] + 0.4)
-    to(p, 'headTurn', -side * 0.42, there)
-    to(p, 'lookX', -side * 0.9, there)
-    to(p, 'lookY', -0.3, there)
+    to(p, 'headTilt', -side * 5, there)
+    to(p, 'headNod', -0.12, there)
     const nod = draws.reduce((s, d) => s + hold(c, d + 0.15 + k * 0.1, d + 0.3 + k * 0.1, d + 0.45 + k * 0.1, d + 0.6 + k * 0.1), 0)
-    to(p, 'headNod', 0.18, nod)
+    to(p, 'headNod', 0.3, nod)
     const hk = side < 0 ? T03.handA : T03.handB
     const raise = (side < 0 && k === 0) || (side > 0 && k === 1) ? hold(c, hk[0], hk[1], hk[2], hk[3]) : 0
     const upArm: Arm = { s: 158, e: 8 }
-    const deskArm: Arm = { s: 14, e: 74 }
+    /* from behind, the arms reach forward to the desk: only the upper arms show beside the back */
+    const deskArm: Arm = { s: 13, e: 24 }
     if (side > 0) setArms(p, deskArm, mixArm(deskArm, upArm, raise))
     else setArms(p, mixArm(deskArm, upArm, raise), deskArm)
     if (raise > 0) {
@@ -1983,15 +2023,33 @@ function setupT03Everyday(kit: StageKit): Update {
     pp(principal, 301, [[0, 'thinking'], [1.1, 'happy'], [3.4, 'listening'], [6.9, 'proud'], [7.9, 'thinking']], prinPose, withTop(BLAZER('#1F2E63', '#141B2E'))),
     pp(tA, 302, [[0, 'listening'], [1.2, 'happy'], [3.0, 'excited'], [4.3, 'happy'], [5.3, 'listening'], [6.0, 'happy']], teacherPose(-1), withTop(STAFF_ID('#0E8C7F'))),
     pp(tB, 303, [[0, 'listening'], [1.9, 'happy'], [3.7, 'excited'], [5.0, 'happy'], [6.5, 'proud'], [7.4, 'happy']], teacherPose(1), withTop(STAFF_ID('#6A3FD6'))),
-    pp(pupils[0], 304, [[0, 'neutral'], [2.6, 'listening'], [3.9, 'happy'], [5.0, 'thinking'], [6.2, 'happy'], [7.6, 'neutral']], pupilPose(-1, 0), withTop(SCHOOL_TIE)),
-    pp(pupils[1], 305, [[0, 'neutral'], [2.6, 'listening'], [4.7, 'excited'], [6.0, 'happy'], [7.6, 'neutral']], pupilPose(-1, 1), withTop(SCHOOL_TIE)),
-    pp(pupils[2], 306, [[0, 'neutral'], [3.3, 'listening'], [4.6, 'happy'], [6.6, 'listening'], [7.8, 'neutral']], pupilPose(1, 0), withTop(SCHOOL_TIE)),
-    pp(pupils[3], 307, [[0, 'neutral'], [3.3, 'listening'], [5.4, 'excited'], [6.7, 'happy'], [7.8, 'neutral']], pupilPose(1, 1), withTop(SCHOOL_TIE)),
+    pp(pupils[0], 304, [[0, 'neutral']], pupilPose(-1, 0), FROM_BEHIND),
+    pp(pupils[1], 305, [[0, 'neutral']], pupilPose(-1, 1), FROM_BEHIND),
+    pp(pupils[2], 306, [[0, 'neutral']], pupilPose(1, 0), FROM_BEHIND),
+    pp(pupils[3], 307, [[0, 'neutral']], pupilPose(1, 1), FROM_BEHIND),
   ]
   const bodies = [principal, tA, tB, ...pupils]
   people.forEach((s, k) => {
     s.object.position.copy(bodies[k].root)
     scene.add(s.object)
+  })
+  /* the seated pupils: lowered onto their chairs, the picture stopped just under the hips (inside the seat), so no
+     legs show under a chair */
+  people.slice(3).forEach((s, k) => {
+    s.object.position.y = -SEAT_SINK
+    const plane = s.object.children[0] as THREE.Mesh
+    const g = plane.geometry
+    const H = pupils[k].h / 0.93
+    const yc = ((600 - CROP_Y) / 600) * H
+    const pos = g.attributes.position as THREE.BufferAttribute
+    const uv = g.attributes.uv as THREE.BufferAttribute
+    for (let i = 0; i < pos.count; i++) if (pos.getY(i) < 1e-6) {
+      pos.setY(i, yc)
+      uv.setY(i, yc / H)
+    }
+    pos.needsUpdate = true
+    uv.needsUpdate = true
+    g.computeBoundingSphere()
   })
   const clk = slideClock('T03', scene, HB, people)
 

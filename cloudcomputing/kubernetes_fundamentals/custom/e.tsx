@@ -338,8 +338,8 @@ const E_T19: Fig = (p) => {
 
       {/* 3 internal tiers call it from inside */}
       {B_TIER.map((pts, i) => <W key={i} pts={pts} on={s(3)} lit={hot === 2} head={9} delay={i * 120} />)}
-      <Node x={B.TX} y={B_TY[0]} icon="database" size={B.TS} label="Database" on={s(3)} lit={hot === 2} loop="pulse" t={3} w={100} />
-      <Node x={B.TX} y={B_TY[1]} icon="bolt" size={B.TS} label="Cache" on={s(3)} lit={hot === 2} loop="pulse" t={2.6} d={0.6} w={100} delay={120} />
+      <Node x={B.TX} y={B_TY[0]} mark={podMark} size={B.TS} label="App Pod" on={s(3)} lit={hot === 2} w={100} />
+      <Node x={B.TX} y={B_TY[1]} mark={podMark} size={B.TS} label="API Pod" on={s(3)} lit={hot === 2} w={100} delay={120} />
       {B_RT.map((c, i) => <Token key={i} cls={c} on={s(3)} size={8} />)}
 
       {/* 4 never routable from outside */}

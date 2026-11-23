@@ -472,6 +472,40 @@ const reachNear = (b: Body, side: 'L' | 'R', k: THREE.Vector3, camera: THREE.Cam
   return dist(x) <= dist(y) ? x : y
 }
 const REST: Arm = { s: 5, e: 8 }
+/**
+ * Review 2026-11-23 (slide 24: "unnatural hand movements and distorted joints"). A cook's pot sits beside the shoulder
+ * in the picture, so a hand sent to the pot itself could only get there with the upper arm folded across the chest.
+ * A working hand is placed instead in the rig's frame a little ABOVE and OUTSIDE what it works on (it holds the
+ * handle; the spoon hangs into the pot), with the elbow DOWN and out: of the two elbow solutions, never one whose
+ * upper arm crosses the chest.
+ */
+const handOver = (b: Body, side: 'L' | 'R', k: THREE.Vector3, camera: THREE.Camera, dx: number, dy: number): Arm => {
+  const p = worldToRig(k, b.root, b.h, camera)
+  const sg = side === 'L' ? -1 : 1
+  const q = { x: p.x + sg * dx, y: p.y + dy }
+  const c = [ik2(side, b.sh, q, false), ik2(side, b.sh, q, true)].filter((a) => a.s >= -2 && a.s <= 150)
+  if (!c.length) return ik(side, b.sh, q)
+  return c.reduce((a, x) => (Math.cos(x.s * DEG) > Math.cos(a.s * DEG) ? x : a))
+}
+/** a relaxed arm at the counter: hanging, the elbow a little bent, the hand behind the counter's edge */
+const AT_COUNTER: Arm = { s: 9, e: 14 }
+/** a hand closed round a handle (side-on, fingers curled, thumb over them); `pinch` opens it toward a spice pinch */
+function grip(p: Pose, side: 'L' | 'R', pinch: number) {
+  const f = lerp(0.92, 0.62, pinch)
+  if (side === 'R') {
+    p.fR1 = lerp(f, 0.45, pinch)
+    p.fR2 = p.fR3 = p.fR4 = f
+    p.tR = lerp(0.75, 0.55, pinch)
+    p.spreadR = 0.05
+    p.palmR = 0.12
+  } else {
+    p.fL1 = lerp(f, 0.45, pinch)
+    p.fL2 = p.fL3 = p.fL4 = f
+    p.tL = lerp(0.75, 0.55, pinch)
+    p.spreadL = 0.05
+    p.palmL = 0.12
+  }
+}
 const setArms = (p: Pose, l: Arm, r: Arm) => {
   p.shoulderL = l.s
   p.elbowL = l.e
@@ -788,30 +822,30 @@ function setupT09Everyday(kit: StageKit): Update {
   const stir = (centre: THREE.Vector3, ph: number) => (c: number) => centre.clone().add(new THREE.Vector3(Math.cos(c * TAU + ph) * 0.045, 0.012 * Math.sin(c * TAU * 2 + ph), Math.sin(c * TAU + ph) * 0.03))
   const stirA = stir(potP, 0)
   const stirB = stir(panP, 1.9)
-  const shake = (centre: THREE.Vector3) => (c: number) => centre.clone().add(new THREE.Vector3(0, 0.12 + 0.025 * Math.sin(c * TAU * 3), 0))
+  const shake = (centre: THREE.Vector3) => (c: number) => centre.clone().add(new THREE.Vector3(0, 0.025 * Math.sin(c * TAU * 3), 0))
 
-  /* flatmate 1: his R hand stirs (spoon), goes to the tin, sprinkles; his L hand holds the counter edge */
-  const aPot = reach(fA, 'R', potP, camera)
-  const aShake = reach(fA, 'R', shake(potP)(0), camera)
+  /* where each working hand holds its utensil, in rig px from the pot / pan (outward, up) */
+  const HOLD_A = { dx: 6, dy: -50 }
+  const HOLD_B = { dx: 38, dy: -60 }
+  /* flatmate 1: his R hand stirs (spoon), goes to the tin, sprinkles; his L arm rests at the counter */
   const aR = (c: number) =>
-    armFrom(c, (q) => reachNear(fA, 'R', stirA(q), camera, aPot), [
+    armFrom(c, (q) => handOver(fA, 'R', stirA(q), camera, HOLD_A.dx, HOLD_A.dy), [
       [T9.aTin[0], T9.aTin[1], T9.aTin[2], T9.aTin[3], reach(fA, 'R', tinP, camera)],
-      [T9.aOver[0], T9.aOver[1], T9.aOver[2], T9.aOver[3], (q) => reachNear(fA, 'R', shake(potP)(q), camera, aShake)],
+      [T9.aOver[0], T9.aOver[1], T9.aOver[2], T9.aOver[3], (q) => handOver(fA, 'R', shake(potP)(q), camera, HOLD_A.dx + 4, HOLD_A.dy - 6)],
     ])
-  const aL: Arm = reach(fA, 'L', v3([AX - 0.32, CTOP + 0.03, CNT.z0 + 0.1]), camera)
+  const aL: Arm = AT_COUNTER
   /* flatmate 2: his L hand stirs (spatula), goes to the tin, sprinkles; his R hand rests on the counter */
-  const bPan = reach(fB, 'L', panP, camera)
-  const bShake = reach(fB, 'L', shake(panP)(0), camera)
   const bL = (c: number) =>
-    armFrom(c, (q) => reachNear(fB, 'L', stirB(q), camera, bPan), [
+    armFrom(c, (q) => handOver(fB, 'L', stirB(q), camera, HOLD_B.dx, HOLD_B.dy), [
       [T9.bTin[0], T9.bTin[1], T9.bTin[2], T9.bTin[3], reach(fB, 'L', tinP, camera)],
-      [T9.bOver[0], T9.bOver[1], T9.bOver[2], T9.bOver[3], (q) => reachNear(fB, 'L', shake(panP)(q), camera, bShake)],
+      [T9.bOver[0], T9.bOver[1], T9.bOver[2], T9.bOver[3], (q) => handOver(fB, 'L', shake(panP)(q), camera, HOLD_B.dx + 4, HOLD_B.dy - 6)],
     ])
-  const bR: Arm = reach(fB, 'R', v3([BX + 0.34, CTOP + 0.03, CNT.z0 + 0.1]), camera)
+  const bR: Arm = AT_COUNTER
 
   const lookDoor = (c: number) => hold(c, T9.look[0], T9.look[1], T9.look[2], T9.look[3])
   const poseA = (p: Pose, c: number) => {
     setArms(p, aL, aR(c))
+    grip(p, 'R', hold(c, T9.aTin[0], T9.aTin[1], T9.aOver[2], T9.aOver[3]))
     /* eyes on his pot; to the tin and back; round to the door when the letters come */
     lookAt(p, 0.5, 1 - lookDoor(c), 1)
     lookAt(p, 0.9, hold(c, T9.aTin[0], T9.aTin[1], T9.aTin[2], T9.aTin[3]), 0.6)
@@ -821,6 +855,7 @@ function setupT09Everyday(kit: StageKit): Update {
   }
   const poseB = (p: Pose, c: number) => {
     setArms(p, bL(c), bR)
+    grip(p, 'L', hold(c, T9.bTin[0], T9.bTin[1], T9.bOver[2], T9.bOver[3]))
     lookAt(p, -0.5, 1 - lookDoor(c), 1)
     lookAt(p, -0.9, hold(c, T9.bTin[0], T9.bTin[1], T9.bTin[2], T9.bTin[3]), 0.6)
     lookAt(p, -1, lookDoor(c))
@@ -873,6 +908,7 @@ function setupT09Everyday(kit: StageKit): Update {
   const hA = new THREE.Vector3()
   const hB = new THREE.Vector3()
   const tmp = new THREE.Vector3()
+  const camRight = new THREE.Vector3()
   const rest = (o: THREE.Object3D, at: THREE.Vector3, tilt: number) => {
     o.position.copy(at)
     o.quaternion.copy(camera.quaternion)
@@ -888,11 +924,15 @@ function setupT09Everyday(kit: StageKit): Update {
     handWorld('R', fA.sh, aR(cq), fA.h, fA.root, camera, hA)
     const awayA = hold(c, T9.aAway[0], T9.aAway[1], T9.aAway[2], T9.aAway[3])
     rest(spoon, hA.clone().lerp(tmp.copy(potP).add(new THREE.Vector3(0.05, 0.02, 0.04)), awayA), lerp(0.35, 0.6, awayA))
-    spoon.position.y += 0.06 * (1 - awayA)
+    spoon.position.y -= 0.01 * (1 - awayA)
+    /* the handle runs through the closed fist, which the rig draws a little outside the grip point */
+    camRight.set(1, 0, 0).applyQuaternion(camera.quaternion)
+    spoon.position.addScaledVector(camRight, 0.022 * (1 - awayA))
     handWorld('L', fB.sh, bL(cq), fB.h, fB.root, camera, hB)
     const awayB = hold(c, T9.bAway[0], T9.bAway[1], T9.bAway[2], T9.bAway[3])
     rest(spat, hB.clone().lerp(tmp.copy(panP).add(new THREE.Vector3(-0.05, 0.02, 0.04)), awayB), lerp(-0.35, -0.6, awayB))
-    spat.position.y += 0.06 * (1 - awayB)
+    spat.position.y -= 0.01 * (1 - awayB)
+    spat.position.addScaledVector(camRight, -0.022 * (1 - awayB))
 
     /* flames and steam */
     flames.forEach((f, k) => f.scale.set(1, 0.8 + 0.25 * Math.abs(Math.sin(c * TAU * 6 + k * 1.3)), 1))

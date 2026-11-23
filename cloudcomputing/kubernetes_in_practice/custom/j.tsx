@@ -863,11 +863,7 @@ function setupT15Concept(kit: StageKit): Update {
 
   const rep = makeReplacer()
   scene.add(rep.g)
-  const sparks = Array.from({ length: 6 }, () => {
-    const h = halo('rgba(120,170,255,0.9)', 0.8)
-    scene.add(h)
-    return h
-  })
+  /* no puffs behind the replacer: they read as smoke (review 2026-11-23) */
   const updTraffic = traffic(scene, () => ({ g: makeRequest() }))
   const clk = slideClock('J15', scene, devHold(HOLD15), [])
   return (t: number) => {
@@ -881,12 +877,6 @@ function setupT15Concept(kit: StageKit): Update {
     rep.ringM.emissiveIntensity = 0.8 + 0.6 * Math.sin(c * TAU * 2)
     rep.head.position.y = 1.36 - 0.12 * Math.max(0, Math.sin(c * TAU * 2))
     rep.barM.emissiveIntensity = 1.2 + 0.5 * Math.sin(c * TAU * 4)
-    sparks.forEach((h, i) => {
-      const a = mod(c * (14 / L15) + i / sparks.length, 1)
-      h.position.set(pv.x - PAV.len / 2 - 0.4 - a * 1.6, 0.25 + a * 1.2, LZ[pv.k] + (i % 3 - 1) * 0.7)
-      h.scale.setScalar(0.5 + a * 0.6)
-      ;(h.material as THREE.MeshBasicMaterial).opacity = 0.6 * Math.sin(Math.PI * a)
-    })
     /* the Service's lamps: the lane each one stands for is lit while it is in service */
     lampMs.forEach((m, i) => (m.opacity = closed15(i, c) ? 0.2 : 0.95))
   }

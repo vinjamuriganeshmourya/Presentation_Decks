@@ -1021,10 +1021,26 @@
   },
   {
    "id": "T16",
+   "layout": "lead",
+   "kicker": "Surge Unavailable Settings",
+   "title": "Controlling Rollout Pace",
+   "lead": "With 6 replicas and both fields at 25%, Kubernetes adds 2 extra pods first, then takes old pods down one at a time",
+   "figure": {
+    "type": "custom",
+    "name": "E_T16B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1080,
+   "figH": 280,
+   "notes": "\"Walk through the table: with 6 replicas and 25 percent, surge rounds up to 2 extra pods and unavailable rounds down to 1. Ask why Kubernetes biases rounding toward availability over strict pod count, a common interview probe.\""
+  },
+  {
+   "id": "T16-B",
    "layout": "table",
    "kicker": "Surge Unavailable Settings",
    "title": "Controlling Rollout Pace",
-   "lead": "RollingUpdate exposes two fields that pace the replacement: maxSurge, extra pods allowed above the desired count, and maxUnavailable, pods allowed to be down at once",
    "table": {
     "type": "table",
     "columns": [
@@ -1061,24 +1077,9 @@
        "1 pod down (rounds down)"
       ]
      }
-    ]
+    ],
+    "size": 20
    },
-   "notes": "\"Walk through the table: with 6 replicas and 25 percent, surge rounds up to 2 extra pods and unavailable rounds down to 1. Ask why Kubernetes biases rounding toward availability over strict pod count, a common interview probe.\""
-  },
-  {
-   "id": "T16-B",
-   "layout": "lead",
-   "kicker": "Surge Unavailable Settings",
-   "title": "Controlling Rollout Pace",
-   "figure": {
-    "type": "custom",
-    "name": "E_T16B",
-    "props": {
-     "steps": 3
-    }
-   },
-   "figW": 1080,
-   "figH": 440,
    "notes": "\"Walk through the table: with 6 replicas and 25 percent, surge rounds up to 2 extra pods and unavailable rounds down to 1. Ask why Kubernetes biases rounding toward availability over strict pod count, a common interview probe.\""
   },
   {

@@ -25,10 +25,10 @@ import clientMark from '../images/res-client.svg'
  *   slide 39 E_T15   566 x 360  Recreate lane | RollingUpdate lane, each the chart + the Service it feeds (2)
  *   slide 40 E_T15B  566 x 380  the Deployment's EKS console panel with the chart and its progress | Client -> Service
  *                               -> pods, the request line kept green throughout (2)
- *   slide 43 E_T16B 1080 x 440  6 replicas, 2 surge slots (maxSurge), 1 pod down at a time (maxUnavailable); the
+ *   slide 42 E_T16B 1080 x 280  6 replicas, 2 surge slots (maxSurge), 1 pod down at a time (maxUnavailable); the
  *                               walk until all 6 are new (3)
  *   slide 44 E_T17   566 x 360  the chart reversed | `kubectl rollout history` terminal + revision column; undo back one (2)
- *   slide 45 E_T17B  566 x 380  `kubectl rollout undo --to-revision=N` terminal | Old / Bad ReplicaSet pods scaling;
+ *   slide 45 E_T17B  566 x 380  `kubectl rollout undo deployment/web-deployment --to-revision=N` terminal | Old / Bad ReplicaSet pods scaling;
  *                               revision column jump to an older revision (2)
  */
 
@@ -363,10 +363,10 @@ const E_T15B: Fig = (p) => {
   )
 }
 
-/* ================================================================== slide 43 · E_T16B · maxSurge and maxUnavailable */
+/* ================================================================== slide 42 · E_T16B · maxSurge and maxUnavailable */
 
 /*
- * 1080 x 440, figure only. The Deployment (66, 224) feeds a `6 replicas` window (slots 0-5, pitch 108) and, beside it, a
+ * 1080 x 280 (the 440 frame's empty top and bottom trimmed when the intro line joined it on slide 42, 2026-11-23). The Deployment (66, 224) feeds a `6 replicas` window (slots 0-5, pitch 108) and, beside it, a
  * dashed `maxSurge` window (slots 6-7). Pods are Kubernetes Pod marks on tiles, old blue, new green (TR 16); each carries
  * its `Old` / `New` tag. Under slot 0 a dashed outline and the `maxUnavailable` tag mark the one pod that may be down
  * (a power disc on it: taken down, not failed).
@@ -375,7 +375,7 @@ const E_T15B: Fig = (p) => {
  * Press 0: six old pods. Press 1: the two surge pods (8 total). Press 2: one old pod down. Press 3: the walk, looping.
  * Held: mid-walk (two old pods gone, one down, four new pods placed or waiting), nothing lit.
  */
-const C = { W: 1080, H: 440, DX: 66, DY: 224, DS: 72, S0: 200, PITCH: 108, SURGE: 36, PS: 80, PANE_Y: 160, PANE_H: 154, TAG_Y: 134, UN_Y: 340 }
+const C = { W: 1080, H: 280, DX: 66, DY: 124, DS: 72, S0: 200, PITCH: 108, SURGE: 36, PS: 80, PANE_Y: 60, PANE_H: 154, TAG_Y: 34, UN_Y: 240 }
 const slotX = (pos: number) => C.S0 + pos * C.PITCH + (pos >= 6 ? C.SURGE : 0)
 const C_PANE = { x0: slotX(0) - C.PS / 2 - 22, x1: slotX(5) + C.PS / 2 + 22 }
 const C_SURGE = { x0: slotX(6) - C.PS / 2 - 18, x1: slotX(7) + C.PS / 2 + 18 }
@@ -541,7 +541,7 @@ const E_T17: Fig = (p) => {
 /* ================================================================== slide 45 · E_T17B · --to-revision=N, ReplicaSets scaling */
 
 /*
- * 566 x 380. Top: the terminal (x 20..546, y 20..108): `kubectl rollout undo --to-revision=N` (press 1). Left below: two
+ * 566 x 380. Top: the terminal (x 20..546, y 20..108): `kubectl rollout undo deployment/web-deployment --to-revision=N` (press 1). Left below: two
  * ReplicaSet cards (x 20..330, h 112, y 124 and 248): the Old ReplicaSet (blue pods) and the Bad ReplicaSet (green
  * pods, the orange cross on its mark); six pod slots each (x 40 + 48 i). Right: the revision column (tiles at x 414;
  * header y 146; revisions 196 / 254 / 312) with the jump from Revision 3 to Revision 1 on its left (x 374), press 1.
@@ -564,7 +564,7 @@ const E_T17B: Fig = (p) => {
   return (
     <Frame w={E.W} h={E.H}>
       {/* point 3: the jump to an older revision */}
-      <TerminalPanel x={E.TX} y={E.TY} w={E.TW} h={E.TH} lit={hot === 0} lines={[{ text: 'kubectl rollout undo --to-revision=N', cmd: true, on: s(1) }]} />
+      <TerminalPanel x={E.TX} y={E.TY} w={E.TW} h={E.TH} lit={hot === 0} lines={[{ text: 'kubectl rollout undo deployment/web-deployment --to-revision=N', cmd: true, on: s(1) }]} size={12.5} />
       <Revisions x={E.RX} y0={E.RY0} pitch={E.PITCH} cur={s(1) ? 1 : 3} lit={hot === 0 ? 1 : -1} />
       <Disc x={E.RX + 15} y={eRev(3) - 14} icon="cross" warn size={22} />
       <Disc x={E.RX + 15} y={eRev(1) - 14} icon="check" size={22} on={s(1)} />

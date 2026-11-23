@@ -1057,7 +1057,11 @@ const T12 = {
 }
 const PERSON12 = new THREE.Vector3(-0.32, 0, 0)
 const PERSON_H = 1.66
+/* the concept card's container (on the node's bracket) */
 const PHONE_AT = new THREE.Vector3(0.04, 1.14, -0.05)
+/* her phone: in front of her, at her waist, centred; both arms come to it from their own side, elbows relaxed out, so
+   neither crosses the other (review 2026-11-23: held out beside her, the tapping arm had to pass under the holding one) */
+const PHONE_HELD = new THREE.Vector3(-0.3, 0.87, -0.05)
 const SW = 0.134
 const SH = 0.28
 const PHONE_S = 1.42
@@ -1231,23 +1235,31 @@ function setupT12Everyday(kit: StageKit): Update {
 
   const cfg = who(CAST_PRESETS.ananya, { name: 'Student', hair: { style: 'ponytail', color: '#2A2324' }, outfit: { top: 'hoodie', topColor: '#E4578F', bottom: 'jeans', bottomColor: '#2C3C81', shoeColor: '#F2F2F5' }, accessories: { earrings: true } })
   const b: Body = { cfg, root: PERSON12.clone(), h: PERSON_H, sh: buildSkin(cfg).shoulderHalf }
-  const yaw = Math.atan2(camera.position.x - PHONE_AT.x, camera.position.z - PHONE_AT.z)
+  const yaw = Math.atan2(camera.position.x - PHONE_HELD.x, camera.position.z - PHONE_HELD.z)
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.08, yaw, 0))
-  /* her R hand holds the phone's lower right edge; the phone sits at PHONE_AT, a small shake while she checks it */
-  const gripP = new THREE.Vector3(SW * 0.2, -SH * 0.46, 0).multiplyScalar(PHONE_S).applyQuaternion(q)
+  /* her L hand grips the phone's left edge, low; the phone sits at PHONE_HELD, a small shake while she checks it */
+  const gripP = new THREE.Vector3(-SW * 0.48, -SH * 0.47, 0).multiplyScalar(PHONE_S).applyQuaternion(q)
   const shakeOf = (c: number) => 0.012 * Math.sin(((c - T12.shake[0]) / (T12.shake[1] - T12.shake[0])) * TAU * 3) * hold(c, T12.shake[0], T12.shake[0] + 0.1, T12.shake[1] - 0.1, T12.shake[1])
-  const phoneAt = (c: number) => PHONE_AT.clone().add(new THREE.Vector3(shakeOf(c), 0.02 * hold(c, T12.shake[0], T12.shake[0] + 0.3, T12.shake[1], T12.shake[1] + 0.4), 0))
-  const holdR = (c: number) => reach(b, 'R', phoneAt(c).add(gripP), camera)
-  /* her L index finger on the pause button: her forearm comes in level, so the grip sits left of the fingertip */
-  const tapW = (lift: number) => PHONE_AT.clone().add(new THREE.Vector3(sx(TAP.x), sy(TAP.y), 0).multiplyScalar(PHONE_S).applyQuaternion(q)).add(new THREE.Vector3(-0.075, -0.015 + lift, 0))
-  const restL: Arm = { s: 8, e: 18 }
-  const fingerL = (c: number) => {
+  const phoneAt = (c: number) => PHONE_HELD.clone().add(new THREE.Vector3(shakeOf(c), 0.02 * hold(c, T12.shake[0], T12.shake[0] + 0.3, T12.shake[1], T12.shake[1] + 0.4), 0))
+  /** of the two elbows, the one out at her side (a relaxed bend, never folded across her front) */
+  const outward = (side: 'L' | 'R', w: THREE.Vector3): Arm => {
+    const pt = worldToRig(w, b.root, b.h, camera)
+    const a = ik2(side, b.sh, pt, false)
+    const d = ik2(side, b.sh, pt, true)
+    return Math.sin(a.s * DEG) >= Math.sin(d.s * DEG) ? a : d
+  }
+  const holdL = (c: number) => outward('L', phoneAt(c).add(gripP))
+  /* her R index finger on the pause button: her forearm comes down from her right elbow, so the grip sits above right
+     of the fingertip and the finger carries on along the forearm onto the button */
+  const tapW = (lift: number) => PHONE_HELD.clone().add(new THREE.Vector3(sx(TAP.x), sy(TAP.y), 0).multiplyScalar(PHONE_S).applyQuaternion(q)).add(new THREE.Vector3(0.06, 0.01 + lift, 0))
+  const restR: Arm = { s: 8, e: 18 }
+  const fingerR = (c: number) => {
     /* down onto the glass at each tap, held for the press */
     let press = 0
     for (const t0 of T12.taps) press = Math.max(press, hold(c, t0 - 0.12, t0, t0 + 0.04, t0 + 0.18))
     press = Math.max(press, hold(c, T12.press[0] - 0.12, T12.press[0], T12.press[1], T12.press[1] + 0.1))
-    const target = reach(b, 'L', tapW(0.03 * (1 - press)), camera)
-    return mixArm(restL, target, hold(c, T12.lift[0], T12.lift[1], T12.down[0], T12.down[1]))
+    const target = outward('R', tapW(0.03 * (1 - press)))
+    return mixArm(restR, target, hold(c, T12.lift[0], T12.lift[1], T12.down[0], T12.down[1]))
   }
   const her = person({
     config: cfg,
@@ -1259,26 +1271,87 @@ function setupT12Everyday(kit: StageKit): Update {
     redraw,
     holdT: devHold(HOLD12),
     pose: (p, c) => {
-      setArms(p, fingerL(c), holdR(c))
-      grip(p, 'R', 1)
-      /* the L hand points: index straight, the rest curled */
+      setArms(p, holdL(c), fingerR(c))
+      grip(p, 'L', 1)
+      /* the R hand points: index straight, the rest curled */
       const point = hold(c, T12.lift[0], T12.lift[1], T12.down[0], T12.down[1])
-      to(p, 'fL1', 0, point)
-      to(p, 'fL2', 0.95, point)
-      to(p, 'fL3', 1, point)
-      to(p, 'fL4', 1, point)
-      to(p, 'tL', 0.8, point)
-      to(p, 'palmL', 0.2, point)
-      /* she looks at the phone the whole time; a small lean in when it fails */
-      to(p, 'headTurn', 0.5, 1)
-      to(p, 'headNod', 0.3, 1)
-      to(p, 'lookX', 1, 1)
-      to(p, 'lookY', 0.6, 1)
+      to(p, 'fR1', 0, point)
+      to(p, 'fR2', 0.95, point)
+      to(p, 'fR3', 1, point)
+      to(p, 'fR4', 1, point)
+      to(p, 'tR', 0.8, point)
+      to(p, 'palmR', 0.2, point)
+      /* she looks down at the phone the whole time; a small lean in when it fails */
+      to(p, 'headTurn', 0.05, 1)
+      to(p, 'headNod', 0.5, 1)
+      to(p, 'lookX', 0.1, 1)
+      to(p, 'lookY', 1, 1)
       to(p, 'headTilt', 5, hold(c, 2.6, 2.9, 4.3, 4.7))
     },
   })
   her.object.position.copy(PERSON12)
   scene.add(her.object)
+  /* The phone is in front of her body, and her forearms and hands are in front of the phone, as they are in life. One
+     sprite cannot layer that, so her forearms and hands are drawn a second time in front of the phone: the same frame
+     on a copy of her plane, scaled about the camera (so it lands on exactly the same pixels), keeping only the pixels
+     inside each forearm (a capsule from elbow to hand, just inside the sleeve's width) and the skin-coloured pixels
+     round each hand. */
+  const plane = (her as unknown as { plane: THREE.Mesh }).plane
+  const planeM = plane.material as THREE.MeshBasicMaterial
+  const fore = { value: [new THREE.Vector4(), new THREE.Vector4()] }
+  const hands = { value: [new THREE.Vector3(), new THREE.Vector3()] }
+  const frontM = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, toneMapped: false })
+  frontM.map = planeM.map
+  frontM.onBeforeCompile = (sh) => {
+    sh.uniforms.uFore = fore
+    sh.uniforms.uHand = hands
+    /* the plane's own uv (vMapUv carries the frame texture's transform) */
+    sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying vec2 vPlaneUv;\nvoid main() {\n  vPlaneUv = uv;')
+    sh.fragmentShader = sh.fragmentShader
+      .replace('void main() {', 'uniform vec4 uFore[2];\nuniform vec3 uHand[2];\nvarying vec2 vPlaneUv;\nvoid main() {')
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        {
+          vec2 r = vec2(vPlaneUv.x * 480.0 - 40.0, (1.0 - vPlaneUv.y) * 600.0); // rig px (person()'s wide: 40)
+          vec3 k = diffuseColor.rgb;
+          bool skin = k.r > 0.08 && k.g > 0.38 * k.r && k.g < 0.97 * k.r && k.b < 0.95 * k.g;
+          bool keep = false;
+          for (int i = 0; i < 2; i++) {
+            vec2 pa = r - uFore[i].xy;
+            vec2 ba = uFore[i].zw - uFore[i].xy;
+            float u = clamp(dot(pa, ba) / max(dot(ba, ba), 1.0), 0.0, 1.0);
+            if (length(pa - ba * u) < 11.5) keep = true;
+            if (skin && distance(r, uHand[i].xy) < uHand[i].z) keep = true;
+          }
+          if (!keep) discard;
+        }`,
+      )
+  }
+  frontM.customProgramCacheKey = () => 't12-hands'
+  const front = new THREE.Mesh(plane.geometry, frontM)
+  front.matrixAutoUpdate = false
+  front.renderOrder = 7
+  scene.add(front)
+  /** the elbow of an arm, rig px (handPt's forward kinematics, upper arm only) */
+  const elbowPt = (side: 'L' | 'R', a: Arm): Pt => {
+    const sg = side === 'L' ? -1 : 1
+    return { x: 200 + sg * (b.sh - 6) + sg * Math.sin(a.s * DEG) * UA, y: 205 + Math.cos(a.s * DEG) * UA }
+  }
+  const setArm = (i: number, side: 'L' | 'R', a: Arm) => {
+    const e = elbowPt(side, a)
+    const h = handPt(side, b.sh, a)
+    fore.value[i].set(e.x, e.y, h.x, h.y)
+    hands.value[i].set(h.x, h.y, 48)
+  }
+  /** p moved toward the camera along its own ray, by d */
+  const camW = new THREE.Vector3()
+  const alongRay = (p: THREE.Vector3, d: number) => {
+    camera.getWorldPosition(camW)
+    const dist = p.distanceTo(camW)
+    return p.sub(camW).multiplyScalar(1 - d / dist).add(camW)
+  }
+  const scaleAbout = new THREE.Matrix4()
   const clk = slideClock('T12', scene, devHold(HOLD12), [her])
   const hand = new THREE.Vector3()
   return (t: number) => {
@@ -1286,12 +1359,25 @@ function setupT12Everyday(kit: StageKit): Update {
     const cq = frameT(c, L12, F12)
     her.update(c, camera)
     /* the phone in her hand: where the drawn hand is */
-    rigToWorld(handPt('R', b.sh, holdR(cq)), PERSON_H, PERSON12, camera, hand)
+    rigToWorld(handPt('L', b.sh, holdL(cq)), PERSON_H, PERSON12, camera, hand)
     ph.quaternion.copy(q)
     ph.position.copy(hand).sub(gripP)
-    towardCamera(ph.position, camera, -0.03)
-    glow.position.copy(ph.position).add(new THREE.Vector3(0, 0, -0.02))
+    /* the glow stays behind her (light round the phone's edges), the phone comes in front of her */
+    glow.position.copy(ph.position).add(new THREE.Vector3(0, 0, -0.06))
     glow.quaternion.copy(q)
+    alongRay(ph.position, 0.04)
+    /* her forearms and hands again, in front of the phone */
+    if (frontM.map !== planeM.map) frontM.map = planeM.map
+    setArm(0, 'L', holdL(cq))
+    setArm(1, 'R', fingerR(cq))
+    plane.updateWorldMatrix(true, false)
+    camera.getWorldPosition(camW)
+    const dist = camW.distanceTo(PERSON12)
+    const k8 = 1 - 0.08 / dist
+    scaleAbout.makeTranslation(camW.x, camW.y, camW.z).multiply(new THREE.Matrix4().makeScale(k8, k8, k8)).multiply(new THREE.Matrix4().makeTranslation(-camW.x, -camW.y, -camW.z))
+    front.matrix.copy(scaleAbout).multiply(plane.matrixWorld)
+    front.matrixWorldNeedsUpdate = true
+    front.visible = plane.visible
     /* the screen stays lit and does not change; only the ripple of each touch shows */
     const age = tapAge(c)
     const k = clamp01(age / 0.45)
