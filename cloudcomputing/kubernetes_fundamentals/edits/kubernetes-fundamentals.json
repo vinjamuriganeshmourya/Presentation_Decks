@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "Change the arrow between the Hosts grid and the Automated Controller. Right now it points Hosts → Automated Controller. Reverse it so it points Automated Controller → Hosts.",
       "at": 1795418715211
+    },
+    "mwsysuqepyuwjm": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T19",
+      "author": "Pallavi",
+      "text": "Left side: replace the Database icon and label with an App Pod icon labeled \"App Pod\".\nLeft side: replace the Cache icon and label with an API Pod icon labeled \"API Pod\".\nRight side: replace the three pod icons with database icons, keeping the IPs (10.0.1.12, 10.0.1.41, 10.0.1.46) as they are.",
+      "at": 1795420151109
     }
   }
 }
