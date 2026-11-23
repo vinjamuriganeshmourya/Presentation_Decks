@@ -1,0 +1,1420 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Kubernetes in Practice",
+  "course": "Cloud Computing",
+  "htmlName": "kubernetes-in-practice",
+  "previous": {
+   "title": "Kubernetes Fundamentals",
+   "items": [
+    "Need for Orchestration",
+    "Kubernetes Architecture",
+    "Pods",
+    "Deployments & ReplicaSets",
+    "Services"
+   ]
+  },
+  "agenda": [
+   "Configuration & Secrets",
+   "Ingress & Namespaces",
+   "Health & Self-Healing",
+   "Rolling Updates & Rollback",
+   "Managed Kubernetes"
+  ],
+  "next": "DevOps & CI/CD Fundamentals"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title",
+   "notes": "TR title line: Session 21 : Kubernetes in Practice"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 20 : Kubernetes Fundamentals\n1. Need for Orchestration: Limits of manual container management at scale\n2. Kubernetes Architecture: Control plane: API server, scheduler, controller manager & etcd; nodes: kubelet, runtime & kube-proxy\n3. Pods: The smallest deployable unit; multi-container pods; pod lifecycle & restart policy\n4. Deployments & ReplicaSets: Declarative desired state; replica management; self-healing\n5. Services: ClusterIP, NodePort & LoadBalancer; service discovery & stable networking"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Configuration & Secrets: ConfigMaps & Secrets; injecting configuration into pods\n2. Ingress & Namespaces: Ingress controllers & routing rules; namespaces; resource requests, limits & quotas\n3. Health & Self-Healing: Liveness, readiness & startup probes\n4. Rolling Updates & Rollback: Update strategy; surge & unavailability settings; rollback of a bad release\n5. Managed Kubernetes: EKS, AKS & GKE; provider-managed components; self-managed vs managed trade-offs"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1,
+   "notes": "Configuration & Secrets: ConfigMaps & Secrets; injecting configuration into pods"
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "Externalizing Config",
+   "title": "ConfigMaps And Secrets",
+   "lead": "Container images stay fixed, but applications often need different settings per environment, like a database address\nKubernetes stores such values outside the image in two objects: ConfigMap for plain settings, Secret for sensitive data",
+   "points": [
+    {
+     "text": "ConfigMap holds key-value pairs: log level, API URL",
+     "icon": "img:images/k8s-cm.svg"
+    },
+    {
+     "text": "Secret holds sensitive data: passwords, tokens, certificates",
+     "icon": "img:images/k8s-secret.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Compare the image to the exam paper and the ConfigMap or Secret to the centre's slip. Secrets specifically protect credentials, unlike plain ConfigMaps. Ask why hardcoding a password in the image is risky.\""
+  },
+  {
+   "id": "T01-B",
+   "layout": "points",
+   "kicker": "Externalizing Config",
+   "title": "ConfigMaps And Secrets",
+   "points": [
+    {
+     "text": "Both created from literals, files or YAML manifests",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Pods reference them by name, not hardcoded values",
+     "icon": "img:images/k8s-pod.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Compare the image to the exam paper and the ConfigMap or Secret to the centre's slip. Secrets specifically protect credentials, unlike plain ConfigMaps. Ask why hardcoding a password in the image is risky.\""
+  },
+  {
+   "id": "T01-AN",
+   "layout": "analogy",
+   "label": "Analogy: one question paper, a slip per centre",
+   "kicker": "Externalizing Config",
+   "title": "ConfigMaps And Secrets",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T01Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T01Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A college prints one common question paper for every centre, but each centre pastes a slip with its room number: just as a ConfigMap attaches environment settings without changing the image. \"Compare the image to the exam paper and the ConfigMap or Secret to the centre's slip. Secrets specifically protect credentials, unlike plain ConfigMaps. Ask why hardcoding a password in the image is risky.\""
+  },
+  {
+   "id": "T02",
+   "layout": "table",
+   "kicker": "ConfigMap Vs Secret",
+   "title": "Storage And Encoding",
+   "lead": "Both share a key-value structure, but Kubernetes stores and protects their contents differently once saved to the cluster",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Aspect",
+      "icon": "i3d:list",
+      "weight": 0.9
+     },
+     {
+      "label": "ConfigMap",
+      "icon": "img:images/k8s-cm.svg",
+      "weight": 1.0
+     },
+     {
+      "label": "Secret",
+      "icon": "img:images/k8s-secret.svg",
+      "weight": 1.1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:eye",
+      "cells": [
+       "Data sensitivity",
+       "Plain text values",
+       "Confidential: passwords, tokens"
+      ]
+     },
+     {
+      "icon": "img:images/k8s-etcd.svg",
+      "cells": [
+       "Encoding in etcd",
+       "Stored as-is",
+       "Base64-encoded, not encrypted"
+      ]
+     },
+     {
+      "icon": "i3d:target",
+      "cells": [
+       "Typical use",
+       "Log level, URLs, flags",
+       "DB credentials, TLS certs"
+      ]
+     },
+     {
+      "icon": "i3d:disk",
+      "cells": [
+       "Object size limit",
+       "1 MiB",
+       "1 MiB"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Point to the encoding row: base64 is encoding, not encryption, a common interview trap. Mention enabling etcd encryption at rest for genuine protection. Ask why base64 alone does not secure a Secret.\""
+  },
+  {
+   "id": "T02-B",
+   "layout": "points",
+   "kicker": "ConfigMap Vs Secret",
+   "title": "Storage And Encoding",
+   "points": [
+    {
+     "text": "Secrets are encrypted at rest only if etcd encryption is enabled",
+     "icon": "img:images/k8s-etcd.svg"
+    },
+    {
+     "text": "Secrets stay hidden from plain kubectl describe output",
+     "icon": "i3d:terminal"
+    },
+    {
+     "text": "ConfigMaps stay unencrypted by design since data is non-sensitive",
+     "icon": "i3d:unlock"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point to the encoding row: base64 is encoding, not encryption, a common interview trap. Mention enabling etcd encryption at rest for genuine protection. Ask why base64 alone does not secure a Secret.\""
+  },
+  {
+   "id": "T03",
+   "layout": "points",
+   "kicker": "Injecting Into Pods",
+   "title": "Env Vars Vs Volumes",
+   "lead": "Pods consume ConfigMap and Secret data in two ways, chosen by how the application reads its settings and whether updates must apply without a restart",
+   "points": [
+    {
+     "text": "envFrom or valueFrom injects keys as environment variables",
+     "icon": "i3d:list"
+    },
+    {
+     "text": "Volume mount exposes each key as a file in a directory",
+     "icon": "img:images/k8s-vol.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T03",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Point out that environment variables need a pod restart to pick up a change, but mounted files update live through kubelet sync. Ask how a hot-reloading application should consume a ConfigMap.\""
+  },
+  {
+   "id": "T03-B",
+   "layout": "points",
+   "kicker": "Injecting Into Pods",
+   "title": "Env Vars Vs Volumes",
+   "points": [
+    {
+     "text": "Env vars are fixed at container start, frozen until restart",
+     "icon": "i3d:lock"
+    },
+    {
+     "text": "Volume-mounted files sync automatically when the source object changes",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T03B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point out that environment variables need a pod restart to pick up a change, but mounted files update live through kubelet sync. Ask how a hot-reloading application should consume a ConfigMap.\""
+  },
+  {
+   "id": "T04",
+   "layout": "points",
+   "kicker": "Config In EKS",
+   "title": "Secrets Manager Bridge",
+   "lead": "On Amazon EKS, the AWS Secrets Store CSI Driver can mount secrets held directly in AWS Secrets Manager or Parameter Store as pod volumes, avoiding a second copy in the cluster",
+   "points": [
+    {
+     "text": "Centralizes rotation and audit logging outside the Kubernetes cluster",
+     "icon": "img:images/aws-secrets-manager.svg"
+    },
+    {
+     "text": "The SecretProviderClass is namespace-scoped, usable only by pods in that namespace",
+     "icon": "img:images/k8s-ns.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 540,
+   "notes": "\"Point to the AWS Secrets Manager console as the real source of truth the CSI driver pulls from. Mention this avoids storing sensitive data twice. Ask how this driver differs from a plain Kubernetes Secret.\""
+  },
+  {
+   "id": "T04-B",
+   "layout": "points",
+   "kicker": "Config In EKS",
+   "title": "Secrets Manager Bridge",
+   "points": [
+    {
+     "text": "Mounted secrets refresh on a poll interval when rotation is enabled, so no pod restart is needed",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04B",
+    "props": {
+     "steps": 1
+    }
+   },
+   "figH": 320,
+   "pointsW": 540,
+   "note": {
+    "text": "With configuration externalized safely, the next concern is routing outside traffic into the cluster and organising workloads into namespaces",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "\"Point to the AWS Secrets Manager console as the real source of truth the CSI driver pulls from. Mention this avoids storing sensitive data twice. Ask how this driver differs from a plain Kubernetes Secret.\""
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2,
+   "notes": "Ingress & Namespaces: Ingress controllers & routing rules; namespaces; resource requests, limits & quotas"
+  },
+  {
+   "id": "T05",
+   "layout": "points",
+   "kicker": "Cluster Control Tools",
+   "title": "Routing And Isolation",
+   "lead": "Running many services in one cluster raises three questions: how traffic reaches the right service, how teams share the cluster safely, and how much compute each pod may use",
+   "points": [
+    {
+     "text": "Ingress: single entry point routing external traffic by host or path",
+     "icon": "img:images/k8s-ing.svg"
+    },
+    {
+     "text": "Namespaces: virtual partitions separating teams, environments or projects",
+     "icon": "img:images/k8s-ns.svg"
+    },
+    {
+     "text": "Resource requests, limits & quotas: governing how much compute each pod and namespace consumes",
+     "icon": "i3d:gauge"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T05",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 540,
+   "notes": "\"Frame the section as three practical controls needed once a cluster runs many services. Mention that the AWS Load Balancer Controller handles Ingress on EKS, and the EKS console's Resources tab lists Namespaces. Interview angle: distinguish routing from resource governance.\""
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "Why Ingress Exists",
+   "title": "Single Traffic Entry",
+   "lead": "Each LoadBalancer-type Service needs its own external balancer, costly once a cluster hosts many services\nIngress is an API object defining HTTP(S) routing rules so one entry point reaches many services",
+   "points": [
+    {
+     "text": "Rules match requests by hostname, path, or both",
+     "icon": "i3d:filter"
+    },
+    {
+     "text": "Reduces per-service cloud balancer cost at scale",
+     "icon": "img:images/aws-elastic-load-balancing.svg"
+    },
+    {
+     "text": "Needs a controller running to take effect",
+     "icon": "i3d:gear"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T06",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"AWS EKS uses the AWS Load Balancer Controller to turn an Ingress object into an Application Load Balancer. LoadBalancer services create one balancer each; Ingress consolidates routing into one. Exam hook: Ingress alone does nothing without a controller.\""
+  },
+  {
+   "id": "T06-AN",
+   "layout": "analogy",
+   "label": "Analogy: office receptionist",
+   "kicker": "Why Ingress Exists",
+   "title": "Single Traffic Entry",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T06Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T06Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: An office receptionist directs each visitor to the right floor by name: just as Ingress routes each request to the right service by hostname or path. \"AWS EKS uses the AWS Load Balancer Controller to turn an Ingress object into an Application Load Balancer. LoadBalancer services create one balancer each; Ingress consolidates routing into one. Exam hook: Ingress alone does nothing without a controller.\""
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Ingress Controller Mechanics",
+   "title": "Host And Path Rules",
+   "lead": "An Ingress object alone defines no behaviour; an Ingress controller, which runs inside the cluster, reads these objects and configures real routing",
+   "points": [
+    {
+     "text": "Ingress controller: AWS Load Balancer Controller, HAProxy, Traefik or another implementation of the rules",
+     "icon": "i3d:gear"
+    },
+    {
+     "text": "Host-based routing: separate domains, e.g. shop.example.com, api.example.com, to different services",
+     "icon": "i3d:globe"
+    },
+    {
+     "text": "Path-based routing: one domain, with /orders and /cart sent to different services",
+     "icon": "i3d:branch"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 600,
+   "notes": "\"Explain the controller watches the API server for Ingress objects and updates its proxy configuration live. Point to the EKS console's Load Balancers page showing the ALB created from an Ingress. Mention Gateway API as the newer successor, and that the community Ingress NGINX project was retired in March 2026. Interview hook: Ingress needs a controller installed, the object alone does nothing.\""
+  },
+  {
+   "id": "T07-B",
+   "layout": "points",
+   "kicker": "Ingress Controller Mechanics",
+   "title": "Host And Path Rules",
+   "points": [
+    {
+     "text": "TLS termination: controller can decrypt HTTPS before forwarding to pods",
+     "icon": "i3d:unlock"
+    },
+    {
+     "text": "On EKS, AWS Load Balancer Controller provisions an Application Load Balancer per Ingress",
+     "icon": "img:images/aws-application-load-balancer.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 600,
+   "notes": "\"Explain the controller watches the API server for Ingress objects and updates its proxy configuration live. Point to the EKS console's Load Balancers page showing the ALB created from an Ingress. Mention Gateway API as the newer successor, and that the community Ingress NGINX project was retired in March 2026. Interview hook: Ingress needs a controller installed, the object alone does nothing.\""
+  },
+  {
+   "id": "T08",
+   "layout": "points",
+   "kicker": "Kubernetes Namespaces",
+   "title": "Cluster Virtual Partitions",
+   "lead": "A cluster shared by many teams risks name clashes\nA namespace is a virtual partition inside one cluster, scoping object names so same-named resources coexist safely",
+   "points": [
+    {
+     "text": "Distinct from Linux kernel namespaces: groups objects, not processes",
+     "icon": "img:images/tech-linux.png"
+    },
+    {
+     "text": "Default namespaces include default, kube-system and kube-public",
+     "icon": "img:images/k8s-ns.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T08",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"This differs from Linux process namespaces, a cluster-level grouping, not process isolation. Point to the EKS console's Namespaces list. Exam hook: a Pod name must be unique only within its namespace.\""
+  },
+  {
+   "id": "T08-B",
+   "layout": "points",
+   "kicker": "Kubernetes Namespaces",
+   "title": "Cluster Virtual Partitions",
+   "points": [
+    {
+     "text": "Most API objects, like Pods and Services, live inside a namespace",
+     "icon": "img:images/k8s-pod.svg"
+    },
+    {
+     "text": "Nodes and persistent volumes stay cluster-scoped, outside any namespace",
+     "icon": "img:images/k8s-node.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T08B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"This differs from Linux process namespaces, a cluster-level grouping, not process isolation. Point to the EKS console's Namespaces list. Exam hook: a Pod name must be unique only within its namespace.\""
+  },
+  {
+   "id": "T08-AN",
+   "layout": "analogy",
+   "label": "Analogy: classrooms with their own registers",
+   "kicker": "Kubernetes Namespaces",
+   "title": "Cluster Virtual Partitions",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T08Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T08Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A school campus splits students into separate classrooms in one building, each keeping its own attendance register: just as a namespace keeps names private within its own slice of one cluster. \"This differs from Linux process namespaces, a cluster-level grouping, not process isolation. Point to the EKS console's Namespaces list. Exam hook: a Pod name must be unique only within its namespace.\""
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "Namespace Use Cases",
+   "title": "Isolation In Practice",
+   "lead": "Namespaces let one cluster serve several environments or teams without separate clusters, because access and quotas can be scoped per namespace rather than per cluster",
+   "points": [
+    {
+     "text": "Team separation: each team manages its own namespace, avoiding name conflicts",
+     "icon": "i3d:users"
+    },
+    {
+     "text": "DNS-based discovery: name.namespace.svc.cluster.local reaches a service in another namespace",
+     "icon": "img:images/tech-coredns.svg"
+    },
+    {
+     "text": "Resource quotas apply per namespace, capping total compute for that group",
+     "icon": "img:images/k8s-quota.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T09",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 600,
+   "notes": "\"Namespaces are a logical boundary for names and quotas, not automatically a security wall. Point to the EKS console dropdown that filters resources by namespace. Interview hook: cross-namespace calls need the namespace in the name (name.namespace); same-namespace calls do not.\""
+  },
+  {
+   "id": "T10",
+   "layout": "points",
+   "kicker": "Requests And Limits",
+   "title": "Per-Pod Compute Bounds",
+   "lead": "Without a bound, one pod can starve others on shared CPU and memory\nA request guarantees compute at scheduling; a limit sets the ceiling it may never exceed",
+   "points": [
+    {
+     "text": "Scheduler places a pod only where requested capacity is free",
+     "icon": "img:images/k8s-sched.svg"
+    },
+    {
+     "text": "CPU limit exceeded: pod is throttled, not killed",
+     "icon": "i3d:cpu"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T10",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"This builds on cgroups from container fundamentals, enforcing requests and limits at the node. The EKS console shows usage against these values under Pod details. Exam hook: CPU throttles under a limit; memory is killed.\""
+  },
+  {
+   "id": "T10-B",
+   "layout": "points",
+   "kicker": "Requests And Limits",
+   "title": "Per-Pod Compute Bounds",
+   "points": [
+    {
+     "text": "Memory limit exceeded: container is OOMKilled, then restarted per its restart policy",
+     "icon": "i3d:chip"
+    },
+    {
+     "text": "Units: CPU in millicores (500m), memory in mebibytes (256Mi)",
+     "icon": "i3d:gauge"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T10B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"This builds on cgroups from container fundamentals, enforcing requests and limits at the node. The EKS console shows usage against these values under Pod details. Exam hook: CPU throttles under a limit; memory is killed.\""
+  },
+  {
+   "id": "T10-AN",
+   "layout": "analogy",
+   "label": "Analogy: hostel mess plates",
+   "kicker": "Requests And Limits",
+   "title": "Per-Pod Compute Bounds",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T10Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T10Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A hostel mess guarantees every student one full plate, but no one can take more than two plates. In the same way, a request guarantees a pod its minimum compute, and a limit caps the maximum it can use. \"This builds on cgroups from container fundamentals, enforcing requests and limits at the node. The EKS console shows usage against these values under Pod details. Exam hook: CPU throttles under a limit; memory is killed.\""
+  },
+  {
+   "id": "T11",
+   "layout": "table",
+   "kicker": "Namespace Resource Quotas",
+   "title": "Capping Namespace Totals",
+   "lead": "Individual pod limits do not stop a namespace from launching unlimited pods\nA ResourceQuota object caps the total CPU, memory, and object count a namespace may consume across all its pods",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Control",
+      "icon": "i3d:gear",
+      "weight": 0.8
+     },
+     {
+      "label": "Scope",
+      "icon": "i3d:target",
+      "weight": 0.8
+     },
+     {
+      "label": "Effect",
+      "icon": "i3d:gauge",
+      "weight": 1.4
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:check",
+      "cells": [
+       "Request",
+       "Single pod",
+       "Guaranteed minimum for scheduling"
+      ]
+     },
+     {
+      "icon": "img:images/k8s-limits.svg",
+      "cells": [
+       "Limit",
+       "Single pod",
+       "Hard ceiling; throttle or kill"
+      ]
+     },
+     {
+      "icon": "img:images/k8s-quota.svg",
+      "cells": [
+       "ResourceQuota",
+       "Whole namespace",
+       "Caps total CPU, memory, object count"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Point to the EKS console's ResourceQuotas view under a selected namespace, showing used versus hard caps. Interview hook: a ResourceQuota can require every pod to declare requests and limits, rejecting ones that do not.\""
+  },
+  {
+   "id": "T11-B",
+   "layout": "lead",
+   "kicker": "Namespace Resource Quotas",
+   "title": "Capping Namespace Totals",
+   "lead": "Ingress decides who can reach the cluster, namespaces decide who shares it, and quotas decide how much each group may use: together they keep a multi-service cluster reachable and fair",
+   "figure": {
+    "type": "custom",
+    "name": "C_T11B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1080,
+   "figH": 360,
+   "notes": "\"Point to the EKS console's ResourceQuotas view under a selected namespace, showing used versus hard caps. Interview hook: a ResourceQuota can require every pod to declare requests and limits, rejecting ones that do not.\""
+  },
+  {
+   "id": "S-QUIZ-1",
+   "layout": "quiz",
+   "notes": "Mid-session quiz (sections 1-2). Q1. Which object holds plain settings and which holds sensitive data? Answer: ConfigMap for plain settings, Secret for sensitive data. Q2. Is a Secret encrypted in etcd by default? Answer: No, it is base64-encoded, not encrypted, unless etcd encryption is enabled. Q3. Which way of injecting a ConfigMap picks up a change without a restart? Answer: The volume mount, whose files sync automatically. Q4. What does an Ingress object need running before it takes effect? Answer: An Ingress controller. Q5. Must a Pod name be unique across the whole cluster? Answer: No, only within its namespace. Q6. What happens when a container exceeds its memory limit? Answer: It is OOMKilled, then restarted per its restart policy."
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3,
+   "notes": "Health & Self-Healing: Liveness, readiness & startup probes"
+  },
+  {
+   "id": "T12",
+   "layout": "points",
+   "kicker": "Why Probes Exist",
+   "title": "Self-Healing Blind Spot",
+   "lead": "Self-healing restarts a container only when its process actually exits; a container that hangs but keeps running looks healthy to that check\nProbes let the kubelet test real application health instead",
+   "points": [
+    {
+     "text": "Liveness probe: detects a hung container, triggers a restart",
+     "icon": "i3d:heartbeat"
+    },
+    {
+     "text": "Readiness probe: detects a not-yet-ready pod, holds traffic back",
+     "icon": "i3d:gate"
+    },
+    {
+     "text": "Startup probe: delays the other two for slow-starting applications",
+     "icon": "i3d:hourglass"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T12",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Point out that the crash-only restart from the earlier restart-policy slide cannot see a hung application. Explain each probe answers a different health question. Interview hook: ask why a hung process escapes a crash-only restart.\""
+  },
+  {
+   "id": "T12-AN",
+   "layout": "analogy",
+   "label": "Analogy: a frozen phone screen",
+   "kicker": "Why Probes Exist",
+   "title": "Self-Healing Blind Spot",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T12Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T12Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A frozen phone screen still looks switched on until you tap it, just as a hung container still looks running until a probe checks if it actually responds. \"Point out that the crash-only restart from the earlier restart-policy slide cannot see a hung application. Explain each probe answers a different health question. Interview hook: ask why a hung process escapes a crash-only restart.\""
+  },
+  {
+   "id": "T13",
+   "layout": "table",
+   "kicker": "Probe Mechanisms",
+   "title": "How Checks Run",
+   "lead": "Each probe runs on a schedule set in the pod manifest and takes one of several forms, the three most common shown here, with shared threshold fields deciding when a result counts as failure",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Probe Mechanism",
+      "icon": "i3d:health",
+      "weight": 0.9
+     },
+     {
+      "label": "How It Checks",
+      "icon": "i3d:search",
+      "weight": 1.5
+     },
+     {
+      "label": "Manifest Field",
+      "icon": "i3d:code",
+      "weight": 0.8
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:globe",
+      "cells": [
+       "HTTP GET",
+       "kubelet calls a URL path, 200-399 is healthy",
+       "httpGet"
+      ]
+     },
+     {
+      "icon": "i3d:router",
+      "cells": [
+       "TCP socket",
+       "kubelet attempts a socket connection",
+       "tcpSocket"
+      ]
+     },
+     {
+      "icon": "i3d:terminal",
+      "cells": [
+       "Exec command",
+       "kubelet runs a command inside the container",
+       "exec"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Point to a kubectl get pod -o yaml output, naming these same fields. Mention that the workload view in EKS, AKS or GKE surfaces probe failures as pod events. Exam hook: name a probe mechanism and its matching manifest field.\""
+  },
+  {
+   "id": "T13-B",
+   "layout": "points",
+   "kicker": "Probe Mechanisms",
+   "title": "How Checks Run",
+   "points": [
+    {
+     "text": "periodSeconds: how often the kubelet repeats the check",
+     "icon": "i3d:clock"
+    },
+    {
+     "text": "failureThreshold: consecutive failures before an action triggers",
+     "icon": "i3d:alert"
+    },
+    {
+     "text": "initialDelaySeconds: wait before the very first check runs",
+     "icon": "i3d:hourglass"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T13B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point to a kubectl get pod -o yaml output, naming these same fields. Mention that the workload view in EKS, AKS or GKE surfaces probe failures as pod events. Exam hook: name a probe mechanism and its matching manifest field.\""
+  },
+  {
+   "id": "T14",
+   "layout": "points",
+   "kicker": "Liveness In Action",
+   "title": "Restart Trace",
+   "lead": "A worked timeline on one pod shows the threshold being crossed and the consequence it triggers, while a separate readiness check runs on the same pod independently",
+   "points": [
+    {
+     "text": "t=0s: container starts on port 8080, startup probe gates the other two",
+     "icon": "i3d:play"
+    },
+    {
+     "text": "t=10s, 20s, 30s: liveness probe at http://pod-ip:8080/healthz times out thrice, periodSeconds=10",
+     "icon": "i3d:stopwatch"
+    },
+    {
+     "text": "failureThreshold=3 reached: kubelet kills and restarts only this container",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T14",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Walk the timeline, stressing liveness restarts only the container while readiness only pulls the pod from traffic. Point to kubectl describe pod events showing Unhealthy and Killing entries. Interview hook: ask why a failing readiness probe never causes a restart.\""
+  },
+  {
+   "id": "T14-B",
+   "layout": "points",
+   "kicker": "Liveness In Action",
+   "title": "Restart Trace",
+   "points": [
+    {
+     "text": "Readiness probe fails separately: pod removed from Service endpoints, no restart",
+     "icon": "img:images/k8s-ep.svg"
+    },
+    {
+     "text": "Container restarts, passes checks, pod rejoins Service endpoints",
+     "icon": "i3d:check"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T14B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 320,
+   "pointsW": 540,
+   "note": {
+    "text": "The readiness gate seen here is what a rolling update relies on to avoid downtime: a new pod receives traffic only once it is ready",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "\"Walk the timeline, stressing liveness restarts only the container while readiness only pulls the pod from traffic. Point to kubectl describe pod events showing Unhealthy and Killing entries. Interview hook: ask why a failing readiness probe never causes a restart.\""
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4,
+   "notes": "Rolling Updates & Rollback: Update strategy; surge & unavailability settings; rollback of a bad release"
+  },
+  {
+   "id": "T15",
+   "layout": "points",
+   "kicker": "Rolling Updates",
+   "title": "Recreate Vs RollingUpdate",
+   "lead": "Deploying a new image to every pod at once takes the application offline until new pods start\nA Deployment's spec chooses between two strategies, RollingUpdate (default) and Recreate, to control that switch",
+   "points": [
+    {
+     "text": "Recreate: terminates all old pods before starting new ones",
+     "icon": "i3d:power"
+    },
+    {
+     "text": "RollingUpdate: new pods added while old pods removed gradually",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T15",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain that Recreate causes a visible outage while RollingUpdate does not, and point to the strategy type field in a Deployment manifest. Exam angle: why RollingUpdate is the default for stateless web services.\""
+  },
+  {
+   "id": "T15-B",
+   "layout": "points",
+   "kicker": "Rolling Updates",
+   "title": "Recreate Vs RollingUpdate",
+   "points": [
+    {
+     "text": "Rollout progress visible on the Deployment's EKS console page",
+     "icon": "img:images/aws-eks.svg"
+    },
+    {
+     "text": "RollingUpdate keeps the service reachable throughout the rollout",
+     "icon": "img:images/k8s-svc.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T15B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain that Recreate causes a visible outage while RollingUpdate does not, and point to the strategy type field in a Deployment manifest. Exam angle: why RollingUpdate is the default for stateless web services.\""
+  },
+  {
+   "id": "T15-AN",
+   "layout": "analogy",
+   "label": "Analogy: repaving one lane at a time",
+   "kicker": "Rolling Updates",
+   "title": "Recreate Vs RollingUpdate",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T15Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T15Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A highway repaving crew closes one lane at a time and reroutes traffic rather than shutting the whole road: just as a rolling update replaces pods lane by lane while the service stays reachable. \"Explain that Recreate causes a visible outage while RollingUpdate does not, and point to the strategy type field in a Deployment manifest. Exam angle: why RollingUpdate is the default for stateless web services.\""
+  },
+  {
+   "id": "T16",
+   "layout": "table",
+   "kicker": "Surge Unavailable Settings",
+   "title": "Controlling Rollout Pace",
+   "lead": "RollingUpdate exposes two fields that pace the replacement: maxSurge, extra pods allowed above the desired count, and maxUnavailable, pods allowed to be down at once",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Setting",
+      "icon": "i3d:gear",
+      "weight": 0.8
+     },
+     {
+      "label": "Meaning",
+      "icon": "i3d:doc",
+      "weight": 1.3
+     },
+     {
+      "label": "6 replicas, 25% example",
+      "icon": "img:images/k8s-pod.svg",
+      "weight": 1.2
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:plus",
+      "cells": [
+       "maxSurge",
+       "Extra pods allowed above desired count",
+       "2 extra pods (rounds up)"
+      ]
+     },
+     {
+      "icon": "i3d:minus",
+      "cells": [
+       "maxUnavailable",
+       "Pods allowed unavailable at once",
+       "1 pod down (rounds down)"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Walk through the table: with 6 replicas and 25 percent, surge rounds up to 2 extra pods and unavailable rounds down to 1. Ask why Kubernetes biases rounding toward availability over strict pod count, a common interview probe.\""
+  },
+  {
+   "id": "T16-B",
+   "layout": "lead",
+   "kicker": "Surge Unavailable Settings",
+   "title": "Controlling Rollout Pace",
+   "figure": {
+    "type": "custom",
+    "name": "E_T16B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1080,
+   "figH": 440,
+   "notes": "\"Walk through the table: with 6 replicas and 25 percent, surge rounds up to 2 extra pods and unavailable rounds down to 1. Ask why Kubernetes biases rounding toward availability over strict pod count, a common interview probe.\""
+  },
+  {
+   "id": "T17",
+   "layout": "points",
+   "kicker": "Rollback Mechanism",
+   "title": "Reverting Prior Revision",
+   "lead": "Deployments keep a revision history of past ReplicaSets, so a release that fails its probes or breaks in production can be reverted to the last known-good version",
+   "points": [
+    {
+     "text": "kubectl rollout history shows past revision numbers",
+     "icon": "i3d:list"
+    },
+    {
+     "text": "kubectl rollout undo reverts to the previous ReplicaSet",
+     "icon": "i3d:terminal"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T17",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Point to the Deployments tab on an EKS console after a bad image tag fails readiness checks, then run rollout undo live. Exam hook: rollback reuses the same rolling mechanism, just in the reverse direction.\""
+  },
+  {
+   "id": "T17-B",
+   "layout": "points",
+   "kicker": "Rollback Mechanism",
+   "title": "Reverting Prior Revision",
+   "points": [
+    {
+     "text": "rollout undo --to-revision=N targets a specific older version",
+     "icon": "i3d:version"
+    },
+    {
+     "text": "Old ReplicaSet scales up, bad one scales down automatically",
+     "icon": "img:images/k8s-rs.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T17B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point to the Deployments tab on an EKS console after a bad image tag fails readiness checks, then run rollout undo live. Exam hook: rollback reuses the same rolling mechanism, just in the reverse direction.\""
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5,
+   "notes": "Managed Kubernetes: EKS, AKS & GKE; provider-managed components; self-managed vs managed trade-offs"
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "Managed K8s Landscape",
+   "title": "Who Runs Control Plane",
+   "lead": "Running a Kubernetes cluster independently means installing and operating every control-plane component directly; a managed service removes that operational burden",
+   "points": [
+    {
+     "text": "Self-managed: team installs, patches and scales the control plane",
+     "icon": "i3d:users"
+    },
+    {
+     "text": "Managed: cloud provider operates the control plane components",
+     "icon": "i3d:cloud"
+    },
+    {
+     "text": "Three major managed services: EKS, AKS, GKE",
+     "icon": "img:images/tech-kubernetes.svg"
+    },
+    {
+     "text": "Cluster nodes still run customer workloads either way",
+     "icon": "img:images/k8s-node.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T19",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Contrast running Kubernetes on self-managed virtual machines against paying AWS, Azure or Google to run it. Mention that most production teams take the managed path since it is the focus here. An interviewer may ask who patches etcd in a managed cluster: the provider does.\""
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "Provider-Managed Components",
+   "title": "What Provider Operates",
+   "lead": "A managed Kubernetes service operates the API server, scheduler, controller manager and etcd on infrastructure it owns, patches and keeps highly available",
+   "points": [
+    {
+     "text": "Provider handles patching, upgrades and control-plane high availability",
+     "icon": "img:images/k8s-control-plane.svg",
+     "at": 1
+    },
+    {
+     "text": "Customer still manages workload manifests and add-ons",
+     "icon": "i3d:doc",
+     "at": 2
+    },
+    {
+     "text": "Plus worker nodes unless a serverless option such as Fargate is chosen",
+     "icon": "img:images/aws-fargate.svg",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T20",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Point out that only the control-plane pieces move to the provider; the worker nodes stay visible in the EKS or GKE console. Say that kubectl still talks to the same API server endpoint, just one the team never patches. Expect an interview question on exactly which components a managed service covers.\""
+  },
+  {
+   "id": "T20-B",
+   "layout": "points",
+   "kicker": "Provider-Managed Components",
+   "title": "What Provider Operates",
+   "points": [
+    {
+     "text": "Provider exposes only the API server endpoint to connect kubectl",
+     "icon": "img:images/k8s-api.svg"
+    },
+    {
+     "text": "AWS console shows this as the EKS cluster endpoint field",
+     "icon": "img:images/aws-eks.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T20B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point out that only the control-plane pieces move to the provider; the worker nodes stay visible in the EKS or GKE console. Say that kubectl still talks to the same API server endpoint, just one the team never patches. Expect an interview question on exactly which components a managed service covers.\""
+  },
+  {
+   "id": "T20-AN",
+   "layout": "analogy",
+   "label": "Analogy: a rented flat",
+   "kicker": "Provider-Managed Components",
+   "title": "What Provider Operates",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T20Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T20Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A rented flat's owner takes care of the building, lift and water supply, while you only manage your own furniture and belongings, just as a managed Kubernetes service runs the control plane while your team manages only its apps. \"Point out that only the control-plane pieces move to the provider; the worker nodes stay visible in the EKS or GKE console. Say that kubectl still talks to the same API server endpoint, just one the team never patches. Expect an interview question on exactly which components a managed service covers.\""
+  },
+  {
+   "id": "T21",
+   "layout": "table",
+   "kicker": "EKS AKS GKE",
+   "title": "Provider Offerings Compared",
+   "lead": "Each hyperscaler sells the same managed-control-plane idea under its own name, differing mainly in how worker nodes are provisioned",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Service",
+      "icon": "img:images/tech-kubernetes.svg",
+      "weight": 1.1
+     },
+     {
+      "label": "Provider",
+      "icon": "i3d:cloud",
+      "weight": 0.6
+     },
+     {
+      "label": "Node Provisioning",
+      "icon": "img:images/k8s-node.svg",
+      "weight": 1.5
+     }
+    ],
+    "rows": [
+     {
+      "icon": "img:images/aws-eks.svg",
+      "cells": [
+       "EKS (Elastic Kubernetes Service)",
+       "AWS",
+       "Managed node groups, Fargate serverless pods or EKS Auto Mode"
+      ]
+     },
+     {
+      "icon": "img:images/azure-aks.svg",
+      "cells": [
+       "AKS (Azure Kubernetes Service)",
+       "Azure",
+       "Virtual machine scale sets as node pools"
+      ]
+     },
+     {
+      "icon": "img:images/gcp-gke.svg",
+      "cells": [
+       "GKE (Google Kubernetes Engine)",
+       "GCP",
+       "Autopilot fully managed nodes or Standard mode"
+      ]
+     }
+    ],
+    "logo": true
+   },
+   "notes": "\"Walk through the table left to right: AWS, Azure and Google each offer the same idea under a different name. Mention the EKS console's node-group screen and GKE's Autopilot toggle as where this choice is actually made. An interviewer may ask to name the three services and their parent clouds.\""
+  },
+  {
+   "id": "T22",
+   "layout": "table",
+   "kicker": "Self-Managed Vs Managed",
+   "title": "Trade-Offs To Weigh",
+   "lead": "Choosing between running an own control plane and paying a provider to run it trades operational effort against cost and control",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Factor",
+      "icon": "i3d:scale",
+      "weight": 0.8
+     },
+     {
+      "label": "Self-Managed",
+      "icon": "i3d:users",
+      "weight": 1.2
+     },
+     {
+      "label": "Managed (EKS/AKS/GKE)",
+      "icon": "i3d:cloud",
+      "weight": 1.4
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:wrench",
+      "cells": [
+       "Operational effort",
+       "Team patches etcd, API server, upgrades",
+       "Provider handles control-plane operations"
+      ]
+     },
+     {
+      "icon": "i3d:coin",
+      "cells": [
+       "Cost",
+       "No control-plane fee, higher staff time",
+       "Often a per-cluster control-plane fee (varies by provider and tier), plus node cost"
+      ]
+     },
+     {
+      "icon": "i3d:gear",
+      "cells": [
+       "Customisation",
+       "Full control over versions, plugins",
+       "Limited to provider-supported configurations"
+      ]
+     },
+     {
+      "icon": "i3d:health",
+      "cells": [
+       "Availability",
+       "Team builds HA etcd and API server",
+       "Provider offers a control-plane uptime SLA"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Frame this as a cost-versus-control decision rather than a right-or-wrong choice. Mention that a regulated on-premises workload often forces self-managed, while most teams pick managed to save operational effort. Expect a question asking to justify one choice over the other for a given scenario.\""
+  },
+  {
+   "id": "T22-B",
+   "layout": "lead",
+   "kicker": "Self-Managed Vs Managed",
+   "title": "Trade-Offs To Weigh",
+   "figure": {
+    "type": "custom",
+    "name": "F_T22B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1080,
+   "figH": 440,
+   "notes": "\"Frame this as a cost-versus-control decision rather than a right-or-wrong choice. Mention that a regulated on-premises workload often forces self-managed, while most teams pick managed to save operational effort. Expect a question asking to justify one choice over the other for a given scenario.\""
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz",
+   "notes": "Quiz on Kubernetes in Practice. Q1. Why is base64 alone not enough to secure a Secret? Answer: Base64 is encoding, not encryption; anyone who reads it can decode it. Q2. Which two fields route a request in an Ingress rule? Answer: The hostname and the path. Q3. Which probe pulls a pod from Service endpoints without restarting it? Answer: The readiness probe. Q4. With failureThreshold=3 and periodSeconds=10, how long until a hung container is restarted? Answer: About 30 seconds, after three failed checks. Q5. With 6 replicas and 25%, how many extra pods may maxSurge add? Answer: 2, because surge rounds up. Q6. Which command reverts a Deployment to its previous ReplicaSet? Answer: kubectl rollout undo. Q7. In a managed cluster, who patches etcd? Answer: The provider."
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Configuration & Secrets: ConfigMaps & Secrets; injecting configuration into pods\n2. Ingress & Namespaces: Ingress controllers & routing rules; namespaces; resource requests, limits & quotas\n3. Health & Self-Healing: Liveness, readiness & startup probes\n4. Rolling Updates & Rollback: Update strategy; surge & unavailability settings; rollback of a bad release\n5. Managed Kubernetes: EKS, AKS & GKE; provider-managed components; self-managed vs managed trade-offs"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "DevOps & CI/CD Fundamentals"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}

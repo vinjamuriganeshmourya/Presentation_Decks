@@ -1,0 +1,1225 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Kubernetes Fundamentals",
+  "course": "Cloud Computing",
+  "htmlName": "kubernetes-fundamentals",
+  "previous": {
+   "title": "Building with Containers",
+   "items": [
+    "Writing a Dockerfile",
+    "Layers & Caching",
+    "Image Optimization",
+    "Container Configuration",
+    "Multi-Container Apps & Registries"
+   ]
+  },
+  "agenda": [
+   "Need for Orchestration",
+   "Kubernetes Architecture",
+   "Pods",
+   "Deployments & ReplicaSets",
+   "Services"
+  ],
+  "next": "Kubernetes in Practice"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title",
+   "notes": "TR title line: Session 20 : Kubernetes Fundamentals"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 19 : Building with Containers\n1. Writing a Dockerfile: Base images; core instructions; the build context\n2. Layers & Caching: Layer creation & reuse; instruction ordering for cache efficiency\n3. Image Optimization: Minimal base images; multi-stage builds; image size & attack surface\n4. Container Configuration: Environment variables, volumes & port mapping; secrets handling\n5. Multi-Container Apps & Registries: Compose: services, networks & dependencies; push & pull; tagging strategy & immutable tags"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Need for Orchestration: Limits of manual container management at scale\n2. Kubernetes Architecture: Control plane: API server, scheduler, controller manager & etcd; nodes: kubelet, runtime & kube-proxy\n3. Pods: The smallest deployable unit; multi-container pods; pod lifecycle & restart policy\n4. Deployments & ReplicaSets: Declarative desired state; replica management; self-healing\n5. Services: ClusterIP, NodePort & LoadBalancer; service discovery & stable networking"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1,
+   "notes": "Need for Orchestration: Limits of manual container management at scale"
+  },
+  {
+   "id": "T01",
+   "layout": "lead",
+   "kicker": "Why Orchestration",
+   "title": "Problem At Scale",
+   "lead": "Starting, stopping and checking a handful of containers by hand is manageable, but a production system runs hundreds of containers across many machines, and manual commands cannot keep up",
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figW": 1080,
+   "figH": 330,
+   "notes": "\"Open by asking what happens when the single nginx container from the Docker session becomes three hundred containers across twenty machines. Point out that every manual command now needs to run correctly, every time, on the right host. This gap is the exam hook: orchestration exists because manual operations do not scale.\""
+  },
+  {
+   "id": "T01-B",
+   "layout": "points",
+   "kicker": "Why Orchestration",
+   "title": "Problem At Scale",
+   "lead": "Container orchestration is the automated system that decides where containers run, keeps the desired number running, and reconnects them as they move, without a human issuing each command",
+   "points": [
+    {
+     "text": "Decides container placement across available host machines",
+     "icon": "i3d:server"
+    },
+    {
+     "text": "Restarts or replaces containers that stop responding",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 500,
+   "notes": "\"Open by asking what happens when the single nginx container from the Docker session becomes three hundred containers across twenty machines. Point out that every manual command now needs to run correctly, every time, on the right host. This gap is the exam hook: orchestration exists because manual operations do not scale.\""
+  },
+  {
+   "id": "T01-C",
+   "layout": "points",
+   "kicker": "Why Orchestration",
+   "title": "Problem At Scale",
+   "points": [
+    {
+     "text": "Adjusts running container count as demand changes",
+     "icon": "i3d:gauge"
+    },
+    {
+     "text": "Keeps networking correct as containers move between hosts",
+     "icon": "i3d:link"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01C",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 500,
+   "notes": "\"Open by asking what happens when the single nginx container from the Docker session becomes three hundred containers across twenty machines. Point out that every manual command now needs to run correctly, every time, on the right host. This gap is the exam hook: orchestration exists because manual operations do not scale.\""
+  },
+  {
+   "id": "T01-AN",
+   "layout": "analogy",
+   "label": "Analogy: traffic constable and city signals",
+   "kicker": "Why Orchestration",
+   "title": "Problem At Scale",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T01Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T01Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A single traffic constable can direct cars at one junction by hand, but a whole city needs a synchronised signal network: just as one engineer can run a few containers manually, but a fleet needs an orchestrator deciding placement and recovery automatically. \"Open by asking what happens when the single nginx container from the Docker session becomes three hundred containers across twenty machines. Point out that every manual command now needs to run correctly, every time, on the right host. This gap is the exam hook: orchestration exists because manual operations do not scale.\""
+  },
+  {
+   "id": "T02",
+   "layout": "points",
+   "kicker": "Manual Limits",
+   "title": "Five Failure Points",
+   "lead": "Each operation that is trivial for one container becomes error-prone once the fleet and the number of hosts grow, because a human cannot track every container's state in real time",
+   "points": [
+    {
+     "text": "Placement: choosing the least-loaded host by hand is guesswork",
+     "icon": "i3d:target"
+    },
+    {
+     "text": "Health: a crashed container needs manual detection and restart",
+     "icon": "i3d:heartbeat"
+    },
+    {
+     "text": "Scaling: adding containers for a traffic spike needs human action",
+     "icon": "i3d:chart"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Walk through one failure point concretely: a container crashes at 2 a.m. and nobody restarts it until someone notices the outage. A frequent interview ask is what problem Kubernetes solves, naming Amazon EKS as where this is solved on AWS.\""
+  },
+  {
+   "id": "T02-B",
+   "layout": "points",
+   "kicker": "Manual Limits",
+   "title": "Five Failure Points",
+   "points": [
+    {
+     "text": "Updates: rolling a new image across many hosts risks downtime",
+     "icon": "i3d:upload"
+    },
+    {
+     "text": "Discovery: a moved container's new address breaks static links",
+     "icon": "i3d:link"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 320,
+   "pointsW": 520,
+   "note": {
+    "text": "Kubernetes (K8s) is the orchestration platform the industry has standardised on to solve these limits, run in AWS as the managed Amazon Elastic Kubernetes Service (EKS)",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "\"Walk through one failure point concretely: a container crashes at 2 a.m. and nobody restarts it until someone notices the outage. A frequent interview ask is what problem Kubernetes solves, naming Amazon EKS as where this is solved on AWS.\""
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2,
+   "notes": "Kubernetes Architecture: Control plane: API server, scheduler, controller manager & etcd; nodes: kubelet, runtime & kube-proxy"
+  },
+  {
+   "id": "T03",
+   "layout": "points",
+   "kicker": "Kubernetes Architecture",
+   "title": "Control Plane And Nodes",
+   "lead": "Kubernetes (K8s), an open-source container-orchestration platform, decides placement and keeps containers running by splitting work between a control plane that decides and worker nodes that execute",
+   "points": [
+    {
+     "text": "API server: front door for every cluster command",
+     "icon": "img:images/k8s-api.svg"
+    },
+    {
+     "text": "Scheduler: picks a node for each new pod (a pod wraps one or more containers)",
+     "icon": "img:images/k8s-sched.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T03",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Introduce Kubernetes as the orchestration answer to the manual-scaling problem just discussed. Point to the diagram's two boxes as the whole architecture map before any single piece is opened up.\""
+  },
+  {
+   "id": "T03-B",
+   "layout": "points",
+   "kicker": "Kubernetes Architecture",
+   "title": "Control Plane And Nodes",
+   "points": [
+    {
+     "text": "Controller manager: keeps actual state matching desired state",
+     "icon": "img:images/k8s-c-m.svg"
+    },
+    {
+     "text": "etcd: stores the entire cluster state as key-value data",
+     "icon": "img:images/k8s-etcd.svg"
+    },
+    {
+     "text": "Kubelet, container runtime and kube-proxy: run pods and route traffic on every node",
+     "icon": "img:images/k8s-node.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T03B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Introduce Kubernetes as the orchestration answer to the manual-scaling problem just discussed. Point to the diagram's two boxes as the whole architecture map before any single piece is opened up.\""
+  },
+  {
+   "id": "T03-AN",
+   "layout": "analogy",
+   "label": "Analogy: school principal and teachers",
+   "kicker": "Kubernetes Architecture",
+   "title": "Control Plane And Nodes",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T03Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T03Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A school principal decides which teacher takes which class, while teachers go into classrooms and actually teach. In the same way, the control plane decides where work runs, and nodes do the actual work. \"Introduce Kubernetes as the orchestration answer to the manual-scaling problem just discussed. Point to the diagram's two boxes as the whole architecture map before any single piece is opened up.\""
+  },
+  {
+   "id": "T04",
+   "layout": "points",
+   "kicker": "API Server",
+   "title": "Cluster Gateway",
+   "lead": "Every command sent to the cluster, whether typed by an operator or issued by another control-plane process, first lands on the API server: the only direct entry point into the system",
+   "points": [
+    {
+     "text": "Exposes RESTful endpoints secured over HTTPS, default port 6443",
+     "icon": "i3d:api"
+    },
+    {
+     "text": "Authenticates and authorizes each incoming request before acting",
+     "icon": "i3d:idcard"
+    },
+    {
+     "text": "Validates object specifications and persists them into etcd",
+     "icon": "img:images/k8s-etcd.svg"
+    },
+    {
+     "text": "Every other control-plane component talks only through it",
+     "icon": "img:images/k8s-api.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T04",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that the API server is the single source of truth operators interact with, equivalent to the managed endpoint Amazon EKS exposes. Interview hook: ask why no component bypasses it directly.\""
+  },
+  {
+   "id": "T05",
+   "layout": "points",
+   "kicker": "Scheduling Control",
+   "title": "Placing And Reconciling",
+   "lead": "Once the API server accepts a new pod, two more control-plane processes decide where it runs and keep it running the way it was declared",
+   "points": [
+    {
+     "text": "Scheduler: matches each unscheduled pod to a fitting node",
+     "icon": "img:images/k8s-sched.svg"
+    },
+    {
+     "text": "Scoring weighs resource requests, affinity and taint rules",
+     "icon": "i3d:scale"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T05",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain the scheduler as a one-time placement decision and the controller manager as a continuous watch loop. A common interview question asks what happens if a node suddenly dies: the node controller detects the failure, and the pods are evicted and recreated on healthy nodes.\""
+  },
+  {
+   "id": "T05-B",
+   "layout": "points",
+   "kicker": "Scheduling Control",
+   "title": "Placing And Reconciling",
+   "points": [
+    {
+     "text": "Controller manager: runs loops comparing actual state to desired state",
+     "icon": "img:images/k8s-c-m.svg",
+     "at": 1
+    },
+    {
+     "text": "Node controller detects a failed node and evicts its pods",
+     "icon": "img:images/k8s-node.svg",
+     "at": 2
+    },
+    {
+     "text": "Deployment-managed pods are recreated on other nodes",
+     "icon": "img:images/k8s-node.svg",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T05B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain the scheduler as a one-time placement decision and the controller manager as a continuous watch loop. A common interview question asks what happens if a node suddenly dies: the node controller detects the failure, and the pods are evicted and recreated on healthy nodes.\""
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "etcd Store",
+   "title": "Cluster State Database",
+   "lead": "Every object the scheduler and controller manager read or write is itself held in etcd, a distributed key-value store that acts as the cluster's single source of truth",
+   "points": [
+    {
+     "text": "Stores all objects: pods, services, configs and secrets",
+     "icon": "img:images/k8s-etcd.svg"
+    },
+    {
+     "text": "Replicates across control-plane members using the Raft consensus protocol",
+     "icon": "i3d:replica"
+    },
+    {
+     "text": "Default client port 2379, peer communication on port 2380",
+     "icon": "i3d:router"
+    },
+    {
+     "text": "Losing etcd data means losing the entire cluster state",
+     "icon": "i3d:alert"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T06",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Clarify that only the API server reads and writes etcd directly, never the scheduler or controllers themselves. Exam hook: etcd backup and restore is the standard disaster-recovery question for a cluster.\""
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Node Components",
+   "title": "Kubelet Runtime Proxy",
+   "lead": "While the control plane decides, each worker node runs three processes that actually execute containers and route their traffic",
+   "points": [
+    {
+     "text": "Kubelet: node agent that runs the pods it is assigned",
+     "icon": "img:images/k8s-kubelet.svg"
+    },
+    {
+     "text": "Container runtime: pulls images and starts containers, such as containerd",
+     "icon": "img:images/tech-containerd.png"
+    },
+    {
+     "text": "Kube-proxy: maintains network rules for service traffic routing",
+     "icon": "img:images/k8s-k-proxy.svg"
+    },
+    {
+     "text": "Kubelet reports node and pod health back to the API server",
+     "icon": "i3d:heartbeat"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Note that the container runtime is the same containerd layer already met underneath Docker, now managed by kubelet instead of the Docker daemon. Point out kube-proxy as the piece that makes a service address stable despite pods moving.\""
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3,
+   "notes": "Pods: The smallest deployable unit; multi-container pods; pod lifecycle & restart policy"
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "What Is A Pod",
+   "title": "Smallest Deploy Unit",
+   "lead": "A container image alone cannot be scheduled on a cluster; Kubernetes needs a wrapper that carries networking and storage context. That wrapper is the Pod: the smallest deployable unit Kubernetes schedules",
+   "points": [
+    {
+     "text": "Pod wraps one or more containers as a single unit",
+     "icon": "img:images/k8s-pod.svg"
+    },
+    {
+     "text": "All containers in a pod share one IP address",
+     "icon": "i3d:router"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T09",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that Kubernetes never schedules a bare container, only a pod. Point out the shared IP as the reason containers inside talk over localhost. Exam hook: why can two containers in one pod not use the same port.\""
+  },
+  {
+   "id": "T09-B",
+   "layout": "points",
+   "kicker": "What Is A Pod",
+   "title": "Smallest Deploy Unit",
+   "points": [
+    {
+     "text": "Containers in a pod can share mounted storage volumes",
+     "icon": "img:images/k8s-vol.svg"
+    },
+    {
+     "text": "Kubernetes schedules and removes whole pods, never a bare container",
+     "icon": "img:images/k8s-sched.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T09B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that Kubernetes never schedules a bare container, only a pod. Point out the shared IP as the reason containers inside talk over localhost. Exam hook: why can two containers in one pod not use the same port.\""
+  },
+  {
+   "id": "T09-AN",
+   "layout": "analogy",
+   "label": "Analogy: PG room shared by flatmates",
+   "kicker": "What Is A Pod",
+   "title": "Smallest Deploy Unit",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T09Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T09Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A pod is like one PG room shared by flatmates: they share the same address and same kitchen, exactly as pod containers share one IP and one set of volumes. \"Stress that Kubernetes never schedules a bare container, only a pod. Point out the shared IP as the reason containers inside talk over localhost. Exam hook: why can two containers in one pod not use the same port.\""
+  },
+  {
+   "id": "T10",
+   "layout": "points",
+   "kicker": "Multi-Container Pods",
+   "title": "Sidecar And Init",
+   "lead": "Most pods run a single container, but a pod can bundle helper containers that support the main one without changing its image",
+   "points": [
+    {
+     "text": "Sidecar: helper container running alongside, e.g. log shipper",
+     "icon": "i3d:log"
+    },
+    {
+     "text": "Init container: runs once, finishes before app container starts",
+     "icon": "i3d:play"
+    },
+    {
+     "text": "Ambassador: proxies the main container's outbound network calls",
+     "icon": "i3d:router"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T10",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain a sidecar with a concrete example: a logging agent reading the app's log file from a shared volume. Mention Amazon EKS as the AWS service that runs these pod specs. Exam hook: difference between init container and sidecar container.\""
+  },
+  {
+   "id": "T11",
+   "layout": "table",
+   "kicker": "Pod Lifecycle",
+   "title": "Phases And Transitions",
+   "lead": "Once created, a pod moves through a fixed sequence of phases that report whether its containers are scheduled, starting or finished",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Phase",
+      "icon": "img:images/k8s-pod.svg",
+      "weight": 0.6
+     },
+     {
+      "label": "Meaning",
+      "icon": "i3d:doc",
+      "weight": 1.6
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:hourglass",
+      "cells": [
+       "Pending",
+       "Accepted, image pull or scheduling in progress"
+      ]
+     },
+     {
+      "icon": "i3d:play",
+      "cells": [
+       "Running",
+       "At least one container is executing"
+      ]
+     },
+     {
+      "icon": "i3d:check",
+      "cells": [
+       "Succeeded",
+       "All containers exited with status zero"
+      ]
+     },
+     {
+      "icon": "i3d:alert",
+      "cells": [
+       "Failed",
+       "All containers stopped, at least one with a non-zero status, and won't be restarted"
+      ]
+     },
+     {
+      "icon": "i3d:search",
+      "cells": [
+       "Unknown",
+       "Pod state could not be obtained from the node"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Walk through a pod pulling a 180 MB image, sitting in Pending for a few seconds, then moving to Running once the container starts. Point out Unknown as a node-communication failure, not a container crash. Exam hook: can a pod go from Failed back to Running.\""
+  },
+  {
+   "id": "T11-B",
+   "layout": "lead",
+   "kicker": "Pod Lifecycle",
+   "title": "Phases And Transitions",
+   "lead": "Pod myapp-7f9c6d8b45-k2p9q pulls a 180 MB image in about 6 seconds, then moves to Running once its container starts",
+   "figure": {
+    "type": "custom",
+    "name": "C_T11B",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1080,
+   "figH": 360,
+   "notes": "\"Walk through a pod pulling a 180 MB image, sitting in Pending for a few seconds, then moving to Running once the container starts. Point out Unknown as a node-communication failure, not a container crash. Exam hook: can a pod go from Failed back to Running.\""
+  },
+  {
+   "id": "T12",
+   "layout": "table",
+   "kicker": "Restart Policies",
+   "title": "Always OnFailure Never",
+   "lead": "When a container inside a pod exits, the restart policy decides what the kubelet does next, and the right choice depends on whether the workload is long-running or one-off",
+   "table": {
+    "type": "table",
+    "ringCol": [
+     0
+    ],
+    "columns": [
+     {
+      "label": "Policy",
+      "icon": "i3d:policy",
+      "weight": 0.7
+     },
+     {
+      "label": "Behaviour",
+      "icon": "i3d:refresh",
+      "weight": 1.25
+     },
+     {
+      "label": "Typical Use",
+      "icon": "i3d:target",
+      "weight": 1.15
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:server",
+      "cells": [
+       "Always",
+       "Restarts on any exit, including success (default)",
+       "Long-running web services"
+      ]
+     },
+     {
+      "icon": "i3d:gear",
+      "cells": [
+       "OnFailure",
+       "Restarts only on non-zero exit",
+       "Batch jobs that must retry"
+      ]
+     },
+     {
+      "icon": "i3d:flask",
+      "cells": [
+       "Never",
+       "Does not restart the container",
+       "One-shot diagnostic or test pods"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Point out Always is the default used by Deployments, which is why web pods come back after a crash. Contrast with Never for a one-time debugging pod that should stay failed for inspection. Exam hook: why Jobs use OnFailure instead of Always.\""
+  },
+  {
+   "id": "S-QUIZ-1",
+   "layout": "quiz",
+   "notes": "Mid-session quiz (sections 1-3). Q1. Name two things that break when hundreds of containers are managed by hand. Answer: Any two of placement, health, scaling, updates and discovery. Q2. Which control-plane component is the only direct entry point into the cluster? Answer: The API server. Q3. Which component stores the entire cluster state? Answer: etcd. Q4. What does every container in one pod share? Answer: One IP address, and they can share mounted volumes. Q5. Which container runs once and finishes before the app container starts? Answer: The init container. Q6. Which restart policy is the default? Answer: Always."
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4,
+   "notes": "Deployments & ReplicaSets: Declarative desired state; replica management; self-healing"
+  },
+  {
+   "id": "T14",
+   "layout": "points",
+   "kicker": "Declarative Desired State",
+   "title": "What A Deployment Is",
+   "lead": "Manually restarting crashed containers at scale fails, so a Deployment declares the desired state instead of a sequence of steps, and Kubernetes continuously enforces it",
+   "points": [
+    {
+     "text": "Desired state: declared replica count and container image version",
+     "icon": "img:images/k8s-deploy.svg"
+    },
+    {
+     "text": "kubectl apply -f deployment.yaml submits that declared state",
+     "icon": "i3d:terminal"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T14",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain the shift from issuing commands to declaring an outcome, using the thermostat picture. Interview angle: why does Kubernetes favour declarative over imperative management?\""
+  },
+  {
+   "id": "T14-B",
+   "layout": "points",
+   "kicker": "Declarative Desired State",
+   "title": "What A Deployment Is",
+   "points": [
+    {
+     "text": "Declarative state persists continuously, unlike a one-time command",
+     "icon": "i3d:refresh"
+    },
+    {
+     "text": "Deployment automatically creates and owns its ReplicaSet",
+     "icon": "img:images/k8s-rs.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T14B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain the shift from issuing commands to declaring an outcome, using the thermostat picture. Interview angle: why does Kubernetes favour declarative over imperative management?\""
+  },
+  {
+   "id": "T14-AN",
+   "layout": "analogy",
+   "label": "Analogy: water tank with an automatic motor switch",
+   "kicker": "Declarative Desired State",
+   "title": "What A Deployment Is",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T14Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T14Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A water tank with an automatic motor switch keeps checking the water level. When the level drops, the motor turns on and refills it to full. In the same way, a Deployment keeps checking the pod count and restores it whenever it drops. \"Explain the shift from issuing commands to declaring an outcome, using the thermostat picture. Interview angle: why does Kubernetes favour declarative over imperative management?\""
+  },
+  {
+   "id": "T15",
+   "layout": "points",
+   "kicker": "ReplicaSet Mechanism",
+   "title": "Reconciliation Loop",
+   "lead": "A declared target needs an enforcer: the ReplicaSet controller is the continuously running loop that keeps the live pod count equal to what the Deployment declared",
+   "points": [
+    {
+     "text": "Label selector decides which running pods belong to this set",
+     "icon": "i3d:tag"
+    },
+    {
+     "text": "Reconciliation loop repeatedly compares actual pod count against desired count",
+     "icon": "i3d:refresh"
+    },
+    {
+     "text": "Fewer pods than desired: controller creates new ones from the pod template",
+     "icon": "i3d:plus"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T15",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that the comparison runs continuously in the background, not once at creation. Mention the label selector is how the controller recognises its own pods. Exam hook: ask what happens if a pod's labels are edited manually.\""
+  },
+  {
+   "id": "T15-B",
+   "layout": "points",
+   "kicker": "ReplicaSet Mechanism",
+   "title": "Reconciliation Loop",
+   "points": [
+    {
+     "text": "More pods than desired: controller terminates the extra matching pods",
+     "icon": "i3d:minus"
+    },
+    {
+     "text": "Deployment manages the ReplicaSet, never pods directly, to allow safe rollouts",
+     "icon": "img:images/k8s-deploy.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T15B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that the comparison runs continuously in the background, not once at creation. Mention the label selector is how the controller recognises its own pods. Exam hook: ask what happens if a pod's labels are edited manually.\""
+  },
+  {
+   "id": "T16",
+   "layout": "points",
+   "kicker": "Self-Healing Traced",
+   "title": "Pod Loss Recovery",
+   "lead": "Self-healing is this same reconciliation loop acting without any manual trigger: the moment a running pod disappears, the controller notices the gap",
+   "points": [
+    {
+     "text": "Deployment web-deployment keeps desired replicas at three",
+     "icon": "img:images/k8s-deploy.svg",
+     "at": 1
+    },
+    {
+     "text": "Pod web-deployment-7d9f8c7b67-x4k2p is deleted at 42 seconds uptime",
+     "icon": "i3d:trash",
+     "at": 2
+    },
+    {
+     "text": "For example by kubectl delete pod",
+     "icon": "i3d:terminal",
+     "at": 2
+    },
+    {
+     "text": "ReplicaSet controller sees actual count two against desired three",
+     "icon": "img:images/k8s-rs.svg",
+     "at": 3
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T16",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Walk through the crash and replacement using the pod names on the slide. Point at the mismatch between desired and actual count as the trigger. Contrast this with a crashed container, which the kubelet restarts inside the same pod under its restart policy. Exam hook: self-healing replaces pods, it does not resurrect the original one.\""
+  },
+  {
+   "id": "T16-B",
+   "layout": "points",
+   "kicker": "Self-Healing Traced",
+   "title": "Pod Loss Recovery",
+   "points": [
+    {
+     "text": "Scheduler places a new pod on an available healthy node within 5 seconds",
+     "icon": "img:images/k8s-sched.svg"
+    },
+    {
+     "text": "Kubelet on that node pulls the image and starts the container",
+     "icon": "img:images/k8s-kubelet.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T16B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 320,
+   "pointsW": 540,
+   "note": {
+    "text": "Within seconds the count returns to three, with a new pod such as web-deployment-7d9f8c7b67-q8z1n replacing the deleted one with no recovery step needed from an administrator",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "\"Walk through the crash and replacement using the pod names on the slide. Point at the mismatch between desired and actual count as the trigger. Contrast this with a crashed container, which the kubelet restarts inside the same pod under its restart policy. Exam hook: self-healing replaces pods, it does not resurrect the original one.\""
+  },
+  {
+   "id": "T17",
+   "layout": "points",
+   "kicker": "Scaling and Rollouts",
+   "title": "Replica Management Live",
+   "lead": "Keeping replicas alive only matters if their count can change: scaling a Deployment up or down drives the same reconciliation loop toward a new target",
+   "points": [
+    {
+     "text": "kubectl scale deployment web-deployment --replicas=5 updates the desired count instantly",
+     "icon": "i3d:terminal"
+    },
+    {
+     "text": "Amazon EKS console's Workloads tab shows desired versus current replica counts",
+     "icon": "img:images/aws-eks.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T17",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 500,
+   "notes": "\"Point to the EKS Workloads tab if a screenshot is shown, highlighting desired versus current counts. Mention that rolling updates swap ReplicaSets rather than editing pods in place. Exam hook: ask how a Deployment's rollout differs from a ReplicaSet's scaling.\""
+  },
+  {
+   "id": "T17-B",
+   "layout": "points",
+   "kicker": "Scaling and Rollouts",
+   "title": "Replica Management Live",
+   "points": [
+    {
+     "text": "Rolling update replaces pods gradually when a new image is applied",
+     "icon": "i3d:refresh"
+    },
+    {
+     "text": "Old ReplicaSet scales down as the new ReplicaSet scales up",
+     "icon": "img:images/k8s-rs.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T17B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 320,
+   "pointsW": 520,
+   "note": {
+    "text": "Pods kept alive this way still need one stable address other components can reach, which is the role a stable network identity plays",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "\"Point to the EKS Workloads tab if a screenshot is shown, highlighting desired versus current counts. Mention that rolling updates swap ReplicaSets rather than editing pods in place. Exam hook: ask how a Deployment's rollout differs from a ReplicaSet's scaling.\""
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5,
+   "notes": "Services: ClusterIP, NodePort & LoadBalancer; service discovery & stable networking"
+  },
+  {
+   "id": "T18",
+   "layout": "points",
+   "kicker": "Why Services Exist",
+   "title": "Service Types Map",
+   "lead": "Pods restart and reschedule constantly, and each new pod gets a fresh IP address, so nothing durable can point at one directly. A Service gives a changing set of pods one stable network identity",
+   "points": [
+    {
+     "text": "ClusterIP: internal-only access for other pods",
+     "icon": "img:images/k8s-svc.svg"
+    },
+    {
+     "text": "NodePort: opens one port on every node",
+     "icon": "img:images/k8s-node.svg"
+    },
+    {
+     "text": "LoadBalancer: provisions an external cloud load balancer",
+     "icon": "img:images/aws-elastic-load-balancing.svg"
+    },
+    {
+     "text": "Selector: labels linking a service to its pods",
+     "icon": "i3d:tag"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T18",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Open with pod IP churn as the problem a Service solves. Name all three types together before going deep on any one. Interview hook: why Services exist even though pods already have IPs.\""
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "ClusterIP Service",
+   "title": "Default Internal Type",
+   "lead": "ClusterIP is the default Service type: Kubernetes assigns one stable virtual IP, drawn from the cluster's internal service address range, reachable only from inside the cluster",
+   "points": [
+    {
+     "text": "Default type when a manifest names none",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Virtual IP stays fixed as backend pods change",
+     "icon": "i3d:pin"
+    },
+    {
+     "text": "Used for internal tiers: databases, caches, internal APIs",
+     "icon": "i3d:database"
+    },
+    {
+     "text": "Never routable from outside the cluster network",
+     "icon": "i3d:ban"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T19",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Stress that ClusterIP is the quiet default most workloads use. Give the database-tier example as the everyday case. Exam hook: what type is created when none is specified.\""
+  },
+  {
+   "id": "T19-AN",
+   "layout": "analogy",
+   "label": "Analogy: office internal landline extension",
+   "kicker": "ClusterIP Service",
+   "title": "Default Internal Type",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "J_T19Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "J_T19Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: An office's internal landline extension stays the same even as different employees rotate through that desk: just as a ClusterIP keeps one address while the pods answering it change. \"Stress that ClusterIP is the quiet default most workloads use. Give the database-tier example as the everyday case. Exam hook: what type is created when none is specified.\""
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "NodePort Service",
+   "title": "Static Node Port",
+   "lead": "NodePort builds on ClusterIP by also opening one static port, from the default 30000–32767 range, on every node in the cluster",
+   "points": [
+    {
+     "text": "Reachable via any node's IP plus that port",
+     "icon": "img:images/k8s-node.svg"
+    },
+    {
+     "text": "ClusterIP is still created and used internally",
+     "icon": "img:images/k8s-svc.svg"
+    },
+    {
+     "text": "No built-in load balancing across the nodes themselves",
+     "icon": "i3d:scale"
+    },
+    {
+     "text": "External traffic must track which nodes are alive",
+     "icon": "i3d:heartbeat"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T20",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Explain NodePort as ClusterIP plus one extra static door on each machine. Mention it is rarely used directly in production clusters. Exam hook: the default NodePort range number.\""
+  },
+  {
+   "id": "T21",
+   "layout": "points",
+   "kicker": "LoadBalancer Service",
+   "title": "Cloud LB Integration",
+   "lead": "LoadBalancer extends NodePort further: a cloud-provider controller provisions an external load balancer that forwards traffic onto the NodePort opened on each node",
+   "points": [
+    {
+     "text": "In Amazon EKS, triggers an AWS load balancer automatically",
+     "icon": "img:images/aws-eks.svg"
+    },
+    {
+     "text": "Standard choice for internet-facing production traffic",
+     "icon": "i3d:globe"
+    },
+    {
+     "text": "Falls back to plain NodePort behaviour outside managed clouds",
+     "icon": "img:images/k8s-node.svg"
+    },
+    {
+     "text": "Health checks stop traffic going to unhealthy nodes",
+     "icon": "i3d:health"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T21",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 360,
+   "pointsW": 520,
+   "notes": "\"Point to where this concept lives in practice: the EKS console's load balancer resource created from a Service manifest. Note the per-service cost as a one-line aside. Exam hook: trace what happens behind a LoadBalancer type.\""
+  },
+  {
+   "id": "T22",
+   "layout": "points",
+   "kicker": "Service Discovery",
+   "title": "DNS And Endpoints",
+   "lead": "Applications must find a Service without hardcoding its virtual IP, so Kubernetes resolves a stable internal DNS name through CoreDNS, the cluster's built-in DNS server",
+   "points": [
+    {
+     "text": "Service DNS name follows the pattern service-name.namespace.svc.cluster.local for lookup",
+     "icon": "img:images/tech-coredns.svg"
+    },
+    {
+     "text": "EndpointSlice objects list the pod IPs matching the selector",
+     "icon": "img:images/k8s-ep.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T22",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 540,
+   "notes": "\"Build on kube-proxy as already known and explain the rules it programs to route a Service IP to a live pod. Say CoreDNS plainly as the modern DNS add-on, not the older kube-dns. Exam hook: how a pod name resolves to a working connection end to end.\""
+  },
+  {
+   "id": "T22-B",
+   "layout": "points",
+   "kicker": "Service Discovery",
+   "title": "DNS And Endpoints",
+   "points": [
+    {
+     "text": "kube-proxy writes iptables or IPVS rules per node",
+     "icon": "img:images/k8s-k-proxy.svg"
+    },
+    {
+     "text": "Environment variables also inject service details at pod start",
+     "icon": "i3d:code"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T22B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 360,
+   "pointsW": 540,
+   "notes": "\"Build on kube-proxy as already known and explain the rules it programs to route a Service IP to a live pod. Say CoreDNS plainly as the modern DNS add-on, not the older kube-dns. Exam hook: how a pod name resolves to a working connection end to end.\""
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz",
+   "notes": "Quiz on Kubernetes Fundamentals. Q1. What does the scheduler decide for each new pod? Answer: Which node it runs on. Q2. What happens to the pods of a node that fails? Answer: The node controller evicts them and Deployment-managed pods are recreated on other nodes. Q3. What is the smallest deployable unit Kubernetes schedules? Answer: The pod. Q4. A ReplicaSet wants three pods and sees two. What does it do? Answer: It creates a new pod from the pod template. Q5. Which Service type is created when a manifest names none? Answer: ClusterIP. Q6. What is the default NodePort range? Answer: 30000 to 32767. Q7. Which cluster add-on resolves a Service name to its ClusterIP? Answer: CoreDNS."
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Need for Orchestration: Limits of manual container management at scale\n2. Kubernetes Architecture: Control plane: API server, scheduler, controller manager & etcd; nodes: kubelet, runtime & kube-proxy\n3. Pods: The smallest deployable unit; multi-container pods; pod lifecycle & restart policy\n4. Deployments & ReplicaSets: Declarative desired state; replica management; self-healing\n5. Services: ClusterIP, NodePort & LoadBalancer; service discovery & stable networking"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Kubernetes in Practice"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}
