@@ -55,6 +55,7 @@
    "kicker": "Why Orchestration",
    "title": "Problem At Scale",
    "lead": "Starting, stopping and checking a handful of containers by hand is manageable, but a production system runs hundreds of containers across many machines, and manual commands cannot keep up",
+   "leadW": 1080,
    "figure": {
     "type": "custom",
     "name": "A_T01",
