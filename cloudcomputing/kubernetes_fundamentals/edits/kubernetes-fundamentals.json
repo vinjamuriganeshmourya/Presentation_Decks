@@ -20,7 +20,7 @@
     },
     "mwsyv9aucuz01t": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T19",
       "author": "Pallavi",
       "text": "Replace the Database icon and label with an App Pod icon labeled \"App Pod\".\nReplace the Cache icon and label with an API Pod icon labeled \"API Pod\".",
