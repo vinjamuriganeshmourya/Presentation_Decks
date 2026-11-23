@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/kubernetes_fundamentals/kubernetes-fundamentals",
+  "slides": {},
+  "threads": {
+    "mwsxy2pgfgk50y": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T01",
+      "author": "Pallavi",
+      "text": "Change the arrow between the Hosts grid and the Automated Controller. Right now it points Hosts → Automated Controller. Reverse it so it points Automated Controller → Hosts.",
+      "at": 1795418715211
+    }
+  }
+}
