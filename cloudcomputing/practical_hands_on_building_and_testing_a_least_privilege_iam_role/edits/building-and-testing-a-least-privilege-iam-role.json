@@ -1,0 +1,10 @@
+{
+  "deck": "cloudcomputing/practical_hands_on_building_and_testing_a_least_privilege_iam_role/building-and-testing-a-least-privilege-iam-role",
+  "slides": {
+    "D-LAB": {
+      "text": {
+        "Building and Testing a Least-Privilege IAM Role": "Applying Least Privilege with AWS IAM"
+      }
+    }
+  }
+}
