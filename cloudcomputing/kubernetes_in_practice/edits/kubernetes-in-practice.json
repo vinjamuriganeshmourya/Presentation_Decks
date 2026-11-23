@@ -17,6 +17,14 @@
       "author": "Pallavi",
       "text": "add this visual in previous slide with intro line and add the table in new slide",
       "at": 1795425930494
+    },
+    "mwt2aue5rcmuzj": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T17-B",
+      "author": "Pallavi",
+      "text": "kubectl rollout undo --to-revision=N → kubectl rollout undo deployment/web-deployment --to-revision=N",
+      "at": 1795426029366
     }
   }
 }
