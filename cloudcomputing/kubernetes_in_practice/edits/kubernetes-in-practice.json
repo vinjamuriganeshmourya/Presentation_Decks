@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/kubernetes_in_practice/kubernetes-in-practice",
+  "slides": {},
+  "threads": {
+    "mwt23pgvcup5m1": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T13-B",
+      "author": "Pallavi",
+      "text": "Change initialDelaySeconds: → initialDelaySeconds: 5",
+      "at": 1795425696374
+    }
+  }
+}
