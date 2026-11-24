@@ -25,6 +25,14 @@
       "author": "Pallavi",
       "text": "chagne the intro line\n\nContinuous delivery packages every tested change for release but keeps a human approval gate; continuous deployment removes that gate and releases automatically the moment tests pass",
       "at": 1795513070785
+    },
+    "mwuiac1vyzkwq7": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21-C",
+      "author": "Pallavi",
+      "text": "for visual\n\nRelease and Deploy: Deploy → Dev → Staging → Production in sequence, not three parallel arrows.\nCost of Broken Main: stop the Branch arrow at the lock so it doesn't reach main.\nDelivery vs Deployment: add \"On demand\" and \"Several times a day\" tags to the two rows.\nFive Failure Points: add the 2 missing points or rename to \"Three Failure Points.\"\nProbes manifest: add a value to initialDelaySeconds: (for example, 5).",
+      "at": 1795513345745
     }
   }
 }
