@@ -22,7 +22,8 @@ import alarmMark from '../images/aws-cloudwatch-alarm.svg'
  *   slide 21 C_T08   500 x 336  Artifact -> Release (tag) -> Deploy (rocket) -> Dev / Staging / Production;
  *                               1 the tag stamps and the artifact drops into Amazon ECR, 2 deploy lands it on a server
  *                               and a container (2)
- *   slide 22 C_T08B  500 x 336  same row; 1 the environments light Dev -> Staging -> Production (layers hub),
+ *   slide 22 C_T08B  500 x 336  same row, the environments as a chain Deploy -> Dev -> Staging -> Production (review
+ *                               round 2); 1 the environments light Dev -> Staging -> Production (layers hub),
  *                               2 CodeDeploy under Deploy, wired to EC2, ECS and Lambda (2)
  *   slide 23 C_T09   520 x 336  Operate panel (production server, patching / capacity / incident) -> Monitor panel
  *                               (metrics chart, logs, alert bell); 1 operate, 2 monitor (2)
@@ -138,6 +139,11 @@ const W_AR: Pt[] = [[AX + TS / 2, ROW], [RX - TS / 2, ROW]]
 const W_RD: Pt[] = [[RX + TS / 2, ROW], [DX - TS / 2, ROW]]
 const W_RE: Pt[] = [[RX, TAG_END], [RX, ECR.y - ECR.s / 2]]
 const wEnv = (i: number): Pt[] => (i === 0 ? [[DX + TS / 2, ROW], [ENV.x, ROW]] : [[DX + TS / 2, ROW], [TRUNK, ROW], [TRUNK, envCy(i)], [ENV.x, envCy(i)]])
+/* T08-B (review round 2, 2026-11-24): a sequential chain, Deploy -> Dev, Dev down to Staging, Staging down to Production;
+   the panels a little shorter so each down arrow has room; Dev stays on the row's centre line */
+const ENVC = { x: ENV.x, w: ENV.w, h: 88, ys: [ROW - 44, 131, 248] }
+const CHX = ENVC.x + ENVC.w / 2
+const wChain = (i: number): Pt[] => (i === 0 ? wEnv(0) : [[CHX, ENVC.ys[i - 1] + ENVC.h], [CHX, ENVC.ys[i]]])
 const wTg = (i: number): Pt[] => [[DX, TAG_END], [DX, TG_J], [TG.xs[i], TG_J], [TG.xs[i], TG.y - TG.s / 2]]
 const W_DC: Pt[] = [[DX, TAG_END], [DX, CD.y - CD.s / 2]]
 const CD_END = CD.y + CD.s / 2 + 6 + 18
@@ -151,6 +157,8 @@ const R8 = {
   tg0: K.ride('t8tg0', wTg(0), 3.5, 4.5, P8),
   tg1: K.ride('t8tg1', wTg(1), 3.6, 4.6, P8),
   env: [0, 1, 2].map((i) => K.ride(`t8env${i}`, wEnv(i), 3.4 + i * 1.1, 4.2 + i * 1.1, P8)),
+  /* the chain: one trip down the chain, each leg arriving as its panel lights (the 4.2 s ring round) */
+  chain: [[0.1, 0.9], [1.45, 1.85], [2.85, 3.25]].map(([a, b], i) => K.ride(`t8ch${i}`, wChain(i), a, b, 4.2)),
   aws: [0, 1, 2].map((i) => K.ride(`t8aws${i}`, [...W_DC, ...wAws(i)], 2.2 + i * 1.4, 3.3 + i * 1.4, P8)),
 }
 /* T08-B point 3: the environments light in order Dev -> Staging -> Production, 4.2 s round */
@@ -158,10 +166,10 @@ const ENV_RING = [0, 1, 2].map((i) => fade(`envring${i}`, 4.2, [[0, 0], [i * 33.
 /* the tag stamping the version on Release, once a loop */
 const STAMP = fade('stamp', P8, [[0, 0], [15, 0], [18, 1], [30, 1], [34, 0], [100, 0]])
 
-function EnvPanel({ i, lit, dim = false }: { i: number; lit: boolean; dim?: boolean }) {
+function EnvPanel({ i, lit, dim = false, g = ENV }: { i: number; lit: boolean; dim?: boolean; g?: typeof ENV }) {
   const e = ENVS[i]
   return (
-    <Panel x={ENV.x} y={ENV.ys[i]} w={ENV.w} h={ENV.h} lit={lit} radius={16}>
+    <Panel x={g.x} y={g.ys[i]} w={g.w} h={g.h} lit={lit} radius={16}>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: dim ? 0.55 : 1 }}>
         <Plinth size={38}><Ico3D name={e.icon} size={28} loop="bob" d={i * 0.5} /></Plinth>
         <span style={tag(14)}>{e.label}</span>
@@ -171,7 +179,7 @@ function EnvPanel({ i, lit, dim = false }: { i: number; lit: boolean; dim?: bool
 }
 
 /** the Artifact -> Release -> Deploy row and the environment column, shared by T08 and T08-B */
-function ReleaseRow({ litRel = false, litDep = false, stamp = false }: { litRel?: boolean; litDep?: boolean; stamp?: boolean }) {
+function ReleaseRow({ litRel = false, litDep = false, stamp = false, chain = false }: { litRel?: boolean; litDep?: boolean; stamp?: boolean; chain?: boolean }) {
   const held = useHeld()
   return (
     <>
@@ -186,8 +194,8 @@ function ReleaseRow({ litRel = false, litDep = false, stamp = false }: { litRel?
       )}
       <W pts={W_AR} />
       <W pts={W_RD} />
-      {[0, 1, 2].map((i) => <W key={i} pts={wEnv(i)} />)}
-      {[0, 1, 2].map((i) => <EnvPanel key={i} i={i} lit={false} />)}
+      {[0, 1, 2].map((i) => <W key={i} pts={chain ? wChain(i) : wEnv(i)} />)}
+      {[0, 1, 2].map((i) => <EnvPanel key={i} i={i} lit={false} g={chain ? ENVC : ENV} />)}
     </>
   )
 }
@@ -218,13 +226,13 @@ const C_T08B: Fig = (p) => {
   const { hot, s } = useBuild(p)
   return (
     <Frame w={F8.w} h={F8.h}>
-      <ReleaseRow litDep={hot === 1} />
+      <ReleaseRow litDep={hot === 1} chain />
       <W pts={W_RE} />
       <Node x={ECR.x} y={ECR.y} size={ECR.s} mark={ecrMark} label="Amazon ECR" w={120} />
       {/* point 3: development, staging and production, in that order (the layers hub on the trunk) */}
-      <Disc x={TRUNK} y={(ROW + envCy(1)) / 2} icon="layers" on lit={hot === 0} />
-      {[0, 1, 2].map((i) => <RingLoop key={i} x={ENV.x} y={ENV.ys[i]} w={ENV.w} h={ENV.h} cls={ENV_RING[i]} on={s(1) && hot === 0} />)}
-      {[0, 1, 2].map((i) => <Rider key={i} cls={R8.env[i]} on={s(1)} size={22} />)}
+      <Disc x={(DX + TS / 2 + ENVC.x) / 2} y={ROW} icon="layers" on lit={hot === 0} />
+      {[0, 1, 2].map((i) => <RingLoop key={i} x={ENVC.x} y={ENVC.ys[i]} w={ENVC.w} h={ENVC.h} cls={ENV_RING[i]} on={s(1) && hot === 0} />)}
+      {[0, 1, 2].map((i) => <Rider key={i} cls={R8.chain[i]} on={s(1)} size={i === 0 ? 22 : 18} />)}
       {/* point 4: CodeDeploy automates deployment to EC2, ECS or Lambda */}
       <W pts={W_DC} on={s(2)} />
       <Node x={CD.x} y={CD.y} size={CD.s} mark={codedeployMark} label="CodeDeploy" on={s(2)} lit={hot === 1} w={120} />

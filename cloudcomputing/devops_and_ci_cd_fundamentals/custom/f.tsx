@@ -415,8 +415,8 @@ const F_T19: Fig = (p) => {
  * check rows, the middle one failing (orange cross), turning to a tick with the badge.
  */
 const D = { W: 566, H: 330, FX: 80, FY: 76, MX: 200, LY: 160, CIX: 250, BX: 40, BW: 486, BY: 262, BH: 20, PX: 300, PY: 30, PW: 246, PH: 184 }
-const dTop = D.BY - D.BH / 2
-const D_MERGE: Pt[] = [[D.FX + 28, D.FY], [D.MX, D.FY], [D.MX, dTop]]
+/* review round 2 (2026-11-24): the merge wire stops at the padlock (tip on its top edge); nothing runs on into main */
+const D_MERGE: Pt[] = [[D.FX + 28, D.FY], [D.MX, D.FY], [D.MX, D.LY - 22]]
 const DP = 7
 const D_MERGER = K.ride('t19bm', D_MERGE, 3.9, 5.6, DP)
 const SHUT = loop('shut', DP, [[0, op(1)], [46, op(1)], [52, op(0)], [90, op(0)], [96, op(1)], [100, op(1)]])

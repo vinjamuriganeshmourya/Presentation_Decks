@@ -1988,7 +1988,78 @@ const photoTex = (flower: string) =>
       g.arc(40 + dx, dy, 5, 0, TAU)
       g.fill()
     }
+    /* review round 2 (2026-11-24): the bird caught in flight, wings spread, in the photo's sky */
+    g.strokeStyle = BIRD.body
+    g.lineWidth = 2.4
+    g.lineCap = 'round'
+    g.beginPath()
+    g.moveTo(10, 15)
+    g.quadraticCurveTo(14.5, 8.5, 19, 14)
+    g.quadraticCurveTo(23.5, 8.5, 28, 15)
+    g.stroke()
+    g.fillStyle = BIRD.body
+    g.beginPath()
+    g.ellipse(19, 14.5, 3, 2, 0, 0, TAU)
+    g.fill()
   })
+/** review round 2 (2026-11-24, user: "a moving subject ... captured at a single moment"): a bird flies round the vase and
+ * freezes mid-flight at each flash, its motion trail gone, then flies on. Colours and the loop are the scene's own. */
+const BIRD = { body: '#2D63FB', belly: '#F5F7FF', beak: '#F2A93B', c: [0.92, 1.52, -1.05] as const, rx: 0.38, rz: 0.19, ry: 0.06, freeze: 0.45, laps: 2, flaps: 36 }
+/** the bird's own clock: wall time minus the frozen spells at each shot, so its path still closes over the loop */
+const birdT = (c: number) => c - T12.shot.reduce((a, s) => a + Math.min(BIRD.freeze, Math.max(0, c - s)), 0)
+const BIRD_SPAN = L12 - T12.shot.length * BIRD.freeze
+/** a small bird, flying along local +x: body, head, beak, tail, and two wings on hinges (opacity < 1 = a trail ghost) */
+function bird(opacity = 1) {
+  const o = opacity < 1 ? { transparent: true, opacity, depthWrite: false } : {}
+  const bodyM = mat(BIRD.body, { roughness: 0.4, ...o })
+  const bellyM = mat(BIRD.belly, { roughness: 0.5, ...o })
+  const beakM = mat(BIRD.beak, { roughness: 0.4, ...o })
+  const g = new THREE.Group()
+  const b = sphere(0.034, bodyM, [0, 0, 0])
+  b.scale.set(1.9, 0.95, 1)
+  g.add(b)
+  const belly = sphere(0.028, bellyM, [0.006, -0.012, 0])
+  belly.scale.set(1.7, 0.7, 0.9)
+  g.add(belly)
+  g.add(sphere(0.026, bodyM, [0.064, 0.016, 0]))
+  const beak = mesh(new THREE.ConeGeometry(0.009, 0.026, 12), beakM, [0.097, 0.012, 0])
+  beak.rotation.z = -Math.PI / 2
+  g.add(beak)
+  for (const s of [-1, 1]) g.add(sphere(0.005, mat('#1A1F2B', o), [0.083, 0.024, s * 0.016]))
+  const tail = box(0.06, 0.006, 0.042, bodyM, [-0.084, 0.006, 0])
+  tail.rotation.z = 0.18
+  g.add(tail)
+  /* a swept wing: broad at the shoulder, a pointed tip trailing back (a flat shape, both faces drawn) */
+  const sh = new THREE.Shape()
+  sh.moveTo(0.032, 0)
+  sh.quadraticCurveTo(0.036, 0.1, -0.02, 0.19)
+  sh.quadraticCurveTo(-0.04, 0.11, -0.05, 0.08)
+  sh.lineTo(-0.042, 0)
+  sh.lineTo(0.032, 0)
+  const wingM = mat(BIRD.body, { roughness: 0.45, side: THREE.DoubleSide, ...o })
+  const wing = (s: number) => {
+    const hinge = new THREE.Group()
+    hinge.position.set(0.004, 0.014, s * 0.018)
+    const geo = new THREE.ShapeGeometry(sh, 12)
+    geo.rotateX(Math.PI / 2)
+    if (s < 0) geo.scale(1, 1, -1)
+    hinge.add(mesh(geo, wingM))
+    g.add(hinge)
+    return hinge
+  }
+  const wl = wing(-1)
+  const wr = wing(1)
+  if (opacity < 1) g.traverse((m) => ((m as THREE.Mesh).castShadow = false))
+  g.scale.setScalar(1.5)
+  return { g, wl, wr }
+}
+/** the bird's place and heading at bird time tb */
+function birdAt(tb: number, out: THREE.Vector3) {
+  const th = (TAU * BIRD.laps * tb) / BIRD_SPAN
+  out.set(BIRD.c[0] + BIRD.rx * Math.cos(th), BIRD.c[1] + BIRD.ry * Math.sin(2 * th), BIRD.c[2] + BIRD.rz * Math.sin(th))
+  /* heading: the path's tangent (d/dth of cos, sin) */
+  return Math.atan2(-(BIRD.rz * Math.cos(th)), -BIRD.rx * Math.sin(th))
+}
 /** an open album: a cover (its colour) and two cream pages with six empty photo corners */
 function album(cover: string) {
   const g = new THREE.Group()
@@ -2087,6 +2158,24 @@ function setupT12Everyday(kit: StageKit): Update {
   })
   const flash = halo('rgba(255,255,255,1)', 0.55)
   scene.add(flash)
+  /* the moving subject: a bird in flight with a fading trail; at each flash it holds still, a moment frozen */
+  const bd = bird()
+  scene.add(bd.g)
+  const ghosts = [0.32, 0.18, 0.08].map((o) => {
+    const gh = bird(o)
+    scene.add(gh.g)
+    return gh
+  })
+  const bp = new THREE.Vector3()
+  const placeBird = (bb: ReturnType<typeof bird>, tb: number, snap = false) => {
+    const yaw = birdAt(tb, bp)
+    bb.g.position.copy(bp)
+    bb.g.rotation.set(0, yaw, 0.06 * Math.sin((TAU * BIRD.laps * tb) / BIRD_SPAN * 2))
+    /* in flight the wings beat (biased upward, so they read from the side); frozen, they hold a raised V, mid-beat */
+    const f = snap ? 0.7 : 0.2 + 0.65 * Math.sin((TAU * BIRD.flaps * tb) / BIRD_SPAN)
+    bb.wl.rotation.x = f
+    bb.wr.rotation.x = -f
+  }
   /* the photographer, holding her camera in both hands */
   const pb = body(who(CAST_PRESETS.ananya, { name: 'Photographer', skinTone: 'medium', hair: { style: 'wavy', color: 'darkBrown' }, outfit: { top: 'blouse', topColor: '#F2A93B', bottom: 'jeans', bottomColor: '#2C3C81', shoeColor: '#7A4A2A' }, accessories: { earrings: true, watch: true, glasses: 'none' } }), [P12.photographer[0], 0, P12.photographer[1]], 1.62)
   const camAt = (up: number) => new THREE.Vector3(pb.root.x + 0.16, lerp(1.08, 1.28, up), pb.root.z + 0.16)
@@ -2140,6 +2229,16 @@ function setupT12Everyday(kit: StageKit): Update {
     flash.position.copy(k).add(new THREE.Vector3(0.12, 0.02, 0.05))
     flash.quaternion.copy(camera.quaternion)
     setOp(flash, fl)
+    /* the bird: flying, or frozen for a spell from each shot (its trail drops away while it is frozen) */
+    /* the held frame (thumbnails, ?still at HOLD12) shows the key moment: the bird frozen as at the first shot */
+    const heldBird = Math.abs(c - HOLD12) < 1e-6
+    const tb = birdT(heldBird ? T12.shot[0] + 0.1 : c)
+    const frozen = heldBird || T12.shot.some((s) => c >= s && c < s + BIRD.freeze)
+    placeBird(bd, tb, frozen)
+    ghosts.forEach((gh, i) => {
+      gh.g.visible = !frozen
+      if (!frozen) placeBird(gh, tb - 0.055 * (i + 1))
+    })
     /* the new idea: the flowers change colour, and change back as the loop ends */
     const idea = seg(c, T12.idea[0], T12.idea[1]) * (1 - seg(c, T12.clear[0], T12.clear[1]))
     flowerM.color.copy(cA).lerp(cB, idea)

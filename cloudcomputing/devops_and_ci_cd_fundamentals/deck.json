@@ -1143,7 +1143,7 @@
       "layout": "points",
       "kicker": "Delivery Vs Deployment",
       "title": "Automatic Vs Manual",
-      "lead": "Continuous delivery, CD, packages every tested change for release but keeps a human approval gate; continuous deployment, also called CD, removes that gate and releases automatically the moment tests pass",
+      "lead": "Continuous delivery packages every tested change for release but keeps a human approval gate. Continuous deployment removes that gate and releases automatically the moment tests pass",
       "points": [
         {
           "text": "Delivery: release decision stays manual, triggered on demand",

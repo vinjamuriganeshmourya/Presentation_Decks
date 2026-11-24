@@ -231,12 +231,12 @@ const G_T20B: Fig = (p) => {
 /*
  * 520 x 360. Two lane cards (0..520, 120 tall): Delivery on y 14, Deployment on y 226, the 92 px between them holding
  * the frame's shared pieces (Same Tests on T21-B; Set-Up and Frequency on T21-C). In each card: the lane's icon at
- * x 44 (a person for Delivery, a bot for Deployment) with its tag, then the stages Build 150, Test 250, Approval 355
+ * x 65 (a person for Delivery, a bot for Deployment) (moved from 44, 2026-11-24, so the Deployment tag has padding on the card) with its tag, then the stages Build 150, Test 250, Approval 355
  * (Delivery only), Production 460, tiles 52 on the card's y0 + 48. Every wire runs tile edge to tile edge.
  * One cycle is 6 s: the Delivery token stops at Approval until the check lands, the Deployment token flows straight
  * through (three times a cycle on T21-C, several releases a day).
  */
-const L = { W: 520, H: 360, Y: [14, 226], LH: 120, TS: 52, IX: 44, IS: 48, BUILD: 150, TEST: 250, APP: 355, PROD: 460, CYC: 6 }
+const L = { W: 520, H: 360, Y: [14, 226], LH: 120, TS: 52, IX: 65, IS: 48, BUILD: 150, TEST: 250, APP: 355, PROD: 460, CYC: 6 }
 const ly = (k: number) => L.Y[k] + 48
 const LANE_W: Pt[][][] = [
   [[[L.BUILD + 26, ly(0)], [L.TEST - 26, ly(0)]], [[L.TEST + 26, ly(0)], [L.APP - 26, ly(0)]], [[L.APP + 26, ly(0)], [L.PROD - 26, ly(0)]]],
@@ -345,16 +345,23 @@ const G_T21B: Fig = (p) => {
 
 /* T21-C: Frequency (a calendar in the gap between the two Production tiles; the top releases once a cycle, the bottom
    three times) and Set-Up (a pipeline in the gap between the two lane icons; Approval on top, None below) */
+/* the calendar moved left from the Production column (review round 2) so the two frequency tags fit on its right */
+const CAL_X = 320
 const G_T21C: Fig = (p) => {
   const { hot, held, s } = useBuild(p, L.CYC * 1000)
   return (
     <Frame w={L.W} h={L.H}>
       <Lane k={0} approval lit={hot === 1 ? ['app'] : []} rocket rocketCls={REL_TOP} held={held} />
       <Lane k={1} slot={s(2)} lit={hot === 1 ? ['slot'] : []} rocket rocketCls={REL_BOT3} held={held} />
-      <Show on={s(1)} style={{ ...box(L.PROD - 20, GAP_Y - 20, 40, 40), zIndex: 6 }}>
+      <Show on={s(1)} style={{ ...box(CAL_X - 20, GAP_Y - 20, 40, 40), zIndex: 6 }}>
         <Plinth size={40} lit={hot === 0}><Ico3D name="calendar" size={28} loop="bob" /></Plinth>
       </Show>
-      <Show on={s(1)} style={{ ...box(L.PROD - 30 - 110, GAP_Y - 10, 110, 20), zIndex: 6, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><span style={tag(14)}>Frequency</span></Show>
+      <Show on={s(1)} style={{ ...box(CAL_X - 30 - 110, GAP_Y - 10, 110, 20), zIndex: 6, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><span style={tag(14)}>Frequency</span></Show>
+      {/* review round 2 (2026-11-24): each lane's frequency, the upper tag beside Delivery, the lower beside Deployment */}
+      <Show on={s(1)} style={{ ...box(CAL_X + 30, GAP_Y - 20, L.W - 20 - CAL_X - 30, 40), zIndex: 6, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <span style={{ ...tag(14), textAlign: 'left', lineHeight: '18px' }}>On Demand</span>
+        <span style={{ ...tag(14), textAlign: 'left', lineHeight: '18px' }}>Several Times A Day</span>
+      </Show>
       <Show on={s(2)} style={{ ...box(L.IX - 20, GAP_Y - 20, 40, 40), zIndex: 6 }}>
         <Plinth size={40} lit={hot === 1}><Ico3D name="pipeline" size={28} loop="bob" d={0.5} /></Plinth>
       </Show>
