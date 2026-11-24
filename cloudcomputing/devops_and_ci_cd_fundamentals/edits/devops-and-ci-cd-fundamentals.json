@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/devops_and_ci_cd_fundamentals/devops-and-ci-cd-fundamentals",
+  "slides": {},
+  "threads": {
+    "mwuhpgll6fwhvk": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T08-B",
+      "author": "Pallavi",
+      "text": "Right now, Deploy sends one line down that splits into three arrows going to Dev, Staging and Production at the same time.\n\nChange it so Deploy points only to Dev, then Dev points down to Staging, then Staging points down to Production.",
+      "at": 1795512371882
+    }
+  }
+}
