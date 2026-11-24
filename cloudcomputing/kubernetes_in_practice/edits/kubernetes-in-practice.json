@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/kubernetes_in_practice/kubernetes-in-practice",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwt23pgvcup5m1": {
       "replies": {},
