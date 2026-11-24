@@ -17,6 +17,14 @@
       "author": "Pallavi",
       "text": "Right now, the arrow from Branch goes through the lock and reaches main with an arrowhead.\n\nChange it so the arrow stops at the lock. Remove the part of the line below the lock and its arrowhead, so nothing touches main.",
       "at": 1795512903474
+    },
+    "mwui4fwxr3vdvd": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T21",
+      "author": "Pallavi",
+      "text": "chagne the intro line\n\nContinuous delivery packages every tested change for release but keeps a human approval gate; continuous deployment removes that gate and releases automatically the moment tests pass",
+      "at": 1795513070785
     }
   }
 }
