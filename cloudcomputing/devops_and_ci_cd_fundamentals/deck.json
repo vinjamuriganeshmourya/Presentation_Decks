@@ -1,0 +1,1401 @@
+{
+  "engine": 1,
+  "meta": {
+    "title": "DevOps & CI/CD Fundamentals",
+    "course": "Cloud Computing",
+    "htmlName": "devops-and-ci-cd-fundamentals",
+    "previous": {
+      "title": "Kubernetes in Practice",
+      "items": [
+        "Configuration & Secrets",
+        "Ingress & Namespaces",
+        "Health & Self-Healing",
+        "Rolling Updates & Rollback",
+        "Managed Kubernetes"
+      ]
+    },
+    "agenda": [
+      "DevOps Principles",
+      "The Cloud SDLC",
+      "Version Control & Git Workflows",
+      "Continuous Integration",
+      "Delivery & Artifacts"
+    ],
+    "next": "CI/CD Pipelines in Practice"
+  },
+  "slides": [
+    {
+      "id": "S-WELCOME",
+      "layout": "brand"
+    },
+    {
+      "id": "S-TITLE",
+      "layout": "title",
+      "notes": "TR title line: Session 22 : DevOps & CI/CD Fundamentals"
+    },
+    {
+      "id": "S-RECAP",
+      "layout": "recap",
+      "notes": "RECAP: Session 21 : Kubernetes in Practice\n1. Configuration & Secrets: ConfigMaps & Secrets; injecting configuration into pods\n2. Ingress & Namespaces: Ingress controllers & routing rules; namespaces; resource requests, limits & quotas\n3. Health & Self-Healing: Liveness, readiness & startup probes\n4. Rolling Updates & Rollback: Update strategy; surge & unavailability settings; rollback of a bad release\n5. Managed Kubernetes: EKS, AKS & GKE; provider-managed components; self-managed vs managed trade-offs"
+    },
+    {
+      "id": "S-AGENDA",
+      "layout": "agenda",
+      "notes": "Agenda for Today's Session\n1. DevOps Principles: Culture, collaboration & shared ownership; the development-operations divide\n2. The Cloud SDLC: Plan, code, build, test, release, deploy, operate & monitor\n3. Version Control & Git Workflows: Repositories, branches, commits & merges; pull requests & code review; trunk-based vs feature-branch\n4. Continuous Integration: Build & test on every change; fast feedback; cost of a broken main branch\n5. Delivery & Artifacts: Continuous delivery vs continuous deployment; build once & promote; dev, staging & production"
+    },
+    {
+      "id": "D1",
+      "layout": "breaker",
+      "index": 1,
+      "notes": "DevOps Principles: Culture, collaboration & shared ownership; the development-operations divide"
+    },
+    {
+      "id": "T01",
+      "layout": "points",
+      "kicker": "DevOps Culture",
+      "title": "Shared Ownership Defined",
+      "lead": "DevOps is a working culture where the team that writes code also helps run it in production, instead of handing it off and walking away\nThe formal term, DevOps (Development + Operations), names this merged way of working",
+      "points": [
+        {
+          "text": "Collaboration: developers and operations plan releases together",
+          "icon": "i3d:users"
+        },
+        {
+          "text": "Shared ownership: dev and ops jointly own production reliability",
+          "icon": "i3d:server"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T01",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Open by asking why a team that only writes code might ship fragile software. Stress that DevOps is a culture and set of practices, not a single tool or job title. Interviewers often ask to define DevOps in one line — this slide is that line.\""
+    },
+    {
+      "id": "T01-B",
+      "layout": "points",
+      "kicker": "DevOps Culture",
+      "title": "Shared Ownership Defined",
+      "points": [
+        {
+          "text": "Feedback loop: production issues flow straight back to coders",
+          "icon": "i3d:refresh"
+        },
+        {
+          "text": "Automation mindset: manual handoffs replaced by shared pipelines",
+          "icon": "i3d:pipeline"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T01B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Open by asking why a team that only writes code might ship fragile software. Stress that DevOps is a culture and set of practices, not a single tool or job title. Interviewers often ask to define DevOps in one line — this slide is that line.\""
+    },
+    {
+      "id": "T01-AN",
+      "layout": "analogy",
+      "label": "Analogy: a group project with one shared grade",
+      "kicker": "DevOps Culture",
+      "title": "Shared Ownership Defined",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T01Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T01Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: In a group project where everyone gets the same grade, no one says 'my part was fine': just as in DevOps, Dev and Ops share the result, so both work together to make the software run well. \"Open by asking why a team that only writes code might ship fragile software. Stress that DevOps is a culture and set of practices, not a single tool or job title. Interviewers often ask to define DevOps in one line — this slide is that line.\""
+    },
+    {
+      "id": "T02",
+      "layout": "points",
+      "kicker": "Dev Ops Divide",
+      "title": "Why Teams Split",
+      "lead": "Before this culture spread, developers were measured on shipping new features fast, while operations staff were measured on keeping systems stable\nThis gap, known as the development-operations divide, pulled the two goals in opposite directions",
+      "points": [
+        {
+          "text": "Conflicting incentives: speed for developers, stability for operations",
+          "icon": "i3d:gauge"
+        },
+        {
+          "text": "Wall of confusion: code thrown over with no runtime context",
+          "icon": "i3d:package"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain the 'wall of confusion' as the historical root cause DevOps was invented to remove. Mention that this silo problem is the classic interview question: why did DevOps emerge. Keep this grounded in the incentive mismatch, not tooling.\""
+    },
+    {
+      "id": "T02-B",
+      "layout": "points",
+      "kicker": "Dev Ops Divide",
+      "title": "Why Teams Split",
+      "points": [
+        {
+          "text": "Blame game: outages blamed on 'bad code' or 'bad infra'",
+          "icon": "i3d:alert"
+        },
+        {
+          "text": "Slow releases: manual handoffs and approvals delayed every deployment",
+          "icon": "i3d:hourglass"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T02B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain the 'wall of confusion' as the historical root cause DevOps was invented to remove. Mention that this silo problem is the classic interview question: why did DevOps emerge. Keep this grounded in the incentive mismatch, not tooling.\""
+    },
+    {
+      "id": "T03",
+      "layout": "points",
+      "kicker": "Shared Ownership",
+      "title": "Practices And Location",
+      "lead": "Shared ownership turns into concrete practice through the principle that teams building a service share responsibility for operating and supporting it in production",
+      "points": [
+        {
+          "text": "Blameless postmortems: incidents reviewed for process, not people",
+          "icon": "i3d:checklist"
+        },
+        {
+          "text": "On-call rotation: developers share production support duty",
+          "icon": "i3d:phone"
+        },
+        {
+          "text": "Shared dashboards: both teams watch the same metrics",
+          "icon": "i3d:dashboard"
+        },
+        {
+          "text": "AWS CodePipeline and CodeDeploy consoles: shared release visibility",
+          "icon": "img:images/aws-codepipeline.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T03",
+        "props": {
+          "steps": 4
+        }
+      },
+      "figH": 400,
+      "pointsW": 560,
+      "notes": "\"Point out that naming CodePipeline here is the real-world anchor, even without a live demo. Emphasise blameless postmortems as a frequently asked culture question in interviews. Keep this distinct from tooling mechanics, which come later.\""
+    },
+    {
+      "id": "T04",
+      "layout": "points",
+      "kicker": "Culture To Pipeline",
+      "title": "Bridging Forward",
+      "lead": "Shared ownership only works once the steps from writing code to running it are defined as one continuous flow, not separate handoffs",
+      "points": [
+        {
+          "text": "Culture sets the goal: one team, one responsibility",
+          "icon": "i3d:target"
+        },
+        {
+          "text": "The software delivery lifecycle turns that goal into stages",
+          "icon": "i3d:layers"
+        },
+        {
+          "text": "Each stage removes one more manual handoff point",
+          "icon": "i3d:link"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "A_T04",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Close by framing culture as the 'why' before the lifecycle shows the 'how'. Ask the class to recall which incentive mismatch caused the divide, as a quick recall check. Keep this bridging line short and declarative.\""
+    },
+    {
+      "id": "D2",
+      "layout": "breaker",
+      "index": 2,
+      "notes": "The Cloud SDLC: Plan, code, build, test, release, deploy, operate & monitor"
+    },
+    {
+      "id": "T05",
+      "layout": "lead",
+      "kicker": "Cloud SDLC Stages",
+      "title": "Eight-Stage Pipeline",
+      "lead": "Shipping software only works if every change moves through the same sequence of checks, from an idea to a running feature; cloud tools and automation help teams move each change through this sequence consistently",
+      "figure": {
+        "type": "custom",
+        "name": "B_T05",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figW": 1080,
+      "figH": 340,
+      "notes": "\"Point to the looping arrow from Monitor back to Plan to show this is a continuous cycle, not a one-time process. A common interview question asks to name the SDLC stages in order.\""
+    },
+    {
+      "id": "T05-B",
+      "layout": "table",
+      "kicker": "Cloud SDLC Stages",
+      "title": "Eight-Stage Pipeline",
+      "table": {
+        "type": "table",
+        "columns": [
+          {
+            "label": "Stage",
+            "icon": "i3d:layers",
+            "weight": 0.5
+          },
+          {
+            "label": "What Happens",
+            "icon": "i3d:doc",
+            "weight": 1.5
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:doc",
+            "cells": [
+              "Plan",
+              "Requirements and user stories defined before coding"
+            ]
+          },
+          {
+            "icon": "i3d:code",
+            "cells": [
+              "Code",
+              "Source written and committed to a repository"
+            ]
+          },
+          {
+            "icon": "i3d:gear",
+            "cells": [
+              "Build",
+              "Source and dependencies compiled into an artifact"
+            ]
+          },
+          {
+            "icon": "i3d:checklist",
+            "cells": [
+              "Test",
+              "Automated checks verify the artifact before it proceeds"
+            ]
+          },
+          {
+            "icon": "i3d:tag",
+            "cells": [
+              "Release",
+              "Tested artifact is versioned and marked ready"
+            ]
+          },
+          {
+            "icon": "i3d:rocket",
+            "cells": [
+              "Deploy",
+              "Release artifact is pushed to a target environment"
+            ]
+          },
+          {
+            "icon": "i3d:server",
+            "cells": [
+              "Operate",
+              "Running system is managed in production"
+            ]
+          },
+          {
+            "icon": "i3d:dashboard",
+            "cells": [
+              "Monitor",
+              "Metrics and logs watched for problems, feeding back into planning"
+            ]
+          }
+        ],
+        "compact": true,
+        "size": 15
+      },
+      "notes": "\"Point to the looping arrow from Monitor back to Plan to show this is a continuous cycle, not a one-time process. A common interview question asks to name the SDLC stages in order.\""
+    },
+    {
+      "id": "T06",
+      "layout": "points",
+      "kicker": "Plan And Code",
+      "title": "Defining Work First",
+      "lead": "Before any code exists, the plan stage turns a business need into clear requirements and user stories, so developers know what to build",
+      "points": [
+        {
+          "text": "Plan output: backlog items, acceptance criteria, sprint goals",
+          "icon": "i3d:list"
+        },
+        {
+          "text": "Code stage: developers write source and commit to a shared repository",
+          "icon": "i3d:code"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T06",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain the backlog as a prioritised to-do list the plan stage produces, and note that a commit hands work from Plan into Code. Interviewers may ask why planning counts as its own SDLC stage.\""
+    },
+    {
+      "id": "T06-B",
+      "layout": "points",
+      "kicker": "Plan And Code",
+      "title": "Defining Work First",
+      "points": [
+        {
+          "text": "Issue trackers like Jira link each commit to its requirement",
+          "icon": "img:images/tech-jira.svg"
+        },
+        {
+          "text": "Typical location: source lives in a hosted Git repository, such as GitHub",
+          "icon": "img:images/tech-github.png"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T06B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain the backlog as a prioritised to-do list the plan stage produces, and note that a commit hands work from Plan into Code. Interviewers may ask why planning counts as its own SDLC stage.\""
+    },
+    {
+      "id": "T06-AN",
+      "layout": "analogy",
+      "label": "Analogy: an architect's blueprint before the bricks",
+      "kicker": "Plan And Code",
+      "title": "Defining Work First",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T06Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T06Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A construction project needs an architect's blueprint before workers lay a single brick: just as the plan stage fixes requirements before the code stage starts building. \"Explain the backlog as a prioritised to-do list the plan stage produces, and note that a commit hands work from Plan into Code. Interviewers may ask why planning counts as its own SDLC stage.\""
+    },
+    {
+      "id": "T07",
+      "layout": "points",
+      "kicker": "Build And Test",
+      "title": "Automated Verification",
+      "lead": "Once code is committed, the build stage turns it into a single deployable artifact, and the test stage runs automated checks on that artifact before anything moves further",
+      "points": [
+        {
+          "text": "Build: compiles source, resolves dependencies, produces one packaged artifact",
+          "icon": "i3d:gear"
+        },
+        {
+          "text": "Tests cover unit level logic and integration between components",
+          "icon": "i3d:checklist"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T07",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the pass/fail fork and stress that an artifact never reaches release without passing its tests. A frequent interview question asks what the build stage actually produces — one versioned artifact, not just compiled files.\""
+    },
+    {
+      "id": "T07-B",
+      "layout": "points",
+      "kicker": "Build And Test",
+      "title": "Automated Verification",
+      "points": [
+        {
+          "text": "A failing test stops the artifact from moving to release",
+          "icon": "i3d:stop"
+        },
+        {
+          "text": "AWS location: CodeBuild runs the compile and automated-test steps",
+          "icon": "img:images/aws-codebuild.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "B_T07B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the pass/fail fork and stress that an artifact never reaches release without passing its tests. A frequent interview question asks what the build stage actually produces — one versioned artifact, not just compiled files.\""
+    },
+    {
+      "id": "T08",
+      "layout": "points",
+      "kicker": "Release And Deploy",
+      "title": "Shipping The Artifact",
+      "lead": "A tested artifact still needs two separate steps to reach users: release marks it ready and versions it, deploy actually moves it onto a running environment",
+      "points": [
+        {
+          "text": "Release: tested artifact is tagged, versioned and stored in a registry such as Amazon ECR",
+          "icon": "i3d:tag"
+        },
+        {
+          "text": "Deploy: the released artifact is installed on servers or containers",
+          "icon": "i3d:rocket"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T08",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 540,
+      "notes": "\"Clarify that release and deploy are distinct actions, not synonyms — a release can sit ready without being deployed yet. Flag that the dev, staging, production sequence shown here returns when delivery and promotion are taught.\""
+    },
+    {
+      "id": "T08-B",
+      "layout": "points",
+      "kicker": "Release And Deploy",
+      "title": "Shipping The Artifact",
+      "points": [
+        {
+          "text": "Target environments: development, staging and production, in that order",
+          "icon": "i3d:layers"
+        },
+        {
+          "text": "AWS location: CodeDeploy automates deployment to EC2, ECS or Lambda",
+          "icon": "img:images/aws-codedeploy.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T08B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 540,
+      "notes": "\"Clarify that release and deploy are distinct actions, not synonyms — a release can sit ready without being deployed yet. Flag that the dev, staging, production sequence shown here returns when delivery and promotion are taught.\""
+    },
+    {
+      "id": "T09",
+      "layout": "points",
+      "kicker": "Operate And Monitor",
+      "title": "Running In Production",
+      "lead": "Once deployed, the operate stage keeps the live system healthy through scaling and incident response, while the monitor stage watches it continuously for trouble",
+      "points": [
+        {
+          "text": "Operate covers patching, capacity changes and on-call incident response",
+          "icon": "i3d:wrench"
+        },
+        {
+          "text": "Monitor: metrics, logs and alerts track health in real time",
+          "icon": "i3d:dashboard"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T09",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the feedback arrow and explain that monitoring data becomes input for the next planning cycle, not a dead end. Interviewers often ask how monitoring differs from operating — operate keeps the system running, monitor tells the team when it is not.\""
+    },
+    {
+      "id": "T09-B",
+      "layout": "points",
+      "kicker": "Operate And Monitor",
+      "title": "Running In Production",
+      "points": [
+        {
+          "text": "AWS location: CloudWatch collects metrics and triggers alerts",
+          "icon": "img:images/aws-cloudwatch.svg"
+        },
+        {
+          "text": "Monitoring signals feed back into planning, closing the SDLC loop",
+          "icon": "i3d:refresh"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "C_T09B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the feedback arrow and explain that monitoring data becomes input for the next planning cycle, not a dead end. Interviewers often ask how monitoring differs from operating — operate keeps the system running, monitor tells the team when it is not.\""
+    },
+    {
+      "id": "D3",
+      "layout": "breaker",
+      "index": 3,
+      "notes": "Version Control & Git Workflows: Repositories, branches, commits & merges; pull requests & code review; trunk-based vs feature-branch"
+    },
+    {
+      "id": "T11",
+      "layout": "points",
+      "kicker": "Version Control Landscape",
+      "title": "Tracking Code Changes",
+      "lead": "Multiple developers editing the same codebase without a system overwrite each other's work and lose history\nGit, the distributed version-control system nearly all teams use, solves this by recording every change as a traceable snapshot",
+      "points": [
+        {
+          "text": "Repository: the project folder plus its complete change history",
+          "icon": "img:images/tech-git.png"
+        },
+        {
+          "text": "Branches: separate lines of work inside the same repository",
+          "icon": "i3d:branch"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T11",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Open with the overwritten-work problem before naming Git. Point out that GitHub, GitLab and Bitbucket all host repositories built on this same model. Interview angle: ask what a repository actually stores besides the current files.\""
+    },
+    {
+      "id": "T11-B",
+      "layout": "points",
+      "kicker": "Version Control Landscape",
+      "title": "Tracking Code Changes",
+      "points": [
+        {
+          "text": "Commits: saved snapshots forming the project's timeline",
+          "icon": "i3d:photo"
+        },
+        {
+          "text": "Pull requests: reviewed proposals to merge one branch into another",
+          "icon": "i3d:merge"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T11B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Open with the overwritten-work problem before naming Git. Point out that GitHub, GitLab and Bitbucket all host repositories built on this same model. Interview angle: ask what a repository actually stores besides the current files.\""
+    },
+    {
+      "id": "T12",
+      "layout": "points",
+      "kicker": "Commits And Branches",
+      "title": "Snapshots And Lines",
+      "lead": "A commit is a snapshot of the exact file state at one point, identified by a unique hash\nA branch is a named, movable pointer to a sequence of commits, letting one line of work diverge from another",
+      "points": [
+        {
+          "text": "HEAD: pointer marking the commit currently being worked on",
+          "icon": "i3d:pin"
+        },
+        {
+          "text": "main: the default branch holding the stable, deployable codebase",
+          "icon": "i3d:branch"
+        },
+        {
+          "text": "Branching cost: near-instant, since a branch is only a pointer",
+          "icon": "i3d:bolt"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T12",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 380,
+      "pointsW": 540,
+      "notes": "\"Stress that a branch is only a pointer, not a copy of all files, which is why creating one is instant. Ask: what moves when HEAD switches branches? Mention the GitHub branch-switcher dropdown as where this is seen live.\""
+    },
+    {
+      "id": "T12-AN",
+      "layout": "analogy",
+      "label": "Analogy: photographs and a second album",
+      "kicker": "Commits And Branches",
+      "title": "Snapshots And Lines",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "H_T12Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "H_T12Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A commit is like a photograph of the project at one moment, and a branch is a separate photo album started to try a new idea without touching the main album: just as a Git branch lets commits diverge safely before rejoining the original history. \"Stress that a branch is only a pointer, not a copy of all files, which is why creating one is instant. Ask: what moves when HEAD switches branches? Mention the GitHub branch-switcher dropdown as where this is seen live.\""
+    },
+    {
+      "id": "T13",
+      "layout": "points",
+      "kicker": "Merging Code Changes",
+      "title": "Combining Branch Histories",
+      "lead": "Once a branch's changes are ready, merging brings them back into another branch, usually main\nGit either fast-forwards the pointer when histories have not diverged, or creates a merge commit joining two separate histories",
+      "points": [
+        {
+          "text": "Fast-forward merge: target branch had no new commits of its own",
+          "icon": "i3d:play"
+        },
+        {
+          "text": "Merge conflict: same lines changed differently, needs manual resolution",
+          "icon": "i3d:alert"
+        },
+        {
+          "text": "Merge commit: a new commit that joins two diverged branch histories",
+          "icon": "i3d:merge"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T13",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 380,
+      "pointsW": 540,
+      "notes": "\"Explain a conflict as Git refusing to guess which change is correct, leaving markers in the file for a human decision. Ask: why does rebase rewrite commit history while merge does not? Mention that a pull request merge button runs this same merge, or a squash or rebase variant of it.\""
+    },
+    {
+      "id": "T14",
+      "layout": "points",
+      "kicker": "Pull Requests Review",
+      "title": "Proposing Merges Safely",
+      "lead": "A pull request (PR) asks reviewers to approve a branch's changes before they merge into main, turning a merge into a checkpoint instead of a silent action\nCode review is that check: teammates read the changes to catch bugs and share context before the merge",
+      "points": [
+        {
+          "text": "Diff view: shows exactly which lines changed, line by line",
+          "icon": "i3d:list"
+        },
+        {
+          "text": "Review comments: reviewers flag issues before approving the merge",
+          "icon": "i3d:chat"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "E_T14",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the diff view and the green approve button as the two things reviewers actually act on. Explain code review as a second pair of eyes catching bugs and sharing context before code reaches main. Interview hook: why block merges on required approvals rather than trusting the author?\""
+    },
+    {
+      "id": "T14-B",
+      "layout": "points",
+      "kicker": "Pull Requests Review",
+      "title": "Proposing Merges Safely",
+      "points": [
+        {
+          "text": "Required approvals: a rule blocking merge until reviewers sign off",
+          "icon": "i3d:lock"
+        },
+        {
+          "text": "Status checks: automated results displayed directly on the request",
+          "icon": "img:images/tech-githubactions.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "E_T14B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the diff view and the green approve button as the two things reviewers actually act on. Explain code review as a second pair of eyes catching bugs and sharing context before code reaches main. Interview hook: why block merges on required approvals rather than trusting the author?\""
+    },
+    {
+      "id": "T15",
+      "layout": "table",
+      "kicker": "Two Branching Workflows",
+      "title": "Trunk vs Feature Branch",
+      "lead": "Teams choose a branching workflow to structure how changes move into main; the two dominant patterns trade merge frequency against isolation",
+      "table": {
+        "type": "table",
+        "columns": [
+          {
+            "label": "Aspect",
+            "icon": "i3d:list",
+            "weight": 0.8
+          },
+          {
+            "label": "Trunk-Based",
+            "icon": "i3d:branch",
+            "weight": 1.2
+          },
+          {
+            "label": "Feature-Branch",
+            "icon": "i3d:merge",
+            "weight": 1.1
+          }
+        ],
+        "rows": [
+          {
+            "icon": "i3d:clock",
+            "cells": [
+              "Branch lifetime",
+              "Hours to a day",
+              "Days to weeks"
+            ]
+          },
+          {
+            "icon": "i3d:refresh",
+            "cells": [
+              "Merge frequency",
+              "Multiple times daily",
+              "Once per completed feature"
+            ]
+          },
+          {
+            "icon": "i3d:alert",
+            "cells": [
+              "Integration risk",
+              "Low, conflicts stay small",
+              "Higher, large diffs merge"
+            ]
+          },
+          {
+            "icon": "i3d:target",
+            "cells": [
+              "Best suited for",
+              "Frequent releases, automated build and test on every merge",
+              "Larger, independent features"
+            ]
+          }
+        ]
+      },
+      "notes": "\"Trunk-based is the pattern most continuous-integration setups assume, so flag that connection without defining CI yet. Ask: why does a long-lived feature branch make merge conflicts worse over time? Keep this AWS-agnostic since it is a Git workflow choice, not a provider feature.\""
+    },
+    {
+      "id": "T15-B",
+      "layout": "points",
+      "kicker": "Two Branching Workflows",
+      "title": "Trunk vs Feature Branch",
+      "points": [
+        {
+          "text": "Trunk-based needs feature flags to hide incomplete work safely",
+          "icon": "i3d:toggle"
+        },
+        {
+          "text": "Feature-branch isolates risk but delays integration problems",
+          "icon": "i3d:hourglass"
+        },
+        {
+          "text": "Short-lived feature branches blend both approaches in practice",
+          "icon": "i3d:branch"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "D_T15B",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 400,
+      "pointsW": 520,
+      "notes": "\"Trunk-based is the pattern most continuous-integration setups assume, so flag that connection without defining CI yet. Ask: why does a long-lived feature branch make merge conflicts worse over time? Keep this AWS-agnostic since it is a Git workflow choice, not a provider feature.\""
+    },
+    {
+      "id": "S-QUIZ-1",
+      "layout": "quiz",
+      "notes": "Mid-session quiz (sections 1-3). Q1. Define DevOps in one line. Answer: A working culture where the team that writes code also helps run it in production. Q2. What was the wall of confusion? Answer: Code thrown over to operations with no runtime context. Q3. Name the eight SDLC stages in order. Answer: Plan, code, build, test, release, deploy, operate, monitor. Q4. What does the build stage produce? Answer: One packaged, versioned artifact. Q5. Why is creating a Git branch near-instant? Answer: A branch is only a pointer to a commit. Q6. When does Git fast-forward instead of creating a merge commit? Answer: When the target branch had no new commits of its own. Q7. Which branching workflow keeps conflicts small? Answer: Trunk-based, with branches living hours to a day."
+    },
+    {
+      "id": "D4",
+      "layout": "breaker",
+      "index": 4,
+      "notes": "Continuous Integration: Build & test on every change; fast feedback; cost of a broken main branch"
+    },
+    {
+      "id": "T17",
+      "layout": "points",
+      "kicker": "Why CI Exists",
+      "title": "Merge Without Breaking",
+      "lead": "A merge pushed without a check can silently break code many developers depend on\nContinuous Integration (CI) builds and tests every change the moment it is pushed, catching problems early",
+      "points": [
+        {
+          "text": "Triggered automatically by every push or pull request",
+          "icon": "i3d:merge"
+        },
+        {
+          "text": "Runs an automated build to compile or package code",
+          "icon": "i3d:gear"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "E_T17",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain CI as an automatic check on every push, not an end-of-day review. Point to GitHub Actions as where this pipeline is configured. Exam hook: CI means build and test triggered on every commit.\""
+    },
+    {
+      "id": "T17-B",
+      "layout": "points",
+      "kicker": "Why CI Exists",
+      "title": "Merge Without Breaking",
+      "points": [
+        {
+          "text": "Executes the full test suite against the new change",
+          "icon": "i3d:checklist"
+        },
+        {
+          "text": "Common CI tools: GitHub Actions, Jenkins, GitLab CI, AWS CodeBuild",
+          "icon": "img:images/tech-githubactions.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "E_T17B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Explain CI as an automatic check on every push, not an end-of-day review. Point to GitHub Actions as where this pipeline is configured. Exam hook: CI means build and test triggered on every commit.\""
+    },
+    {
+      "id": "T17-AN",
+      "layout": "analogy",
+      "label": "Analogy: a restaurant checks each dish",
+      "kicker": "Why CI Exists",
+      "title": "Merge Without Breaking",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T17Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T17Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A restaurant checks each dish before serving it to customers, rather than waiting until the end of the day to discover problems: just as CI builds and tests every code change immediately to catch issues early. \"Explain CI as an automatic check on every push, not an end-of-day review. Point to GitHub Actions as where this pipeline is configured. Exam hook: CI means build and test triggered on every commit.\""
+    },
+    {
+      "id": "T18",
+      "layout": "points",
+      "kicker": "Build Test Loop",
+      "title": "On Every Change",
+      "lead": "Each commit triggers the loop on its own, so a developer learns within minutes whether a change broke something, while the code is still fresh",
+      "points": [
+        {
+          "text": "Checkout: CI server pulls the exact commit pushed",
+          "icon": "i3d:download"
+        },
+        {
+          "text": "Build: code compiled or dependencies installed fresh",
+          "icon": "i3d:gear"
+        },
+        {
+          "text": "Unit tests run first, since they are fast and isolated",
+          "icon": "i3d:stopwatch"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "F_T18",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Stress that fast feedback means catching a bug in minutes rather than weeks later during release testing. Point out the pass/fail badge shown on a pull request. Exam hook: fast feedback shortens the gap between introducing and detecting a bug.\""
+    },
+    {
+      "id": "T18-B",
+      "layout": "points",
+      "kicker": "Build Test Loop",
+      "title": "On Every Change",
+      "points": [
+        {
+          "text": "Result posted directly on the pull request as pass or fail",
+          "icon": "i3d:check"
+        },
+        {
+          "text": "Fast feedback: CI results reach the developer in minutes, not hours, so bugs are fixed while the change is fresh",
+          "icon": "i3d:clock"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "F_T18B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 560,
+      "notes": "\"Stress that fast feedback means catching a bug in minutes rather than weeks later during release testing. Point out the pass/fail badge shown on a pull request. Exam hook: fast feedback shortens the gap between introducing and detecting a bug.\""
+    },
+    {
+      "id": "T19",
+      "layout": "points",
+      "kicker": "Cost of Broken Main",
+      "title": "Why It Matters",
+      "lead": "A failing main branch blocks every teammate who branches from or merges into it, turning one bad change into a team-wide stoppage",
+      "points": [
+        {
+          "text": "Every teammate pulling main inherits the broken code",
+          "icon": "i3d:users"
+        },
+        {
+          "text": "Deployments pause until the breakage is resolved",
+          "icon": "i3d:rocket"
+        },
+        {
+          "text": "Teams fix-forward or revert to limit the blast radius",
+          "icon": "i3d:wrench"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "F_T19",
+        "props": {
+          "steps": 3
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Emphasise that a broken main branch is costly because it stops the whole team, not just one developer. Point to the red cross on a GitHub Actions check as the visible signal. Exam hook: why branch protection ties merge ability to a passing CI run.\""
+    },
+    {
+      "id": "T19-B",
+      "layout": "points",
+      "kicker": "Cost of Broken Main",
+      "title": "Why It Matters",
+      "points": [
+        {
+          "text": "Branch protection rules require CI to pass before merge",
+          "icon": "i3d:lock"
+        },
+        {
+          "text": "Visible on GitHub Actions as a failing status check",
+          "icon": "img:images/tech-githubactions.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "F_T19B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 330,
+      "pointsW": 520,
+      "note": {
+        "text": "A passing build only confirms the code compiles and passes its automated tests; moving that verified artifact onward into delivery is the next concern",
+        "tone": "info",
+        "bg": "blue"
+      },
+      "notes": "\"Emphasise that a broken main branch is costly because it stops the whole team, not just one developer. Point to the red cross on a GitHub Actions check as the visible signal. Exam hook: why branch protection ties merge ability to a passing CI run.\""
+    },
+    {
+      "id": "D5",
+      "layout": "breaker",
+      "index": 5,
+      "notes": "Delivery & Artifacts: Continuous delivery vs continuous deployment; build once & promote; dev, staging & production"
+    },
+    {
+      "id": "T20",
+      "layout": "points",
+      "kicker": "Delivery And Deployment",
+      "title": "From Build To Release",
+      "lead": "Continuous Integration confirms every change builds and passes tests; what happens after that merge decides when and how the change actually reaches users",
+      "points": [
+        {
+          "text": "Continuous delivery: code always release-ready, release needs manual trigger",
+          "icon": "i3d:gate"
+        },
+        {
+          "text": "Continuous deployment: every passing change auto-releases to production",
+          "icon": "i3d:rocket"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "G_T20",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Frame this as the stage right after CI's build-and-test gate passes. Point out the four terms on screen as the section map. Flag the interview trap: both continuous delivery and continuous deployment abbreviate to CD.\""
+    },
+    {
+      "id": "T20-B",
+      "layout": "points",
+      "kicker": "Delivery And Deployment",
+      "title": "From Build To Release",
+      "points": [
+        {
+          "text": "Build once: one artifact built once, never rebuilt per environment",
+          "icon": "i3d:package"
+        },
+        {
+          "text": "Promotion: the same artifact moves through dev, staging and production",
+          "icon": "i3d:layers"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "G_T20B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Frame this as the stage right after CI's build-and-test gate passes. Point out the four terms on screen as the section map. Flag the interview trap: both continuous delivery and continuous deployment abbreviate to CD.\""
+    },
+    {
+      "id": "T21",
+      "layout": "points",
+      "kicker": "Delivery Vs Deployment",
+      "title": "Automatic Vs Manual",
+      "lead": "Continuous delivery, CD, packages every tested change for release but keeps a human approval gate; continuous deployment, also called CD, removes that gate and releases automatically the moment tests pass",
+      "points": [
+        {
+          "text": "Delivery: release decision stays manual, triggered on demand",
+          "icon": "i3d:user"
+        },
+        {
+          "text": "Deployment: release triggered automatically, no human in the loop",
+          "icon": "i3d:bot"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "G_T21",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Stress that the automated steps before this point are identical; only the final gate differs. Ask: why would a team choose to keep the manual gate even with full test coverage? Mention compliance or customer-facing risk as the usual answer.\""
+    },
+    {
+      "id": "T21-B",
+      "layout": "points",
+      "kicker": "Delivery Vs Deployment",
+      "title": "Automatic Vs Manual",
+      "points": [
+        {
+          "text": "Both require the same passing automated test suite first",
+          "icon": "i3d:checklist"
+        },
+        {
+          "text": "Deployment suits mature pipelines with strong automated test coverage",
+          "icon": "i3d:meter"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "G_T21B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Stress that the automated steps before this point are identical; only the final gate differs. Ask: why would a team choose to keep the manual gate even with full test coverage? Mention compliance or customer-facing risk as the usual answer.\""
+    },
+    {
+      "id": "T21-C",
+      "layout": "points",
+      "kicker": "Delivery Vs Deployment",
+      "title": "Automatic Vs Manual",
+      "points": [
+        {
+          "text": "Release frequency: delivery releases on demand; deployment releases several times a day",
+          "icon": "i3d:calendar"
+        },
+        {
+          "text": "Pipeline set-up: delivery adds a manual approval stage; deployment has none",
+          "icon": "i3d:pipeline"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "G_T21C",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Stress that the automated steps before this point are identical; only the final gate differs. Ask: why would a team choose to keep the manual gate even with full test coverage? Mention compliance or customer-facing risk as the usual answer.\""
+    },
+    {
+      "id": "T21-AN",
+      "layout": "analogy",
+      "label": "Analogy: a software update, approved or automatic",
+      "kicker": "Delivery Vs Deployment",
+      "title": "Automatic Vs Manual",
+      "h": 390,
+      "everyday": {
+        "type": "custom",
+        "name": "I_T21Everyday",
+        "props": {
+          "steps": 0
+        }
+      },
+      "concept": {
+        "type": "custom",
+        "name": "I_T21Concept",
+        "props": {
+          "steps": 0
+        }
+      },
+      "notes": "TR analogy: A software update is prepared and tested before reaching users. In continuous delivery, it waits for a person's approval before going live; in continuous deployment, it goes live automatically after passing all tests: just as the difference is whether a human approves the release or the pipeline handles it automatically. \"Stress that the automated steps before this point are identical; only the final gate differs. Ask: why would a team choose to keep the manual gate even with full test coverage? Mention compliance or customer-facing risk as the usual answer.\""
+    },
+    {
+      "id": "T23",
+      "layout": "points",
+      "kicker": "Build Once Promote",
+      "title": "Same Artifact Everywhere",
+      "lead": "Rebuilding code separately for each environment risks a staging-only quirk slipping into production\nBuild once and promote avoids this by compiling a single artifact carried unchanged through every stage",
+      "points": [
+        {
+          "text": "Artifact built once, tagged with a unique version such as app:a1b2c3d that is never reused",
+          "icon": "i3d:tag"
+        },
+        {
+          "text": "Same binary or container image tested in staging, then promoted",
+          "icon": "i3d:container"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "K_T23",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 540,
+      "notes": "\"Point to the artifact box staying identical across every stage, nothing rebuilt in between. Say plainly: rebuilding per environment can silently produce a different binary than what was tested. Exam hook: ask why build-once-promote matters for reproducible releases.\""
+    },
+    {
+      "id": "T23-B",
+      "layout": "points",
+      "kicker": "Build Once Promote",
+      "title": "Same Artifact Everywhere",
+      "points": [
+        {
+          "text": "Promotion copies the artifact forward with no recompilation",
+          "icon": "i3d:upload"
+        },
+        {
+          "text": "Stored in a repository, for example Amazon S3 or ECR",
+          "icon": "img:images/aws-ecr.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "K_T23B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Point to the artifact box staying identical across every stage, nothing rebuilt in between. Say plainly: rebuilding per environment can silently produce a different binary than what was tested. Exam hook: ask why build-once-promote matters for reproducible releases.\""
+    },
+    {
+      "id": "T23-C",
+      "layout": "points",
+      "kicker": "Build Once Promote",
+      "title": "Same Artifact Everywhere",
+      "points": [
+        {
+          "text": "Environment differences, such as URLs and credentials, come from external configuration, not a rebuild",
+          "icon": "i3d:gear"
+        },
+        {
+          "text": "Guarantees the code tested is exactly the code released",
+          "icon": "i3d:check"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "K_T23C",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 560,
+      "notes": "\"Point to the artifact box staying identical across every stage, nothing rebuilt in between. Say plainly: rebuilding per environment can silently produce a different binary than what was tested. Exam hook: ask why build-once-promote matters for reproducible releases.\""
+    },
+    {
+      "id": "T24",
+      "layout": "points",
+      "kicker": "Dev Staging Production",
+      "title": "Environment Pipeline Roles",
+      "lead": "Each environment plays a distinct role in catching problems before customers do, so an artifact earns its way to production only by passing through every stage in order",
+      "points": [
+        {
+          "text": "Dev: integration testing, frequent deploys, lowest stability requirement",
+          "icon": "i3d:code"
+        },
+        {
+          "text": "Staging: mirrors production configuration, final verification before release",
+          "icon": "i3d:replica"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "K_T24",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Name the CodePipeline console as where these stages are literally configured, one after another. Point to the gate between staging and production as the same approval step from the earlier slide. Exam hook: ask why staging must mirror production configuration closely.\""
+    },
+    {
+      "id": "T24-B",
+      "layout": "points",
+      "kicker": "Dev Staging Production",
+      "title": "Environment Pipeline Roles",
+      "points": [
+        {
+          "text": "Production: serves real users, promotion gated by approval or tests",
+          "icon": "i3d:users"
+        },
+        {
+          "text": "AWS CodePipeline models each environment as a separate pipeline stage",
+          "icon": "img:images/aws-codepipeline.svg"
+        }
+      ],
+      "figure": {
+        "type": "custom",
+        "name": "K_T24B",
+        "props": {
+          "steps": 2
+        }
+      },
+      "figH": 380,
+      "pointsW": 520,
+      "notes": "\"Name the CodePipeline console as where these stages are literally configured, one after another. Point to the gate between staging and production as the same approval step from the earlier slide. Exam hook: ask why staging must mirror production configuration closely.\""
+    },
+    {
+      "id": "S-QUIZ",
+      "layout": "quiz",
+      "notes": "Quiz on DevOps & CI/CD Fundamentals. Q1. Why did DevOps emerge? Answer: Developers were measured on speed and operations on stability, so the two goals pulled apart. Q2. What is a blameless postmortem? Answer: An incident review of the process, not the people. Q3. Is a release the same as a deploy? Answer: No, a release can sit ready without being deployed yet. Q4. What do reviewers act on in a pull request? Answer: The diff view and the approve button. Q5. What triggers a CI run? Answer: Every push or pull request. Q6. Why is a broken main branch costly? Answer: It stops the whole team, not just one developer. Q7. What is the one difference between continuous delivery and continuous deployment? Answer: Delivery keeps a manual approval gate before production; deployment has none. Q8. Why build once and promote? Answer: The code tested is exactly the code released."
+    },
+    {
+      "id": "S-TAKEAWAYS",
+      "layout": "takeaways",
+      "notes": "Key Takeaways\n1. DevOps Principles: Culture, collaboration & shared ownership; the development-operations divide\n2. The Cloud SDLC: Plan, code, build, test, release, deploy, operate & monitor\n3. Version Control & Git Workflows: Repositories, branches, commits & merges; pull requests & code review; trunk-based vs feature-branch\n4. Continuous Integration: Build & test on every change; fast feedback; cost of a broken main branch\n5. Delivery & Artifacts: Continuous delivery vs continuous deployment; build once & promote; dev, staging & production"
+    },
+    {
+      "id": "S-NEXT",
+      "layout": "next",
+      "title": "CI/CD Pipelines in Practice"
+    },
+    {
+      "id": "S-THANKS",
+      "layout": "thanks",
+      "title": "Thank You"
+    },
+    {
+      "id": "S-BEST",
+      "layout": "thanks",
+      "title": "All the Best"
+    }
+  ]
+}

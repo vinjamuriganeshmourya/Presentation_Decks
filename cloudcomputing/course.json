@@ -30,7 +30,7 @@
     { "title": "Building with Containers", "folder": null },
     { "title": "Kubernetes Fundamentals", "folder": "kubernetes_fundamentals" },
     { "title": "Kubernetes in Practice", "folder": "kubernetes_in_practice" },
-    { "title": "DevOps & CI/CD", "folder": null },
+    { "title": "DevOps & CI/CD", "folder": "devops_and_ci_cd_fundamentals" },
     { "title": "CI/CD Pipelines", "folder": null },
     { "title": "Infrastructure as Code", "folder": null },
     { "title": "Advanced IaC & Governance", "folder": null },
