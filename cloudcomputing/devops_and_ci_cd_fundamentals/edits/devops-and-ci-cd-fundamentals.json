@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "Right now, Deploy sends one line down that splits into three arrows going to Dev, Staging and Production at the same time.\n\nChange it so Deploy points only to Dev, then Dev points down to Staging, then Staging points down to Production.",
       "at": 1795512371882
+    },
+    "mwui0urfuksm7q": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T19-B",
+      "author": "Pallavi",
+      "text": "Right now, the arrow from Branch goes through the lock and reaches main with an arrowhead.\n\nChange it so the arrow stops at the lock. Remove the part of the line below the lock and its arrowhead, so nothing touches main.",
+      "at": 1795512903474
     }
   }
 }
