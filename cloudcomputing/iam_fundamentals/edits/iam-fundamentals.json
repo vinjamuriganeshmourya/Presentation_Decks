@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/iam_fundamentals/iam-fundamentals",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwiwr87c8ruh4j": {
       "replies": {},
