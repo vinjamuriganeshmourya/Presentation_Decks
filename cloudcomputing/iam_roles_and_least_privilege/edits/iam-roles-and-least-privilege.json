@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/iam_roles_and_least_privilege/iam-roles-and-least-privilege",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwm0489t5zuw7a": {
       "replies": {},
