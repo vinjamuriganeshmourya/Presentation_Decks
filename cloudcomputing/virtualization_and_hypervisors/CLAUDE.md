@@ -4,6 +4,12 @@ The session deck for the Virtualization & Hypervisors session. Read this before 
 are in `KIT.md` and `../../../slide-kit/slide-template/CLAUDE.md`; the course's own rules in
 `../workflow/skills/cloud-computing-course/SKILL.md`.
 
+- **Split (user, 2026-11-26):** slides 37-47 of the student view (`create-vm` to `boot-2`) became the hands-on
+  session "Creating Virtual Machine Using Virtual Box" (`../practical_hands_on_creating_virtual_machine_using_virtual_box`).
+  The split was first cut from the shared student-view HTML (`/home/nxtwave/Desktop/cloud/virtualization-and-hypervisors/`,
+  kept by the user), which hid four frames: `network-analogy`, `desktop-analogy`, `quiz-mid-1`, `para-analogy`. A
+  hidden slide is deleted in a student file, so they are out of `vhDeck.tsx` too (commented, components kept): 47
+  slides, the same as that file. Next Session is unchanged on the user's word.
 - **Plan:** `../session_plans/virtualization_and_hypervisors/plan.md` (signed off on the user's word,
   2026-10-27: the request is the spec).
 - **Source:** `Reference ppt's/virtualization-and-hypervisors 2.html`, a kit-built deck of 62 frames. CONTENT

@@ -6,4 +6,9 @@
  */
 import type { SlideEdits } from '../deck/presenter'
 
-export const SLIDE_EDITS: SlideEdits = {}
+/* carried over 2026-11-26 from the shared student-view file the deck was split from: the presenter's saved text edits, now in source */
+export const SLIDE_EDITS: SlideEdits = {
+  "T12-1": {
+    "Boot Memory Size Security": "Boot , Memory Size Security"
+  }
+}

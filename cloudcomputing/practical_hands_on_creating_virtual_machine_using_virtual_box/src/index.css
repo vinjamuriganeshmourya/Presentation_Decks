@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: #060c1c; /* dark stage behind the slide canvas */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /*
+    THE BROWSER'S OWN HORIZONTAL GESTURE IS SWITCHED OFF. Chromium reads a
+    horizontal overscroll on a page that cannot scroll as "go back" or "go
+    forward" in history, and Android Chrome and iOS Safari read an edge swipe
+    the same way. `useGestureNav` gives that gesture a meaning (one slide), so
+    a swipe right on slide 3 must not leave the deck for the page before it.
+    `overscroll-behavior-x: none` turns the history gesture off; `touch-action:
+    pan-y pinch-zoom` says the page handles horizontal panning itself, so the
+    browser never starts its own. Vertical scrolling inside a slide and pinch
+    zoom are left alone. (kit/deck-gestures, folded in 2026-10-14)
+  */
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
+}
+
+html {
+  overscroll-behavior-x: none;
+}
+
+/*
+  CODE SHOWS THE CHARACTERS THE LEARNER TYPES (content rule 40).
+
+  A code face ships ligatures: `==` drawn as one long glyph, `>=` as a single
+  sign, `!=` as a struck equals. On a projector a learner copying from the
+  screen cannot tell what to type (user, 2026-10-05, Python 17 and 18: "== and
+  >= render as one joined glyph"). Both ligature mechanisms are turned off on
+  every code surface: `calt` is the contextual table most code faces build them
+  with, `liga` the standard one. `font-variant-ligatures: none` is the modern
+  property and the feature string the fallback, so an engine that honours
+  either shows two characters. A monospace ligature keeps the advance of the
+  characters it replaces, so nothing moves: the fix is to the glyphs alone.
+
+  Scoped to monospace surfaces and not set at the root: the text faces keep
+  their own contextual alternates, which this is not about.
+*/
+.font-mono,
+pre,
+code,
+kbd,
+samp {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+/* The updated template's font sheet (base template since 2026-10-14): DM Sans is
+   loaded in Medium and SemiBold only, so no weight is ever faked from a lighter
+   face. */
+html {
+  font-synthesis-weight: none;
+}
+
+/*
+  THE PLAYER'S BOX: the visible viewport, not the largest one.
+
+  `App.tsx` used `h-screen`, which is `100vh`, and on a phone `100vh` is the
+  height with the browser's address bar scrolled away. With the bar on screen
+  the bottom of the player sat under it, and the control bar with it. `100dvh`
+  follows the browser chrome as it comes and goes; the `100vh` line before it is
+  the fallback for an engine that does not know `dvh`. `width: 100%` and not
+  `100vw`: the page never scrolls, so they are the same, and `100vw` is wider
+  than the page the moment a scrollbar exists.
+*/
+.deck-viewport {
+  width: 100%;
+  height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .deck-viewport {
+    height: 100dvh;
+  }
+}
+
+/* The slide canvas is a fixed 1280×720 stage that is scaled to fit the
+   viewport. Everything inside uses absolute px so it matches the PPTX. */
+@layer components {
+  .slide-canvas {
+    width: 1280px;
+    height: 720px;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  /*
+    THE STAGE: the 1280x720 box that `SlideStage` zooms to fit the screen.
+
+    `text-rendering: geometricPrecision` IS THE WHOLE REASON THIS CLASS EXISTS,
+    and it is what makes zooming the stage safe.
+
+    `zoom` re-lays the slide out at the projected size rather than stretching a
+    texture, which is what makes the deck sharp in every engine. The cost is that
+    layout then has to be scale-invariant, and by default it is not: a font
+    engine rounds each glyph's advance to fit the pixel grid, so the advances at
+    66px are not exactly 1.5x the advances at 44px and a line can break after a
+    different word.
+
+    It was measured rather than argued about. With the body's default
+    `optimizeLegibility`, `fit-check.mjs` found the deck's LINE COUNTS stable at
+    1x, 1.5x and 2x but wrap points moving by up to 73px: same number of lines,
+    different words on them. Harmless on the slides it was measured on, and one
+    long bullet away from being a wrap that changes a block's height.
+
+    `geometricPrecision` tells the engine to use the unrounded, geometric advance
+    for every glyph, so advances scale linearly with size and the text breaks in
+    exactly the same place at every zoom. With it, the same check reports the
+    boxes stable to a fraction of a pixel.
+
+    THE TRADE IS REAL AND IT IS THE RIGHT WAY ROUND HERE. Unrounded advances mean
+    glyphs no longer snap to the pixel grid, which at small sizes on a low-DPI
+    screen is very slightly softer than hinted text. This canvas is projected,
+    its smallest type is 11.5px in one control that nobody reads, and the
+    alternative is a layout that silently differs between the machine it was
+    designed on and the one it is shown on. A deck is a fixed design; it has to
+    land where it was drawn.
+  */
+  .slide-stage {
+    text-rendering: geometricPrecision;
+  }
+
+  /*
+    CHARACTER LIFT
+    Nova is drawn in brand blue, so on the dark blue closing frames the figure
+    sank into the ground and read as a silhouette. Two stacked drop-shadows in
+    a cool grey separate it: drop-shadow follows the alpha shape, so it traces
+    the character's outline rather than boxing it the way box-shadow would. The
+    tight one gives the edge definition, the wide one gives the elevation.
+  */
+  .char-lift {
+    filter:
+      drop-shadow(0 4px 6px rgba(3, 14, 38, 0.55))
+      drop-shadow(0 12px 18px rgba(3, 14, 38, 0.45))
+      drop-shadow(0 30px 46px rgba(3, 14, 38, 0.38));
+  }
+
+  /*
+    Thin footer strip present on content/section slides.
+
+    Style-guide navy running out to the brand blue. It used to run Evolve blue
+    into teal into orange, so the closing frames finished on a green-to-orange
+    fade that appeared nowhere else in the deck and in no version of the brand.
+  */
+  .slide-footer-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px; /* 8 until 2026-10-22, 6 that day; the section bar is 4px (user, 2026-10-23), and the plain bar matches it */
+    background: linear-gradient(90deg, #00254b 0%, #0146c7 45%, #2d63fb 100%);
+  }
+}
+
+/* Reduced-motion users get instant, non-animated slides */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+/*
+  FLOW-CHART FIGURES: the node hover.
+
+  A CSS transition and not framer-motion, deliberately. Hover is fired and
+  cancelled fast and repeatedly, and a transition retargets from wherever the
+  value currently is; keyframes and JS-driven animation both restart from zero,
+  which is what makes a quick pointer sweep across a row of nodes look broken.
+  It also runs off the main thread.
+
+  160ms is the `animate` skill's UI tier, NOT the 520ms explanatory tier the
+  figure's entrance uses. A hover is triggered by the presenter, deliberately and
+  often, and they are waiting for it; the figure's entrance is watched once.
+
+  Gated behind `hover: hover` and `pointer: fine` because a touch device fires
+  hover on tap, which would leave a node stuck lifted after a stray finger.
+
+  `transform` and `box-shadow` only. No `top`, no `margin`.
+*/
+@media (hover: hover) and (pointer: fine) {
+  .fc-node--hoverable {
+    transition:
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: transform;
+  }
+
+  .fc-node--hoverable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -18px rgba(45, 99, 251, 0.45);
+  }
+
+  .fc-node__more {
+    transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .fc-node--hoverable:hover .fc-node__more {
+    opacity: 0;
+  }
+}
+
+/*
+  The lift is movement, so reduced motion drops it and keeps the shadow, which
+  is the part that says "this one". The global block above clamps DURATION only,
+  which would still move the node, just instantly.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .fc-node--hoverable:hover {
+    transform: none;
+  }
+}
+
+/*
+  THE HOVER POPOVER HAS TO WIN THE PAINT ORDER.
+
+  Each node sits in a slot that animates `transform`, and a transformed element
+  creates a stacking context. That traps any `z-index` inside the slot, so the
+  detail panel was painted over by every node rendered after it: on a left-hand
+  node it came out sliced by the next two cards along.
+
+  Raising the whole slot on hover is the fix, because the slot is the element
+  that owns the stacking context. `:has()` keeps it in CSS, so no hover state has
+  to be threaded from the card back up to the slot it lives in.
+
+  The base `z-index: 1` matters as much as the raised one: without it the slots
+  are all `auto`, they paint in DOM order, and raising one has nothing to be
+  raised above.
+*/
+.fc-node-slot {
+  z-index: 1;
+}
+
+.fc-node-slot:has(.fc-node--hoverable:hover) {
+  z-index: 60;
+}
+
+/*
+  THE DIAMOND'S HOVER SHADOW BELONGS TO THE DIAMOND, NOT TO ITS BOX.
+
+  A diamond is a rotated square drawn as a separate layer inside an unstyled
+  square `.fc-node` (the rotation cannot live on `.fc-node` itself, because the
+  hover rule sets `transform` on that element and would replace it). The default
+  hover shadow therefore landed on the transparent square and drew a RECTANGLE
+  around the diamond.
+
+  So the bare variant drops the shadow and hands it to the rotated layer, which
+  is the shape the eye actually sees. The lift still happens on `.fc-node`, so
+  the whole thing rises as one.
+*/
+@media (hover: hover) and (pointer: fine) {
+  .fc-node--bare:hover {
+    box-shadow: none;
+  }
+
+  .fc-node__shape {
+    transition: box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .fc-node--hoverable:hover .fc-node__shape {
+    box-shadow: 0 18px 40px -18px rgba(45, 99, 251, 0.45);
+  }
+}

@@ -4,6 +4,12 @@ The session deck for Containers vs Virtual Machines. Read this before editing it
 `KIT.md` and `../../../slide-kit/slide-template/CLAUDE.md`; the course's own rules in
 `../workflow/skills/cloud-computing-course/SKILL.md`.
 
+- **Split (user, 2026-11-26):** slides 13-22 (T05-1 to T05-S8) and 27-42 (T08-1 to T11-8) of the 73-slide deck
+  became the hands-on session "Working with Docker Images and Containers"
+  (`../practical_hands_on_working_with_docker_images_and_containers`). 47 slides stay here, in their old order;
+  Next Session is unchanged on the user's word. The split was first cut from the shared student-view HTML
+  (`/home/nxtwave/Desktop/cloud/containers-vs-virtual-machines/`, kept by the user); its one saved text edit on
+  this deck (T12-1, "Boot , Memory Size Security", carried over as it was) is in `src/decks/slideEdits.ts`.
 - **Plan:** `../session_plans/containers_vs_virtual_machines/plan.md` (signed off on the user's word,
   2026-10-28: the request is the spec).
 - **Source:** `../../cloud_computing/session_plans/session_4/` (note: `cloud_computing`, not this course

@@ -19,9 +19,8 @@ import { BUILD_CSS } from './figures/cv/build'
 import { COMPARE_CSS } from './figures/cv/compare'
 import { CHOOSE_CSS } from './figures/cv/choose'
 import { Container, FlatsAnalogy, Namespaces, Cgroups, UnionFs } from './figures/cv/fundamentals'
-import { DockerParts, SetupPerOs, InstallStep1, InstallStep2, InstallStep3, InstallStep4, InstallStep5, InstallStep6, InstallStep7, InstallStep8, InstallStep8b } from './figures/cv/install'
-import { ImageVsContainer, RecipeAnalogy, PullRun, PullRun2, PartA1, PartA2, RunCommand, CheckStopRemove, DockerfileLayers, BuildCache, HouseAnalogy } from './figures/cv/docker'
-import { PartB1, PartB1b, PartB2, PartB3, PartB4, PartB5, PartB6, PartB7, PartB8 } from './figures/cv/build'
+import { DockerParts } from './figures/cv/install'
+import { ImageVsContainer, RecipeAnalogy, PullRun, PullRun2 } from './figures/cv/docker'
 import { TwoStacks, TwoStacksPoints, BootMemory, WhyGap, SizeDensity, DensityBuys, Isolation, Isolation2, BlastRadius, BlastRadius2 } from './figures/cv/compare'
 import { FourCriteria, ContainerUses, VmUses, DecisionTable, BothTogether } from './figures/cv/choose'
 import { ToolingMap, Hypervisors, Containerd, Podman, Engines, Registries, Tagging, HeadsUp } from './figures/cv/tooling'
@@ -41,6 +40,10 @@ import { ToolingMap, Hypervisors, Containerd, Podman, Engines, Registries, Taggi
  * held still on harness URLs. No builds (`revealEveryStep`): every element
  * enters in reading order (`figures/entrance.ts`), which is how the spec's
  * press order reaches the screen. Section files: `figures/cv/`.
+ *
+ * SPLIT (user, 2026-11-26): slides 13-22 and 27-42 of the 73-slide deck became
+ * "Working with Docker Images and Containers" (../practical_hands_on_working_with_docker_images_and_containers);
+ * 47 slides stay here. Next Session unchanged on the user's word.
  *
  * REVIEW PAIRS (user, 2026-10-28) RESOLVED 2026-10-30: the user kept agenda1
  * (titles only), quiz1 and feedback1 and had agenda0, agenda1 (full lines),
@@ -122,37 +125,13 @@ export const cvDeck: SlideDef[] = [
   /* ── 2 · DOCKER ARCHITECTURE ─────────────────────────────────────────── */
   breaker(1),
   slide('T04-1', S[1], "Docker's five parts", DockerParts),
-  slide('T05-1', S[1], 'Setup per operating system', SetupPerOs),
-  slide('T05-S1', S[1], 'Step 1: WSL 2 enabled', InstallStep1),
-  slide('T05-S2', S[1], 'Step 2: installer options', InstallStep2),
-  slide('T05-S3', S[1], 'Step 3: installed', InstallStep3),
-  slide('T05-S4', S[1], 'Step 4: sign in or skip', InstallStep4),
-  slide('T05-S5', S[1], 'Step 5: back to the app', InstallStep5),
-  slide('T05-S6', S[1], 'Step 6: allow the redirect', InstallStep6),
-  slide('T05-S7', S[1], 'Step 7: Docker Desktop opens', InstallStep7),
-  /* user, 2026-11-04: the two halves swapped, the commands first */
-  slide('T05-S8b', S[1], 'Step 8: the two commands and the Linux note', InstallStep8b),
-  slide('T05-S8', S[1], 'Step 8: verify from the terminal', InstallStep8),
+  /* slides 13-22 (T05-1 to T05-S8, Docker installation) moved to the hands-on deck (user, 2026-11-26):
+     ../practical_hands_on_working_with_docker_images_and_containers */
   slide('T06-1', S[1], 'Image vs container', ImageVsContainer),
   slide('T06-AN', S[1], 'Analogy: One recipe, many cakes', RecipeAnalogy),
   slide('T07-1', S[1], 'Pull and run: the two commands', PullRun),
   slide('T07-1b', S[1], 'Pull and run: socket, cache, repeat run', PullRun2),
-  slide('T08-1', S[1], 'Part A, steps 1 to 5', PartA1),
-  slide('T08-2', S[1], 'Part A, steps 6 to 10', PartA2),
-  slide('T09-1', S[1], 'The run command, slot by slot', RunCommand),
-  slide('T09-2', S[1], 'Check, stop, remove', CheckStopRemove),
-  slide('T10-1', S[1], 'A Dockerfile, line by line', DockerfileLayers),
-  slide('T10-2', S[1], 'Build caching', BuildCache),
-  slide('T10-AN', S[1], 'Analogy: A house built floor by floor', HouseAnalogy),
-  slide('T11-1', S[1], 'Part B: the project folder', PartB1),
-  slide('T11-1b', S[1], 'Part B: Step 1, the folder in VS Code', PartB1b),
-  slide('T11-2', S[1], 'Part B: index.html', PartB2),
-  slide('T11-3', S[1], 'Part B: the Dockerfile', PartB3),
-  slide('T11-4', S[1], 'Part B: build and list', PartB4),
-  slide('T11-5', S[1], 'Part B: container started', PartB5),
-  slide('T11-6', S[1], 'Part B: port mapping confirmed', PartB6),
-  slide('T11-7', S[1], 'Part B: the custom page', PartB7),
-  slide('T11-8', S[1], 'Part B: clean up', PartB8),
+  /* slides 27-42 (T08-1 to T11-8, Part A to Part B clean up) moved to the same hands-on deck (user, 2026-11-26) */
 
   /* ── 3 · CONTAINERS VS VMS ───────────────────────────────────────────── */
   breaker(2),

@@ -12,11 +12,10 @@ import { SCENE_CSS, STILL } from './figures/scene'
 import { ART_CSS, mountClayDefs } from './figures/art'
 import { VH_CSS } from './figures/vh/frames'
 import { Landscape, Benefits, Server, ServerZoom, Storage } from './figures/vh/basics-a'
-import { StorageAnalogy, Network, NetworkLoops, NetworkAnalogy, DesktopApp, DesktopAnalogy, TypesCompared } from './figures/vh/basics-b'
+import { StorageAnalogy, Network, NetworkLoops, DesktopApp, TypesCompared } from './figures/vh/basics-b'
 import { Vmm, VmmRole, VmmAnalogy, Type1, Type2, TypeCompare } from './figures/vh/hyper'
-import { Techniques, Full, FullPath, FullAnalogy, Para, ParaPath, ParaAnalogy, HwAssisted, TechniquesCompared } from './figures/vh/tech'
-import { Anatomy, Vcpu, DiskNic, Artifacts, CreateVm } from './figures/vh/anatomy'
-import { Install1, Install2, Install3, Install4, Install5, Wizard1, Wizard2, Wizard3, Boot1, Boot2 } from './figures/vh/walk'
+import { Techniques, Full, FullPath, FullAnalogy, Para, ParaPath, HwAssisted, TechniquesCompared } from './figures/vh/tech'
+import { Anatomy, Vcpu, DiskNic, Artifacts } from './figures/vh/anatomy'
 import { Lifecycle, SuspendSnapshotClone, LiveMigration, LiveAnalogy, Cost } from './figures/vh/life'
 import { NOTES } from './vhNotes'
 
@@ -31,6 +30,13 @@ import { NOTES } from './vhNotes'
  * TR speaker notes and Visual Guidance. The TR PDF is used for comparison only;
  * the walkthrough captures are its images, which the reference names but does
  * not carry.
+ *
+ * SPLIT (user, 2026-11-26): slides 37-47 of the student view (Creating a VM to
+ * First boot 2) became "Creating Virtual Machine Using Virtual Box"
+ * (../practical_hands_on_creating_virtual_machine_using_virtual_box). The four
+ * frames hidden in the shared student file (three analogies and the mid quiz)
+ * are out of the list too, so this deck is the 47 slides that file showed.
+ * Next Session unchanged on the user's word.
  *
  * THE DESIGN is session 2's current one (session 1's 3D finish): `Card`, the
  * points rail beside a raised stage, library renders (`Icon3D`) and clay
@@ -86,7 +92,6 @@ const S = AGENDA.map((a) => a.title)
 const note = (id: string) => NOTES[id] ?? ''
 const breaker = (i: number): SlideDef => ({ id: `s${i + 1}`, section: S[i], label: 'Section divider', transition: 'zoom', element: <SectionBreakerSlide index={i + 1} title={S[i]} lesson={SESSION} />, notes: `TR section ${i + 1}. The title only.` })
 const slide = (id: string, section: string, label: string, El: (p: { lesson: string }) => React.ReactElement): SlideDef => ({ id, section, label, element: <El lesson={SESSION} />, notes: note(id) })
-const WALK = 'Trainer walks through each screen live rather than reading the captions (the TR\'s own instruction).'
 /** The review pairs (user, 2026-10-30): version 1 of the agenda and the two quiz frames, each directly beside its version 0; the user keeps one of each. */
 const PAIR = (which: string, other: string) => `REVIEW PAIR (user, 2026-10-30): ${which}, beside ${other}. Keep one and delete the other.`
 
@@ -107,9 +112,9 @@ export const vhDeck: SlideDef[] = [
   slide('storage-analogy', S[0], "Analogy: a bank's shared pool", StorageAnalogy),
   slide('network', S[0], 'Network virtualization', Network),
   slide('network-loops', S[0], 'Network virtualization: logical networks', NetworkLoops),
-  slide('network-analogy', S[0], 'Analogy: a Wi-Fi for each company', NetworkAnalogy),
+  /* removed 2026-11-26 to match the shared student file, where it was hidden (a hidden slide is deleted in a student file): network-analogy, Analogy: a Wi-Fi for each company (NetworkAnalogy, basics-b.tsx) */
   slide('desktop-app', S[0], 'Desktop and app virtualization', DesktopApp),
-  slide('desktop-analogy', S[0], 'Analogy: cable TV', DesktopAnalogy),
+  /* removed 2026-11-26 to match the shared student file, where it was hidden (a hidden slide is deleted in a student file): desktop-analogy, Analogy: cable TV (DesktopAnalogy, basics-b.tsx) */
   slide('types-compared', S[0], 'Virtualization types compared', TypesCompared),
 
   /* ── 2 · HYPERVISORS ─────────────────────────────────────────────────── */
@@ -120,7 +125,7 @@ export const vhDeck: SlideDef[] = [
   slide('type1', S[1], 'Type 1 hypervisor', Type1),
   slide('type2', S[1], 'Type 2 hypervisor', Type2),
   slide('type-compare', S[1], 'Bare-metal vs hosted', TypeCompare),
-  { id: 'quiz-mid-1', section: S[1], label: 'Quiz time (layout 1)', transition: 'zoom', element: <QuizCard lesson={SESSION} title="Quiz Time!" />, notes: PAIR('quiz1, the title card with the question cube', 'quiz0, the course quiz frame (the previous frame)') },
+  /* removed 2026-11-26 to match the shared student file, where it was hidden (a hidden slide is deleted in a student file): quiz-mid-1, the mid-deck Quiz Time! card (QuizCard) */
 
   /* ── 3 · VIRTUALIZATION TECHNIQUES ───────────────────────────────────── */
   breaker(2),
@@ -130,7 +135,7 @@ export const vhDeck: SlideDef[] = [
   slide('full-analogy', S[2], 'Analogy: a hotel key card', FullAnalogy),
   slide('para', S[2], 'Para-virtualization', Para),
   slide('para-path', S[2], 'Para-virtualization: hypercalls', ParaPath),
-  slide('para-analogy', S[2], 'Analogy: a service bell', ParaAnalogy),
+  /* removed 2026-11-26 to match the shared student file, where it was hidden (a hidden slide is deleted in a student file): para-analogy, Analogy: a service bell (ParaAnalogy, tech.tsx) */
   slide('hw-assisted', S[2], 'Hardware-assisted virtualization', HwAssisted),
   slide('techniques-compared', S[2], 'Three techniques compared', TechniquesCompared),
 
@@ -140,17 +145,8 @@ export const vhDeck: SlideDef[] = [
   slide('vcpu', S[3], 'vCPU and memory', Vcpu),
   slide('disk-nic', S[3], 'Disk and NIC', DiskNic),
   slide('artifacts', S[3], 'VM packaging artifacts', Artifacts),
-  slide('create-vm', S[3], 'Creating a VM', CreateVm),
-  { ...slide('install-1', S[3], 'Installing VirtualBox 1', Install1), notes: `${note('install-1')}` },
-  { ...slide('install-2', S[3], 'Installing VirtualBox 2', Install2), notes: WALK },
-  { ...slide('install-3', S[3], 'Installing VirtualBox 3', Install3), notes: WALK },
-  { ...slide('install-4', S[3], 'Installing VirtualBox 4', Install4), notes: WALK },
-  { ...slide('install-5', S[3], 'Installing VirtualBox 5', Install5), notes: WALK },
-  { ...slide('wizard-1', S[3], 'New VM wizard 1', Wizard1), notes: WALK },
-  { ...slide('wizard-2', S[3], 'New VM wizard 2', Wizard2), notes: WALK },
-  { ...slide('wizard-3', S[3], 'New VM wizard 3', Wizard3), notes: WALK },
-  slide('boot-1', S[3], 'First boot', Boot1),
-  { ...slide('boot-2', S[3], 'First boot 2', Boot2), notes: WALK },
+  /* slides 37-47 of the student view (create-vm to boot-2, the VirtualBox walkthrough) moved to the hands-on deck
+     "Creating Virtual Machine Using Virtual Box" (user, 2026-11-26): ../practical_hands_on_creating_virtual_machine_using_virtual_box */
 
   /* ── 5 · VM LIFECYCLE & MIGRATION ────────────────────────────────────── */
   breaker(4),
