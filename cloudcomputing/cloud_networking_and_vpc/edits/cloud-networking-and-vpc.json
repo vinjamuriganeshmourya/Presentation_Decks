@@ -1,6 +1,13 @@
 {
   "deck": "cloudcomputing/cloud_networking_and_vpc/cloud-networking-and-vpc",
-  "slides": {},
+  "slides": {
+    "S-QUIZ": {
+      "status": "deleted"
+    },
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwak112gwiqnzp": {
       "replies": {},
