@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/cloud_native_applications/cloud-native-applications",
-  "slides": {},
+  "slides": {
+    "S-QUIZ": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwotot8iqlxhzx": {
       "replies": {},
