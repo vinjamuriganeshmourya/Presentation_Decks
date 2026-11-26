@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/security_practices_and_compliance/security-practices-and-compliance",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mworx0sjr1d86j": {
       "replies": {},
