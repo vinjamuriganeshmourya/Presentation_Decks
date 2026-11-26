@@ -1,6 +1,9 @@
 {
   "deck": "cloudcomputing/kubernetes_in_practice/kubernetes-in-practice",
   "slides": {
+    "S-QUIZ": {
+      "status": "deleted"
+    },
     "S-QUIZ-1": {
       "status": "deleted"
     }
