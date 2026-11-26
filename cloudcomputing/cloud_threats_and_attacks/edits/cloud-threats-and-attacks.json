@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/cloud_threats_and_attacks/cloud-threats-and-attacks",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwlx6t5u8kg8mp": {
       "replies": {},
