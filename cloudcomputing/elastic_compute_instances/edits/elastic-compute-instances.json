@@ -1,6 +1,9 @@
 {
   "deck": "cloudcomputing/elastic_compute_instances/elastic-compute-instances",
   "slides": {
+    "S-QUIZ1": {
+      "status": "deleted"
+    },
     "T06-AN": {
       "status": "deleted"
     }
