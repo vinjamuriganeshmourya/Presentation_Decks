@@ -1,6 +1,10 @@
 {
   "deck": "cloudcomputing/kubernetes_fundamentals/kubernetes-fundamentals",
-  "slides": {},
+  "slides": {
+    "S-QUIZ-1": {
+      "status": "deleted"
+    }
+  },
   "threads": {
     "mwsxy2pgfgk50y": {
       "replies": {},
