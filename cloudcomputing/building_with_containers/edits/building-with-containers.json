@@ -41,6 +41,14 @@
       "author": "Pallavi",
       "text": "in row 1 column 1 change the ubuntu to python as\n\nubuntu:22.04 (full OS)  to \n✅ python:3.12 (full image)",
       "at": 1795773145414
+    },
+    "mwyszo1pjj4npv": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T11",
+      "author": "Pallavi",
+      "text": "change the 1st one to python\n\nUbuntu icon + ubuntu:22.04  to\n✅ Python icon + python:3.12",
+      "at": 1795773188529
     }
   }
 }
