@@ -1,0 +1,14 @@
+{
+  "deck": "cloudcomputing/practical_hands_on_containerizing_and_publishing_an_app_with_amazon_ecr/containerizing-and-publishing-an-app-with-amazon-ecr",
+  "slides": {},
+  "threads": {
+    "mwytmaqjguwzws": {
+      "replies": {},
+      "resolved": false,
+      "slide": "P26",
+      "author": "Pallavi",
+      "text": "\" from the earlier container session\" remove this from text",
+      "at": 1795774244376
+    }
+  }
+}
