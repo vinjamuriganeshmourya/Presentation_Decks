@@ -790,10 +790,10 @@ function plinth(scene: THREE.Scene, x: number, z: number, r: number) {
 const L02 = 9
 const F02 = 108
 const HOLD02 = 6.6 /* both houses furnished, the box on the table, the woman presenting, the developer pointing */
-const CAM02: V3 = [0, 1.52, 4.75]
-const AT02: V3 = [0, 0.74, -0.55]
+const CAM02: V3 = [0, 1.6, 5.85] /* far enough that both whole houses, eaves included, sit inside the card */
+const AT02: V3 = [0, 0.98, -0.55]
 const FOV02 = 33
-const HX = [-0.95, 0.95] as const
+const HX = [-1.02, 1.02] as const /* a clear gap between the two gables */
 const HZ = -0.6
 const HW = 1.66
 const HD = 1.2
@@ -992,7 +992,7 @@ function setupT02Everyday(kit: StageKit): Update {
   lights(scene, [0, 0.9, -0.6], 2.0, 4)
   /* a path to each door, and a low hedge behind */
   for (const x of HX) scene.add(flat(box(0.5, 0.004, 1.2, mat('#EFE6D6', { roughness: 0.9 }), [x, 0.002, HZ + HD / 2 + 0.6])))
-  scene.add(flat(box(5, 0.22, 0.2, mat('#7CC48A', { roughness: 0.9 }), [0, 0.11, BACK - 0.55], 0.08)))
+  scene.add(flat(box(9, 0.22, 0.2, mat('#7CC48A', { roughness: 0.9 }), [0, 0.11, BACK - 0.55], 0.08)))
   house(scene, HX[0], '#FFF6E8', '#E4578F', '#E2CDAE')
   house(scene, HX[1], '#F3F5FA', '#3B6FF0', '#DCD6CC')
 
@@ -1160,7 +1160,7 @@ function setupT02Concept(kit: StageKit): Update {
   /* the app block: drops onto the slim stack when the box goes on the table */
   const app = block(0.34, 0.22, 0.28, '#F2A93B', 'app', 0.66)
   scene.add(app)
-  const appTop = 0.075 + 3 * (LH + LG)
+  const appTop = 0.075 + 2 * (LH + LG) + LH
   const appFrom = appTop + 0.55
   const glow = halo('rgba(20,184,166,0.55)', 0.9)
   glow.position.set(SX, 0.08, HZ - 0.35)
@@ -1215,13 +1215,15 @@ const AT09: V3 = [-0.62, 0.86, -0.7]
 const FOV09 = 34
 const WALL09 = -1.35
 const RACK = { x: -1.0, z: -1.02, w: 0.84, d: 0.34, h: 1.86 }
-const PACKER: V3 = [-0.12, 0, -0.62]
-const BAG = { x: -0.55, z: -0.36, w: 0.42, h: 0.2, d: 0.3, bench: 0.5 }
+const PACKER: V3 = [-0.1, 0, -0.62]
+const BAG = { x: -0.57, z: -0.3, w: 0.42, h: 0.2, d: 0.3, bench: 0.56 }
 /* item k: picked at a, in the hand a+0.5 .. a+1.05, in the bag after */
 const T09 = { a: [0.5, 2.4, 4.3], pick: 0.5, carry: 1.05, rest: 1.45, lid: [6.0, 6.6] as const, open: [8.7, 9.0] as const, gone: [8.7, 8.85] as const, back: [8.85, 9.0] as const }
 /* where each item waits on the rack (the right column) and where it lies in the bag */
-const HOME: V3[] = [[-0.68, 1.31, -0.92], [-0.68, 1.04, -0.92], [-0.78, 1.04, -0.92]]
-const SLOT: V3[] = [[-0.65, 0, -0.38], [-0.55, 0, -0.38], [-0.45, 0, -0.38]]
+/* each resting ON its shelf board (board top = shelf y + 0.0125), clear of the posts, the piles and each other */
+const HOME: V3[] = [[-0.715, 1.283, -0.92], [-0.715, 1.013, -1.0], [-0.775, 1.013, -0.9]]
+/* three separate places inside the bag, none touching */
+const SLOT: V3[] = [[BAG.x - 0.105, 0, BAG.z], [BAG.x + 0.09, 0, BAG.z + 0.075], [BAG.x + 0.035, 0, BAG.z - 0.055]]
 const bagTop = BAG.bench + BAG.h
 
 /** a hard-shell cabin bag (or a container image) open on its bench: body, inner lining, a lid hinged at the back */
@@ -1239,24 +1241,29 @@ function caseOpen(scene: THREE.Scene, kind: 'bag' | 'container') {
     g.add(flat(box(0.06, 0.012, 0.006, mat('#0E8C7F'), [0, BAG.h - 0.04, BAG.d / 2 + 0.003])))
     for (const sx of [-1, 1]) g.add(cyl(0.018, 0.018, 0.02, mat('#2C3545'), [sx * (BAG.w / 2 - 0.05), -0.01, BAG.d / 2 - 0.05], 16))
   }
-  /* the lid is hinged along the LEFT edge, so it opens away from the person packing on the right */
+  /* the lid is hinged along the BACK edge: open, it lies back on the bench behind the bag, so it never covers the
+     wardrobe / rack (and the items waiting there) */
   const hinge = new THREE.Group()
-  hinge.position.set(-BAG.w / 2, BAG.h, 0)
-  const lid = box(BAG.w, 0.12, BAG.d, shell, [BAG.w / 2, 0.06, 0], 0.03)
+  hinge.position.set(0, BAG.h, -BAG.d / 2)
+  const lid = box(BAG.w, 0.12, BAG.d, shell, [0, 0.06, BAG.d / 2], 0.03)
   hinge.add(lid)
-  if (kind === 'bag') hinge.add(box(0.03, 0.025, 0.12, mat('#2C3545'), [BAG.w - 0.05, 0.13, 0], 0.01))
-  else for (let i = -4; i <= 4; i++) hinge.add(flat(box(0.012, 0.006, BAG.d - 0.05, mat('#1F4FD6'), [BAG.w / 2 + i * 0.042, 0.121, 0])))
+  hinge.add(flat(box(BAG.w - 0.04, 0.006, BAG.d - 0.04, mat(kind === 'bag' ? '#2C3545' : '#16245A', { roughness: 0.9 }), [0, -0.002, BAG.d / 2])))
+  if (kind === 'bag') hinge.add(box(0.12, 0.025, 0.03, mat('#2C3545'), [0, 0.06, BAG.d + 0.012], 0.01))
+  else for (let i = -4; i <= 4; i++) hinge.add(flat(box(0.012, 0.006, BAG.d - 0.05, mat('#1F4FD6'), [i * 0.042, 0.121, BAG.d / 2])))
   g.add(hinge)
   scene.add(g)
   /* the bench under it */
   const bench = new THREE.Group()
-  bench.add(box(BAG.w + 0.12, 0.05, BAG.d + 0.08, mat(kind === 'bag' ? '#C49A6C' : '#E4E8F0', { roughness: 0.5 }), [0, BAG.bench - 0.025, 0], 0.01))
-  for (const sx of [-1, 1]) bench.add(box(0.04, BAG.bench - 0.05, BAG.d, mat(kind === 'bag' ? '#8C6440' : '#AEB8CC'), [sx * (BAG.w / 2 + 0.01), (BAG.bench - 0.05) / 2, 0]))
+  /* deep enough for the open lid lying behind the bag */
+  const BD = 2 * BAG.d + 0.08
+  const BZ = BAG.d / 2 + 0.04 - BD / 2 /* front edge 0.04 ahead of the bag, back edge under the open lid tip */
+  bench.add(box(BAG.w + 0.1, 0.05, BD, mat(kind === 'bag' ? '#C49A6C' : '#E4E8F0', { roughness: 0.5 }), [0, BAG.bench - 0.025, BZ], 0.01))
+  for (const sx of [-1, 1]) bench.add(box(0.04, BAG.bench - 0.05, BD - 0.06, mat(kind === 'bag' ? '#8C6440' : '#AEB8CC'), [sx * (BAG.w / 2 + 0.01), (BAG.bench - 0.05) / 2, BZ]))
   bench.position.set(BAG.x, 0, BAG.z)
   scene.add(bench)
-  /* lid angle: open leans left past upright; closed lies flat on the body */
-  const OPEN = 1.95
-  return (k: number) => (hinge.rotation.z = lerp(OPEN, 0, k))
+  /* lid angle: open = flipped back past flat until its far edge rests on the bench; closed lies flat on the body */
+  const OPEN = -(Math.PI + 0.27)
+  return (k: number) => (hinge.rotation.x = lerp(OPEN, 0, k))
 }
 
 /** the wardrobe / rack frame: an open two-column unit; returns the shelf heights of the right column */
@@ -1398,13 +1405,16 @@ function setupT09Everyday(kit: StageKit): Update {
   /* the wardrobe, full: shirts on the rail, folded piles, shoes */
   const wood = mat('#B5835A', { roughness: 0.55 })
   const { left, right } = rack(scene, wood, mat('#E9DCC8', { roughness: 0.8 }))
-  const rail = cyl(0.01, 0.01, RACK.w / 2 - 0.06, mat('#8C96A8', { metalness: 0.5 }), [left, 1.68, RACK.z], 10)
+  const inL = RACK.x - RACK.w / 2 + 0.035
+  const inR = RACK.x - 0.0175
+  const rail = cyl(0.01, 0.01, inR - inL + 0.01, mat('#8C96A8', { metalness: 0.5 }), [(inL + inR) / 2, 1.68, RACK.z], 10)
   rail.rotation.z = Math.PI / 2
   scene.add(rail)
   ;['#E4578F', '#F2A93B', '#14B8A6', '#8B5CF6', '#2C3C81'].forEach((col, i) => {
     const s = hanging(col)
-    s.position.set(left - 0.14 + i * 0.07, 1.68, RACK.z + 0.02 - i * 0.012)
-    s.rotation.y = 0.5
+    /* turned 1.2 rad and 0.06 apart: each shirt clears its neighbours and the posts, every hook on the rail */
+    s.position.set(inL + 0.065 + i * 0.06, 1.68, RACK.z)
+    s.rotation.y = 1.2
     scene.add(s)
   })
   const p1 = pile(['#F4F6FA', '#9FB8F0', '#F2A93B', '#14B8A6'])
@@ -1416,11 +1426,13 @@ function setupT09Everyday(kit: StageKit): Update {
     p.position.set(left + dx, 0.793, RACK.z)
     scene.add(p)
   }
-  scene.add(box(0.22, 0.14, 0.2, mat('#E4578F', { roughness: 0.6 }), [left + 0.04, 0.48, RACK.z], 0.02))
+  /* a shelf for the storage box, which floated in mid-air before */
+  scene.add(box(RACK.w / 2 - 0.035, 0.025, RACK.d, wood, [left, 0.4, RACK.z]))
+  scene.add(box(0.22, 0.14, 0.2, mat('#E4578F', { roughness: 0.6 }), [left + 0.04, 0.4825, RACK.z], 0.02))
   scene.add(box(0.226, 0.03, 0.206, mat('#C2407A', { roughness: 0.6 }), [left + 0.04, 0.555, RACK.z], 0.01))
   for (const [y, cols] of [[0.44, ['#2C3C81', '#3E4A66', '#8B5CF6']], [0.74, ['#E4578F', '#F4F6FA', '#F2A93B']], [1.02, ['#14B8A6', '#9FB8F0']], [1.29, ['#F4F6FA', '#2D63FB']]] as const) {
     const p = pile([...cols])
-    p.position.set(right - 0.06, y + 0.013, RACK.z)
+    p.position.set(right - 0.11, y + 0.013, RACK.z)
     scene.add(p)
   }
   for (const sx of [0, 1]) {

@@ -28,7 +28,7 @@ import nodeMark from '../images/tech-nodejs.svg'
  *                               the empty scratch base, one self-contained package dropping in (2)
  *   slide 11 A_T04   526 x 380  project folder -> Docker daemon (build context tray): every file rides across while
  *                               the build waits (1); .dockerignore filters .git and node_modules out (2)
- *   slide 12 A_T04B  526 x 380  the same drawing: a file outside the context is stopped at its edge (1); the trailing
+ *   slide 12 A_T04B  526 x 380  the same drawing: a file outside the context is refused at the project's border (1); the trailing
  *                               dot of `docker build .` sets the context root (2)
  */
 
@@ -352,10 +352,10 @@ function Context({ p, part }: { p: Record<string, unknown>; part: 'a' | 'b' }) {
 
       {!a && (
         <>
-          {/* COPY path error: a file outside the context never reaches the daemon */}
-          <W pts={[[T4_MID, 283], [T4_MID, ay + T4.FL / 2 + 34]]} head={0} dash="4 6" width={2.2} color="#9DB4E6" on={outside} opacity={outside ? 1 : 0} />
-          <Disc x={T4_MID} y={240} cross size={30} on={outside} z={6} />
-          <Node x={T4_MID} y={306} size={T4.FS} icon="doc" badge="alert" label="Outside File" w={120} tagSize={13} on={outside} lit={hot === 0} loop="tilt" t={2.4} />
+          {/* COPY path error: a file outside the context is refused at the project's border (up, then left to its edge) */}
+          <W pts={[[T4_MID, 300], [T4_MID, top + T4.PH - 14], [T4.PX + T4.PW, top + T4.PH - 14]]} head={0} dash="4 6" width={2.2} color="#9DB4E6" on={outside} opacity={outside ? 1 : 0} />
+          <Disc x={T4_MID} y={top + T4.PH + 8} cross size={30} on={outside} z={6} />
+          <Node x={T4_MID} y={314} size={T4.FS} icon="doc" badge="alert" label="Outside File" w={120} tagSize={13} on={outside} lit={hot === 0} loop="tilt" t={2.4} />
           {/* the context root: the trailing dot of the build command */}
           <W pts={[[130, 282], [130, top + T4.PH + 1]]} head={8} on={root} lit={hot === 1} />
           <Show on={root} style={{ ...box(T4.PX + 10, 282, 200, 48), zIndex: 3 }}>

@@ -612,6 +612,7 @@
    },
    "figH": 380,
    "pointsW": 500,
+   "pointsLoop": 4,
    "notes": "\"Trace the two FROM lines: first builds, second ships. Emphasise only the last stage becomes the final image, so compilers never reach production.\""
   },
   {
@@ -679,9 +680,9 @@
     ],
     "rows": [
      {
-      "icon": "img:images/tech-ubuntu.png",
+      "icon": "img:images/tech-python.svg",
       "cells": [
-       "`ubuntu:22.04` (full OS)",
+       "`python:3.12` (full image)",
        "Large",
        "Full shell, apt included"
       ]
@@ -744,11 +745,6 @@
    "figH": 380,
    "pointsW": 520,
    "notes": "\"Name ECR scanning as where this choice shows up in the console, not just in theory. Tie smaller images to faster pulls and fewer CVE findings as the real payoff. Exam hook: why does reducing attack surface also reduce scan findings?\""
-  },
-  {
-   "id": "S-QUIZ-1",
-   "layout": "quiz",
-   "notes": "Mid-session quiz on sections 1-3. Q1. Which Dockerfile instruction runs when the container starts, not when the image builds? Answer: CMD. Q2. What does .dockerignore do? Answer: It excludes files like .git or node_modules from the build context. Q3. Why copy the dependency manifest before the application source? Answer: The dependency install layer then rarely invalidates, so only the code layer rebuilds. Q4. In a multi-stage build, which stage becomes the final image? Answer: Only the last stage."
   },
   {
    "id": "D4",
@@ -856,7 +852,7 @@
     "columns": [
      {
       "label": "Volume Type",
-      "icon": "i3d:database",
+      "icon": "i3d:disk",
       "weight": 1
      },
      {
@@ -950,7 +946,7 @@
    "title": "Storage And Networking",
    "points": [
     {
-     "text": "`-p` is the instruction that actually publishes that port",
+     "text": "`-p` is the docker run flag that actually publishes that port",
      "icon": "i3d:globe"
     },
     {
@@ -1223,6 +1219,7 @@
    },
    "figH": 420,
    "pointsW": 520,
+   "pointsLoop": 4,
    "notes": "\"Walk through build versus image: web is built locally, db pulls a ready image. Point out port 80 on the host mapping to the container's 5000, same pattern as a single-container run.\""
   },
   {
@@ -1384,11 +1381,6 @@
     ]
    },
    "notes": "\"Walk left to right: latest is fine for a laptop, but production always moves to a locked tag or a digest. Point out that the three rows map directly onto the deployment and rollback decisions made earlier.\""
-  },
-  {
-   "id": "S-QUIZ",
-   "layout": "quiz",
-   "notes": "Quiz on Building with Containers. Q1. What is the difference between RUN and CMD? Answer: RUN executes at build and bakes its result into a layer; CMD is the default command when the container starts. Q2. Why does changing line 2 of a Dockerfile rebuild line 3? Answer: A changed layer invalidates every layer after it (the cascade). Q3. Why can a shell not be used to debug a distroless container? Answer: Distroless images have no shell and no package manager. Q4. What is the difference between EXPOSE and -p? Answer: EXPOSE only documents the port; -p actually publishes it. Q5. Why is ENV unsafe for credentials? Answer: Environment variables are visible through docker inspect and process listings. Q6. Does depends_on wait for the database to be ready? Answer: No, it only orders container start; service_healthy waits for readiness. Q7. Why do production pipelines pin a digest? Answer: A digest always resolves to one exact image, unlike a mutable tag."
   },
   {
    "id": "S-TAKEAWAYS",

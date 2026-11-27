@@ -24,7 +24,7 @@
    "layout": "lead",
    "kicker": "Build To Deploy",
    "title": "Two-Instance Workflow",
-   "lead": "A small Flask app is containerized on one EC2 instance, pushed to Amazon ECR (Elastic Container Registry), then run unchanged on a second EC2 instance\nNeeded before starting: an AWS account, VS Code with the Remote-SSH extension, and basic Docker commands from the earlier container session",
+   "lead": "A small Flask app is containerized on one EC2 instance, pushed to Amazon ECR (Elastic Container Registry), then run unchanged on a second EC2 instance\nNeeded before starting: an AWS account, VS Code with the Remote-SSH extension, and basic Docker commands",
    "leadW": 1000,
    "figure": {
     "type": "custom",
@@ -204,7 +204,7 @@
      "steps": 5,
      "items": [
       {
-       "text": "Launch a second EC2 instance with an ECR-pull role, port 80 open, and Docker installed",
+       "text": "Launch a second x86 EC2 instance with an ECR-pull role, port 80 open, and Docker installed",
        "icon": "img:images/aws-ec2.svg"
       },
       {

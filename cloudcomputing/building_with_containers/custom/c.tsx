@@ -25,7 +25,7 @@ import pythonMark from '../images/tech-python.svg'
  *                               busybox (2)
  *   slide 23 C_T09B  526 x 380  the same boxes: distroless without shell and package manager (1); the trade-off scale,
  *                               size against debugging, an alert on Alpine (2)
- *   slide 27 C_T11  1000 x 340  bar chart of relative sizes, one row per press: ubuntu:22.04, python:3.12-slim,
+ *   slide 27 C_T11  1000 x 340  bar chart of relative sizes, one row per press: python:3.12, python:3.12-slim,
  *                               alpine:3.22, distroless, each with its size tier and a shrinking row of bug badges
  *   slide 29 C_T12   566 x 380  an ECR scan report: the scan flags CVEs in both images (1); the minimal image with few
  *                               findings (2); a cluster of three nodes pulling, the small image fast, the large slow (3)
@@ -291,7 +291,7 @@ const C_T09B: Fig = (p) => {
  */
 const SZ = { W: 1000, H: 340, Y: [44, 128, 212, 296], TILE: 48, BX: 300, BH: 24, BUGX: 820 }
 const SZ_ROWS: { name: string; tier: string; mark?: string; icon?: Ico3DName; len: number; bugs: number }[] = [
-  { name: 'ubuntu:22.04', tier: 'Large', mark: ubuntuMark, len: 440, bugs: 5 },
+  { name: 'python:3.12', tier: 'Large', mark: pythonMark, len: 440, bugs: 5 },
   { name: 'python:3.12-slim', tier: 'Medium', mark: pythonMark, len: 300, bugs: 3 },
   { name: 'alpine:3.22', tier: 'Small', mark: alpineMark, len: 170, bugs: 2 },
   { name: 'distroless', tier: 'Minimal', icon: 'cube', len: 80, bugs: 1 },
