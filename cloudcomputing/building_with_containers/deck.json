@@ -1,0 +1,1414 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Building with Containers",
+  "course": "Cloud Computing",
+  "htmlName": "building-with-containers",
+  "previous": {
+   "title": "Cloud-Native Application Design",
+   "items": [
+    "Cloud-Native Principles",
+    "The Twelve-Factor App",
+    "Monolith vs Microservices",
+    "Statelessness",
+    "Scalability & Resilience Patterns"
+   ]
+  },
+  "agenda": [
+   "Writing a Dockerfile",
+   "Layers & Caching",
+   "Image Optimization",
+   "Container Configuration",
+   "Multi-Container Apps & Registries"
+  ],
+  "agendaWeights": [
+   0.95,
+   1,
+   0.95,
+   1.05,
+   1.3
+  ],
+  "next": "Kubernetes Fundamentals"
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "S-TITLE",
+   "layout": "title",
+   "notes": "TR title line: Session 19 : Building with Containers"
+  },
+  {
+   "id": "S-RECAP",
+   "layout": "recap",
+   "notes": "RECAP: Session 18 : Cloud-Native Application Design\n1. Cloud-Native Principles: Designing for elasticity, failure & change\n2. The Twelve-Factor App: Config & backing services; processes & disposability; logs as event streams\n3. Monolith vs Microservices: Trade-offs; service boundaries; inter-service communication\n4. Statelessness: Stateless vs stateful workloads; externalizing state\n5. Scalability & Resilience Patterns: Horizontal scaling, caching & queues; retries, timeouts, circuit breakers & graceful degradation"
+  },
+  {
+   "id": "S-AGENDA",
+   "layout": "agenda",
+   "notes": "Agenda for Today's Session\n1. Writing a Dockerfile: Base images; core instructions; the build context\n2. Layers & Caching: Layer creation & reuse; instruction ordering for cache efficiency\n3. Image Optimization: Minimal base images; multi-stage builds; image size & attack surface\n4. Container Configuration: Environment variables, volumes & port mapping; secrets handling\n5. Multi-Container Apps & Registries: Compose: services, networks & dependencies; push & pull; tagging strategy & immutable tags"
+  },
+  {
+   "id": "D1",
+   "layout": "breaker",
+   "index": 1,
+   "notes": "Writing a Dockerfile: Base images; core instructions; the build context"
+  },
+  {
+   "id": "T01",
+   "layout": "points",
+   "kicker": "Dockerfile Fundamentals",
+   "title": "Writing Images As Code",
+   "lead": "A Dockerfile is a plain-text script that Docker reads top to bottom to build an image automatically, instead of configuring a container by hand each time",
+   "points": [
+    {
+     "text": "Base image: the starting layer every Dockerfile selects first",
+     "icon": "i3d:layers"
+    },
+    {
+     "text": "Core instructions: FROM, WORKDIR, COPY, RUN, EXPOSE, CMD build the image",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "Build context: the files and folders sent to the Docker daemon",
+     "icon": "i3d:folder"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T01",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Frame the Dockerfile as a recipe the daemon follows exactly once, every time. Mention that each of the three parts gets its own slide next. Interview hook: a Dockerfile makes builds reproducible across machines.\""
+  },
+  {
+   "id": "T02",
+   "layout": "points",
+   "kicker": "Choosing Base Images",
+   "title": "Starting Point Matters",
+   "lead": "A base image is the starting layer every instruction builds on: it fixes the operating system, runtime and tools already present before any custom code is added",
+   "points": [
+    {
+     "text": "Full distro images (ubuntu, debian): larger, many pre-installed utilities",
+     "icon": "img:images/tech-ubuntu.png"
+    },
+    {
+     "text": "Slim/alpine variants: smaller footprint, minimal shell and libraries",
+     "icon": "img:images/tech-alpinelinux.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point out that the base image choice decides most of the final image's size and attack surface. Say the everyday version first: bigger base, more baggage. Exam hook: why slim or alpine images are often preferred for production, and where Alpine's musl libc can cause compatibility problems.\""
+  },
+  {
+   "id": "T02-B",
+   "layout": "points",
+   "kicker": "Choosing Base Images",
+   "title": "Starting Point Matters",
+   "points": [
+    {
+     "text": "Official language images (python, node): runtime pre-installed, versioned tags",
+     "icon": "img:images/tech-python.svg"
+    },
+    {
+     "text": "`scratch`: an empty base",
+     "icon": "i3d:cube",
+     "at": 2
+    },
+    {
+     "text": "Commonly used for fully static binaries or applications that include all required dependencies",
+     "icon": "i3d:package",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T02B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Point out that the base image choice decides most of the final image's size and attack surface. Say the everyday version first: bigger base, more baggage. Exam hook: why slim or alpine images are often preferred for production, and where Alpine's musl libc can cause compatibility problems.\""
+  },
+  {
+   "id": "T02-AN",
+   "layout": "analogy",
+   "label": "Analogy: a furnished house and a basic house",
+   "kicker": "Choosing Base Images",
+   "title": "Starting Point Matters",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T02Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T02Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: Picking a base image is like choosing a house for your needs: a fully furnished house comes with many facilities, while a basic house has only essential facilities, just as a full distro image includes many pre-installed tools, while a slim or alpine image includes only the essentials. \"Point out that the base image choice decides most of the final image's size and attack surface. Say the everyday version first: bigger base, more baggage. Exam hook: why slim or alpine images are often preferred for production, and where Alpine's musl libc can cause compatibility problems.\""
+  },
+  {
+   "id": "T03",
+   "layout": "table",
+   "kicker": "Core Dockerfile Instructions",
+   "title": "Six Key Keywords",
+   "lead": "Beyond selecting a base image and copying files, a Dockerfile needs instructions that set the working directory, run build-time commands and declare what starts the container",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Instruction",
+      "icon": "i3d:code",
+      "weight": 0.7
+     },
+     {
+      "label": "Purpose",
+      "icon": "i3d:target",
+      "weight": 1.4
+     },
+     {
+      "label": "Runs At",
+      "icon": "i3d:clock",
+      "weight": 1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:layers",
+      "cells": [
+       "`FROM`",
+       "Selects the base image",
+       "Build (first layer)"
+      ]
+     },
+     {
+      "icon": "i3d:folder",
+      "cells": [
+       "`WORKDIR`",
+       "Sets working directory inside image",
+       "Build and run"
+      ]
+     },
+     {
+      "icon": "i3d:replica",
+      "cells": [
+       "`COPY`",
+       "Copies files from build context in",
+       "Build"
+      ]
+     },
+     {
+      "icon": "i3d:terminal",
+      "cells": [
+       "`RUN`",
+       "Executes a command, bakes result into layer",
+       "Build"
+      ]
+     },
+     {
+      "icon": "i3d:doc",
+      "cells": [
+       "`EXPOSE`",
+       "Documents the listening port",
+       "Build (metadata only)"
+      ]
+     },
+     {
+      "icon": "i3d:play",
+      "cells": [
+       "`CMD`",
+       "Default command when container starts",
+       "Container start"
+      ]
+     }
+    ],
+    "compact": true
+   },
+   "notes": "\"Stress that, among these six, CMD is the only instruction that runs when the container starts, not when the image builds. Explain RUN bakes its output into a layer permanently. Exam hook: difference between RUN and CMD is a frequent interview question.\""
+  },
+  {
+   "id": "T04",
+   "layout": "points",
+   "kicker": "The Build Context",
+   "title": "What Daemon Receives",
+   "lead": "Running a build sends the build context, the folder named at the end of the docker build command (usually . for the current folder), to the Docker builder, so every COPY instruction can only reach files inside it",
+   "points": [
+    {
+     "text": "Context size: large folders slow every build, even unrelated changes",
+     "icon": "i3d:hourglass"
+    },
+    {
+     "text": "`.dockerignore`: excludes files like `.git` or `node_modules` from context",
+     "icon": "i3d:filter"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain that an oversized context is a common cause of slow builds even when code barely changed. Point to .dockerignore as the direct fix. Exam hook: ask why a build fails to find a file placed outside its folder.\""
+  },
+  {
+   "id": "T04-B",
+   "layout": "points",
+   "kicker": "The Build Context",
+   "title": "What Daemon Receives",
+   "points": [
+    {
+     "text": "COPY path error: a file outside context cannot be copied in",
+     "icon": "i3d:alert"
+    },
+    {
+     "text": "Context root: set by the trailing dot in the build command",
+     "icon": "i3d:target"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "A_T04B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain that an oversized context is a common cause of slow builds even when code barely changed. Point to .dockerignore as the direct fix. Exam hook: ask why a build fails to find a file placed outside its folder.\""
+  },
+  {
+   "id": "D2",
+   "layout": "breaker",
+   "index": 2,
+   "notes": "Layers & Caching: Layer creation & reuse; instruction ordering for cache efficiency"
+  },
+  {
+   "id": "T05",
+   "layout": "points",
+   "kicker": "Caching Beyond Basics",
+   "title": "What Changes Here",
+   "lead": "Every filesystem-changing instruction in a Dockerfile creates a read-only layer, and Docker can reuse a layer only when nothing it depends on has changed",
+   "points": [
+    {
+     "text": "Layer creation: RUN, COPY and ADD each add a layer; ENV, EXPOSE and CMD add only metadata",
+     "icon": "i3d:layers"
+    },
+    {
+     "text": "Layer sharing: layers are read-only, so images built from the same base reuse the same stored layers",
+     "icon": "i3d:link"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T05",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 640,
+   "notes": "\"Recall that each instruction builds on the layer before it. Ask: which instructions in the practical Dockerfile create layers? Interview hook: explain Docker's cache-hit condition precisely.\""
+  },
+  {
+   "id": "T05-B",
+   "layout": "points",
+   "kicker": "Caching Beyond Basics",
+   "title": "What Changes Here",
+   "points": [
+    {
+     "text": "Layer count: Combining related commands into one RUN instruction can reduce the number of layers and keep the image smaller",
+     "icon": "i3d:minus",
+     "at": 1
+    },
+    {
+     "text": "Cache reuse: an unchanged layer is taken from the cache instead of being rebuilt",
+     "icon": "i3d:check",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T05B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 640,
+   "notes": "\"Recall that each instruction builds on the layer before it. Ask: which instructions in the practical Dockerfile create layers? Interview hook: explain Docker's cache-hit condition precisely.\""
+  },
+  {
+   "id": "T06",
+   "layout": "points",
+   "kicker": "Cache Key Mechanism",
+   "title": "Checksum And Cascade",
+   "lead": "Docker computes a checksum for each instruction and the files it touches, comparing it against the checksum stored with the existing layer",
+   "points": [
+    {
+     "text": "Matching checksum on both sides reuses the stored layer untouched",
+     "icon": "i3d:hash"
+    },
+    {
+     "text": "Any mismatch rebuilds that layer; a broad COPY . . changes whenever any file in the context changes",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T06",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Point out that the cascade, not the single layer, is what makes ordering matter — this is the mechanism behind the earlier FROM/COPY/EXPOSE example. Common interview question: why does changing line 2 of a Dockerfile rebuild line 3 even if line 3 is unchanged.\""
+  },
+  {
+   "id": "T06-B",
+   "layout": "points",
+   "kicker": "Cache Key Mechanism",
+   "title": "Checksum And Cascade",
+   "points": [
+    {
+     "text": "When a layer changes, that layer and every layer after it must be rebuilt",
+     "icon": "i3d:layers"
+    },
+    {
+     "text": "Build output marks a reused layer as CACHED in the logs",
+     "icon": "i3d:terminal"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T06B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 540,
+   "notes": "\"Point out that the cascade, not the single layer, is what makes ordering matter — this is the mechanism behind the earlier FROM/COPY/EXPOSE example. Common interview question: why does changing line 2 of a Dockerfile rebuild line 3 even if line 3 is unchanged.\""
+  },
+  {
+   "id": "T07",
+   "layout": "points",
+   "kicker": "Ordering For Efficiency",
+   "title": "Dependency Before Code",
+   "lead": "Because a cache miss cascades downward, the cascade should be triggered as late as possible: rarely-changing instructions go first, frequently-changing ones last",
+   "points": [
+    {
+     "text": "Copy the dependency manifest file before the application source",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Install dependencies in their own layer, which rarely invalidates",
+     "icon": "i3d:package"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain that this is exactly why manifest files are copied ahead of source code in real builds — dependency installs are the expensive step to protect from invalidation. Exam hook: ask what rebuilds if only the application file changes under this ordering.\""
+  },
+  {
+   "id": "T07-B",
+   "layout": "points",
+   "kicker": "Ordering For Efficiency",
+   "title": "Dependency Before Code",
+   "points": [
+    {
+     "text": "Copy application code last, since it changes on nearly every build",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "`docker build --no-cache` forces a full rebuild when needed",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "B_T07B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain that this is exactly why manifest files are copied ahead of source code in real builds — dependency installs are the expensive step to protect from invalidation. Exam hook: ask what rebuilds if only the application file changes under this ordering.\""
+  },
+  {
+   "id": "D3",
+   "layout": "breaker",
+   "index": 3,
+   "notes": "Image Optimization: Minimal base images; multi-stage builds; image size & attack surface"
+  },
+  {
+   "id": "T08",
+   "layout": "points",
+   "kicker": "Why Optimize Images",
+   "title": "Three Levers",
+   "lead": "An unoptimized image still ships unnecessary packages inside every layer, which slows every pull and expands what an attacker can target",
+   "points": [
+    {
+     "text": "Minimal base images: start from the smallest OS that still runs the app",
+     "icon": "i3d:cube"
+    },
+    {
+     "text": "Multi-stage builds: separate the build toolchain from the shipped runtime",
+     "icon": "i3d:layers"
+    },
+    {
+     "text": "Trimmed attack surface: fewer packages means fewer exploitable vulnerabilities",
+     "icon": "i3d:shield"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T08",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Frame image optimization as three separate levers, not one technique. Ask why a smaller image also means a smaller attack surface. Stress that this builds directly on container layering.\""
+  },
+  {
+   "id": "T09",
+   "layout": "points",
+   "kicker": "Minimal Base Images",
+   "title": "Smaller OS Footprint",
+   "lead": "A minimal base image contains only the essential operating-system components, libraries and dependencies needed to run an application, instead of including unnecessary tools and packages",
+   "points": [
+    {
+     "text": "Full distributions bundle shells, editors and compilers unused at runtime",
+     "icon": "i3d:terminal"
+    },
+    {
+     "text": "Alpine Linux uses musl libc and busybox for a far smaller footprint",
+     "icon": "img:images/tech-alpinelinux.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T09",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain minimal base images using the kitchen picture, then name Alpine and distroless as the two common choices. Contrast slim variants as a middle ground between a full OS and distroless. Interview angle: why not always use distroless?\""
+  },
+  {
+   "id": "T09-B",
+   "layout": "points",
+   "kicker": "Minimal Base Images",
+   "title": "Smaller OS Footprint",
+   "points": [
+    {
+     "text": "Distroless images remove the shell and package manager entirely",
+     "icon": "i3d:ban"
+    },
+    {
+     "text": "Trade-off: Alpine's musl libc can break software built for glibc",
+     "icon": "i3d:scale",
+     "at": 2
+    },
+    {
+     "text": "And distroless images cannot be debugged with a shell",
+     "icon": "i3d:terminal",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T09B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Explain minimal base images using the kitchen picture, then name Alpine and distroless as the two common choices. Contrast slim variants as a middle ground between a full OS and distroless. Interview angle: why not always use distroless?\""
+  },
+  {
+   "id": "T09-AN",
+   "layout": "analogy",
+   "label": "Analogy: packing for a short trip",
+   "kicker": "Minimal Base Images",
+   "title": "Smaller OS Footprint",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "H_T09Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "H_T09Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: Packing for a short trip requires only the clothes and items you need, not your entire wardrobe, just as a minimal base image contains only the essential components needed to run an application, without unnecessary tools and packages. \"Explain minimal base images using the kitchen picture, then name Alpine and distroless as the two common choices. Contrast slim variants as a middle ground between a full OS and distroless. Interview angle: why not always use distroless?\""
+  },
+  {
+   "id": "T10",
+   "layout": "points",
+   "kicker": "Multi-Stage Builds",
+   "title": "Build Then Ship",
+   "lead": "A single-stage Dockerfile that compiles and runs code ships the whole build toolchain inside the final image, even though runtime never uses it",
+   "points": [
+    {
+     "text": "Lines 1-4: Build stage installs dependencies and compiles the app with the full toolchain",
+     "icon": "img:images/tech-nodejs.svg"
+    },
+    {
+     "text": "Lines 6-7: Final stage copies only the compiled output into a clean runtime image",
+     "icon": "img:images/tech-nginx.svg"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T10",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 500,
+   "notes": "\"Trace the two FROM lines: first builds, second ships. Emphasise only the last stage becomes the final image, so compilers never reach production.\""
+  },
+  {
+   "id": "T10-B",
+   "layout": "points",
+   "kicker": "Multi-Stage Builds",
+   "title": "Build Then Ship",
+   "points": [
+    {
+     "text": "`COPY --from=build` copies only compiled output, never source or tools",
+     "icon": "i3d:replica"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T10B",
+    "props": {
+     "steps": 1
+    }
+   },
+   "figH": 380,
+   "pointsW": 500,
+   "notes": "\"Trace the two FROM lines: first builds, second ships. Emphasise only the last stage becomes the final image, so compilers never reach production.\""
+  },
+  {
+   "id": "T11",
+   "layout": "lead",
+   "kicker": "Size Vs Attack Surface",
+   "title": "Base Image Compared",
+   "lead": "Smaller images generally have a smaller attack surface because they contain fewer packages and components that need patching and could be exploited",
+   "figure": {
+    "type": "custom",
+    "name": "C_T11",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figW": 1000,
+   "figH": 340,
+   "notes": "\"Walk down the table noting size tier drops as the package manager and shell disappear. Point out distroless trades debugging convenience for the smallest attack surface. Interview hook: why can a shell not be used to debug a distroless container?\""
+  },
+  {
+   "id": "T11-B",
+   "layout": "table",
+   "kicker": "Size Vs Attack Surface",
+   "title": "Base Image Compared",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Base Image",
+      "icon": "i3d:image",
+      "weight": 1.1
+     },
+     {
+      "label": "Size Tier",
+      "icon": "i3d:meter",
+      "weight": 0.8
+     },
+     {
+      "label": "Shell / Package Manager",
+      "icon": "i3d:terminal",
+      "weight": 1.3
+     }
+    ],
+    "rows": [
+     {
+      "icon": "img:images/tech-ubuntu.png",
+      "cells": [
+       "`ubuntu:22.04` (full OS)",
+       "Large",
+       "Full shell, apt included"
+      ]
+     },
+     {
+      "icon": "img:images/tech-python.svg",
+      "cells": [
+       "`python:3.12-slim`",
+       "Medium",
+       "Minimal shell, apt present"
+      ]
+     },
+     {
+      "icon": "img:images/tech-alpinelinux.svg",
+      "cells": [
+       "`alpine:3.22`",
+       "Small (few MB)",
+       "`busybox` shell, apk included"
+      ]
+     },
+     {
+      "icon": "i3d:cube",
+      "cells": [
+       "Distroless",
+       "Minimal",
+       "No shell, no package manager"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Walk down the table noting size tier drops as the package manager and shell disappear. Point out distroless trades debugging convenience for the smallest attack surface. Interview hook: why can a shell not be used to debug a distroless container?\""
+  },
+  {
+   "id": "T12",
+   "layout": "points",
+   "kicker": "Optimizing In Practice",
+   "title": "Scanning And Scope",
+   "lead": "A registry such as Amazon ECR (Elastic Container Registry) can scan a pushed image for known vulnerabilities, and a smaller image surfaces far fewer findings to fix",
+   "points": [
+    {
+     "text": "When turned on, ECR image scanning flags CVEs in installed packages",
+     "icon": "img:images/aws-ecr.svg"
+    },
+    {
+     "text": "Multi-stage builds and minimal bases together cut both size and findings",
+     "icon": "i3d:layers"
+    },
+    {
+     "text": "Smaller images also pull faster across orchestration clusters",
+     "icon": "i3d:download"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "C_T12",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Name ECR scanning as where this choice shows up in the console, not just in theory. Tie smaller images to faster pulls and fewer CVE findings as the real payoff. Exam hook: why does reducing attack surface also reduce scan findings?\""
+  },
+  {
+   "id": "S-QUIZ-1",
+   "layout": "quiz",
+   "notes": "Mid-session quiz on sections 1-3. Q1. Which Dockerfile instruction runs when the container starts, not when the image builds? Answer: CMD. Q2. What does .dockerignore do? Answer: It excludes files like .git or node_modules from the build context. Q3. Why copy the dependency manifest before the application source? Answer: The dependency install layer then rarely invalidates, so only the code layer rebuilds. Q4. In a multi-stage build, which stage becomes the final image? Answer: Only the last stage."
+  },
+  {
+   "id": "D4",
+   "layout": "breaker",
+   "index": 4,
+   "notes": "Container Configuration: Environment variables, volumes & port mapping; secrets handling"
+  },
+  {
+   "id": "T13",
+   "layout": "points",
+   "kicker": "Configuring Containers",
+   "title": "Four Config Levers",
+   "lead": "A container image stays generic until runtime settings make it fit one environment, extending the twelve-factor idea of keeping config outside code",
+   "points": [
+    {
+     "text": "Environment variables: inject settings at start-up without changing the image",
+     "icon": "i3d:toggle"
+    },
+    {
+     "text": "Volumes: attach storage that outlives the container",
+     "icon": "i3d:database"
+    },
+    {
+     "text": "Port mapping: expose a container's service to the host",
+     "icon": "i3d:router"
+    },
+    {
+     "text": "Secrets handling: supply credentials without baking them into the image",
+     "icon": "i3d:key"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T13",
+    "props": {
+     "steps": 4
+    }
+   },
+   "figH": 400,
+   "pointsW": 560,
+   "notes": "\"State that these four levers turn one built image into many deployable instances. Point at each arrow while naming it. Ask: why must configuration live outside the image rather than inside it?\""
+  },
+  {
+   "id": "T14",
+   "layout": "points",
+   "kicker": "Environment Variables",
+   "title": "Runtime Config Injection",
+   "lead": "A container image can contain default settings, while environment variables injected at runtime allow the same image to behave differently in each environment",
+   "points": [
+    {
+     "text": "ENV in a Dockerfile sets a default value inside the image",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Application code reads the variable, for example via `getenv`",
+     "icon": "i3d:code"
+    },
+    {
+     "text": "Missing variable falls back to a default string coded in the app",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T14",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain that -e overrides any ENV default baked into the image. Mention getenv() as the code-side read. Ask how an app's displayed message can change without rebuilding the image.\""
+  },
+  {
+   "id": "T14-AN",
+   "layout": "analogy",
+   "label": "Analogy: phone settings changed per user",
+   "kicker": "Environment Variables",
+   "title": "Runtime Config Injection",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T14Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T14Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A mobile phone comes with default settings, but each user can change the language or brightness based on their preference, just as the same container image can use different environment variable values in different environments. \"Explain that -e overrides any ENV default baked into the image. Mention getenv() as the code-side read. Ask how an app's displayed message can change without rebuilding the image.\""
+  },
+  {
+   "id": "T15",
+   "layout": "table",
+   "kicker": "Volumes & Ports",
+   "title": "Storage And Networking",
+   "lead": "Container storage disappears when a container is removed, and its network stays isolated by default; volumes and port mapping are the two fixes for that",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Volume Type",
+      "icon": "i3d:database",
+      "weight": 1
+     },
+     {
+      "label": "Managed By",
+      "icon": "i3d:user",
+      "weight": 0.8
+     },
+     {
+      "label": "Use Case",
+      "icon": "i3d:target",
+      "weight": 1.5
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:database",
+      "cells": [
+       "Named volume",
+       "Docker",
+       "Portable storage, decoupled from host path"
+      ]
+     },
+     {
+      "icon": "i3d:folder",
+      "cells": [
+       "Bind mount",
+       "Host filesystem",
+       "Direct host path, live-edit during development"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Walk through the -p 8080:5000 syntax on screen and contrast it with a bind mount's host path. Ask the difference between EXPOSE and -p, a common interview question.\""
+  },
+  {
+   "id": "T15-B",
+   "layout": "points",
+   "kicker": "Volumes & Ports",
+   "title": "Storage And Networking",
+   "points": [
+    {
+     "text": "`-v volumeName:/container/path` mounts a named volume into the container",
+     "icon": "i3d:database"
+    },
+    {
+     "text": "`-p hostPort:containerPort` forwards host traffic to the container port",
+     "icon": "i3d:router"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T15B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 580,
+   "notes": "\"Walk through the -p 8080:5000 syntax on screen and contrast it with a bind mount's host path. Ask the difference between EXPOSE and -p, a common interview question.\""
+  },
+  {
+   "id": "T15-C",
+   "layout": "points",
+   "kicker": "Volumes & Ports",
+   "title": "Storage And Networking",
+   "points": [
+    {
+     "text": "Omitting the host port picks a random free host port",
+     "icon": "i3d:dice"
+    },
+    {
+     "text": "EXPOSE only documents the intended listening port",
+     "icon": "i3d:doc"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T15C",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 580,
+   "notes": "\"Walk through the -p 8080:5000 syntax on screen and contrast it with a bind mount's host path. Ask the difference between EXPOSE and -p, a common interview question.\""
+  },
+  {
+   "id": "T15-D",
+   "layout": "points",
+   "kicker": "Volumes & Ports",
+   "title": "Storage And Networking",
+   "points": [
+    {
+     "text": "`-p` is the instruction that actually publishes that port",
+     "icon": "i3d:globe"
+    },
+    {
+     "text": "Multiple containers can map different host ports to one image",
+     "icon": "i3d:container"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T15D",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 580,
+   "notes": "\"Walk through the -p 8080:5000 syntax on screen and contrast it with a bind mount's host path. Ask the difference between EXPOSE and -p, a common interview question.\""
+  },
+  {
+   "id": "T16",
+   "layout": "points",
+   "kicker": "Secrets Handling",
+   "title": "Beyond Env Variables",
+   "lead": "Environment variables are visible through docker inspect and process listings, so a password or API key placed there stays exposed to anyone with container access",
+   "points": [
+    {
+     "text": "Never hardcode secrets in a Dockerfile",
+     "icon": "i3d:ban"
+    },
+    {
+     "text": "A hardcoded secret persists permanently in the image layers",
+     "icon": "i3d:layers"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T16",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 400,
+   "pointsW": 540,
+   "notes": "\"Point out that docker inspect can reveal environment variables, which is why secrets need a different path. Name AWS Secrets Manager as the concrete service. Ask why ENV is unsafe for credentials despite being fine for config.\""
+  },
+  {
+   "id": "T16-B",
+   "layout": "points",
+   "kicker": "Secrets Handling",
+   "title": "Beyond Env Variables",
+   "points": [
+    {
+     "text": "Mounted secret files keep credentials out of environment and image history",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Managed secret stores, such as AWS Secrets Manager, inject values at runtime",
+     "icon": "img:images/aws-secrets-manager.svg"
+    },
+    {
+     "text": "Secrets rotate independently of the image, with no rebuild needed",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "E_T16B",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 400,
+   "pointsW": 540,
+   "notes": "\"Point out that docker inspect can reveal environment variables, which is why secrets need a different path. Name AWS Secrets Manager as the concrete service. Ask why ENV is unsafe for credentials despite being fine for config.\""
+  },
+  {
+   "id": "D5",
+   "layout": "breaker",
+   "index": 5,
+   "notes": "Multi-Container Apps & Registries: Compose: services, networks & dependencies; push & pull; tagging strategy & immutable tags"
+  },
+  {
+   "id": "T18",
+   "layout": "points",
+   "kicker": "Beyond Single Containers",
+   "title": "Compose And Registries",
+   "lead": "A real application rarely runs as one container; a web service, a database and a cache must start together and reach each other\nSharing a built image across machines then needs a third piece: a registry workflow",
+   "points": [
+    {
+     "text": "Docker Compose: one file defining several linked services",
+     "icon": "i3d:doc"
+    },
+    {
+     "text": "Push and pull: moving an image to and from a registry",
+     "icon": "i3d:upload"
+    },
+    {
+     "text": "Tagging strategy: naming versions so the right build is found",
+     "icon": "i3d:tag"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T18",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Frame this as the natural next step after single-container Docker: real apps need several containers coordinated, and images need a cloud home. Ask: why can't one Dockerfile alone run a web app plus its database?\""
+  },
+  {
+   "id": "T19",
+   "layout": "points",
+   "kicker": "Docker Compose Explained",
+   "title": "One File Many Services",
+   "lead": "Starting a web container and a database container with separate docker run commands is error-prone\nDocker Compose, a tool that describes multiple containers as services in one YAML file, starts the whole application together",
+   "points": [
+    {
+     "text": "Each service names an image or a build context",
+     "icon": "i3d:image"
+    },
+    {
+     "text": "`compose.yaml` is the default filename Compose reads",
+     "icon": "i3d:doc"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T19",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Say Compose replaces several manual docker run commands with one declarative file. Point to the services key as the anchor every learner should look for first. Interview angle: ask why Compose matters for local multi-service development.\""
+  },
+  {
+   "id": "T19-B",
+   "layout": "points",
+   "kicker": "Docker Compose Explained",
+   "title": "One File Many Services",
+   "points": [
+    {
+     "text": "`docker compose up -d` starts all services in the background",
+     "icon": "i3d:play"
+    },
+    {
+     "text": "`docker compose down` stops and removes the whole group",
+     "icon": "i3d:stop"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T19B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Say Compose replaces several manual docker run commands with one declarative file. Point to the services key as the anchor every learner should look for first. Interview angle: ask why Compose matters for local multi-service development.\""
+  },
+  {
+   "id": "T19-AN",
+   "layout": "analogy",
+   "label": "Analogy: a school timetable",
+   "kicker": "Docker Compose Explained",
+   "title": "One File Many Services",
+   "h": 390,
+   "everyday": {
+    "type": "custom",
+    "name": "I_T19Everyday",
+    "props": {
+     "steps": 0
+    }
+   },
+   "concept": {
+    "type": "custom",
+    "name": "I_T19Concept",
+    "props": {
+     "steps": 0
+    }
+   },
+   "notes": "TR analogy: A school timetable coordinates different classes and teachers to run together smoothly, just as Docker Compose manages multiple services from one file. \"Say Compose replaces several manual docker run commands with one declarative file. Point to the services key as the anchor every learner should look for first. Interview angle: ask why Compose matters for local multi-service development.\""
+  },
+  {
+   "id": "T20",
+   "layout": "points",
+   "kicker": "Networks And Deps",
+   "title": "Service Communication",
+   "lead": "Services in one Compose file need to find each other without hardcoded addresses, and some must wait for another to be ready first",
+   "points": [
+    {
+     "text": "Default network: Compose joins all services to one shared network",
+     "icon": "i3d:link"
+    },
+    {
+     "text": "Service name as hostname: web reaches db at `db:5432`",
+     "icon": "i3d:globe"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T20",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain that the service name itself works as a DNS hostname inside the shared network, so no IP address is ever hardcoded. Mention depends_on only orders container start, not application readiness, as a common interview trap.\""
+  },
+  {
+   "id": "T20-B",
+   "layout": "points",
+   "kicker": "Networks And Deps",
+   "title": "Service Communication",
+   "points": [
+    {
+     "text": "depends_on: sets start order; service_healthy waits for readiness",
+     "icon": "i3d:hourglass"
+    },
+    {
+     "text": "Custom networks: isolate a group of services from the rest",
+     "icon": "i3d:shield"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "F_T20B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain that the service name itself works as a DNS hostname inside the shared network, so no IP address is ever hardcoded. Mention depends_on only orders container start, not application readiness, as a common interview trap.\""
+  },
+  {
+   "id": "T21",
+   "layout": "points",
+   "kicker": "Compose File Traced",
+   "title": "Two Linked Services",
+   "lead": "A two-service file shows how the web application and its database are declared and wired together in practice",
+   "points": [
+    {
+     "text": "Lines 2-7: web is built from the local Dockerfile and waits for db to start first",
+     "icon": "i3d:webpage"
+    },
+    {
+     "text": "Lines 8-11: db runs the official `postgres:16` image",
+     "icon": "img:images/tech-postgresql.svg",
+     "at": 2
+    },
+    {
+     "text": "With its password read from the `DB_PASSWORD` variable instead of being written in the file",
+     "icon": "i3d:key",
+     "at": 2
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "D_T21",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 420,
+   "pointsW": 520,
+   "notes": "\"Walk through build versus image: web is built locally, db pulls a ready image. Point out port 80 on the host mapping to the container's 5000, same pattern as a single-container run.\""
+  },
+  {
+   "id": "T22",
+   "layout": "points",
+   "kicker": "Push And Pull Flow",
+   "title": "Publishing An Image",
+   "lead": "A locally built image stays on one machine until it is tagged for a registry address and pushed; another machine then pulls the identical bytes back down",
+   "points": [
+    {
+     "text": "Login: authenticate to the registry before pushing (ECR login tokens last 12 hours)",
+     "icon": "i3d:key"
+    },
+    {
+     "text": "Tag: rename the image as\n`registry-address/repository:tag`",
+     "icon": "i3d:tag"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "G_T22",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Emphasise the layer-by-layer transfer: only changed layers move, which is why repeated pushes of a similar image are fast. Mention a cloud registry such as Amazon ECR as where this exact flow happens.\""
+  },
+  {
+   "id": "T22-B",
+   "layout": "points",
+   "kicker": "Push And Pull Flow",
+   "title": "Publishing An Image",
+   "points": [
+    {
+     "text": "Push: uploads only the image layers the registry lacks",
+     "icon": "i3d:upload"
+    },
+    {
+     "text": "Pull: downloads only the layers missing from the local cache",
+     "icon": "i3d:download"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "G_T22B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 560,
+   "notes": "\"Emphasise the layer-by-layer transfer: only changed layers move, which is why repeated pushes of a similar image are fast. Mention a cloud registry such as Amazon ECR as where this exact flow happens.\""
+  },
+  {
+   "id": "T23",
+   "layout": "points",
+   "kicker": "Why Tags Must Lock",
+   "title": "Registry-Level Immutability",
+   "lead": "A mutable tag can silently start pointing at a different image after a later push, so redeploying the same tag months later may run an unexpected build\nRegistries let an owner lock a tag against this",
+   "points": [
+    {
+     "text": "Tag immutability setting: repository refuses to re-push an existing tag",
+     "icon": "i3d:lock"
+    },
+    {
+     "text": "Digest pinning: a deployment refers to the sha256 digest directly",
+     "icon": "i3d:digest"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "G_T23",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain this goes beyond naming a tag: the registry itself can enforce that a tag never changes once pushed. A common interview question is why production pipelines pin a digest instead of trusting a tag alone.\""
+  },
+  {
+   "id": "T23-B",
+   "layout": "points",
+   "kicker": "Why Tags Must Lock",
+   "title": "Registry-Level Immutability",
+   "points": [
+    {
+     "text": "Reproducibility: a locked tag always resolves to one exact image",
+     "icon": "i3d:target"
+    },
+    {
+     "text": "Rollback safety: an immutable tag always redeploys the exact same image",
+     "icon": "i3d:refresh"
+    }
+   ],
+   "figure": {
+    "type": "custom",
+    "name": "G_T23B",
+    "props": {
+     "steps": 2
+    }
+   },
+   "figH": 380,
+   "pointsW": 520,
+   "notes": "\"Explain this goes beyond naming a tag: the registry itself can enforce that a tag never changes once pushed. A common interview question is why production pipelines pin a digest instead of trusting a tag alone.\""
+  },
+  {
+   "id": "T24",
+   "layout": "table",
+   "kicker": "Tag Strategy Compared",
+   "title": "Choosing A Scheme",
+   "lead": "Different tagging choices trade convenience for certainty about exactly which image gets run",
+   "table": {
+    "type": "table",
+    "columns": [
+     {
+      "label": "Strategy",
+      "icon": "i3d:tag",
+      "weight": 1.1
+     },
+     {
+      "label": "Mutability",
+      "icon": "i3d:refresh",
+      "weight": 1
+     },
+     {
+      "label": "Best Use",
+      "icon": "i3d:target",
+      "weight": 1
+     }
+    ],
+    "rows": [
+     {
+      "icon": "i3d:laptop",
+      "cells": [
+       "`latest`",
+       "Moves with every push",
+       "Local development only"
+      ]
+     },
+     {
+      "icon": "i3d:version",
+      "cells": [
+       "Semantic version (`v1.2.0`)",
+       "Stable by convention",
+       "Release tracking"
+      ]
+     },
+     {
+      "icon": "i3d:lock",
+      "cells": [
+       "Immutable tag or digest",
+       "Locked by the registry",
+       "Production deployment"
+      ]
+     }
+    ]
+   },
+   "notes": "\"Walk left to right: latest is fine for a laptop, but production always moves to a locked tag or a digest. Point out that the three rows map directly onto the deployment and rollback decisions made earlier.\""
+  },
+  {
+   "id": "S-QUIZ",
+   "layout": "quiz",
+   "notes": "Quiz on Building with Containers. Q1. What is the difference between RUN and CMD? Answer: RUN executes at build and bakes its result into a layer; CMD is the default command when the container starts. Q2. Why does changing line 2 of a Dockerfile rebuild line 3? Answer: A changed layer invalidates every layer after it (the cascade). Q3. Why can a shell not be used to debug a distroless container? Answer: Distroless images have no shell and no package manager. Q4. What is the difference between EXPOSE and -p? Answer: EXPOSE only documents the port; -p actually publishes it. Q5. Why is ENV unsafe for credentials? Answer: Environment variables are visible through docker inspect and process listings. Q6. Does depends_on wait for the database to be ready? Answer: No, it only orders container start; service_healthy waits for readiness. Q7. Why do production pipelines pin a digest? Answer: A digest always resolves to one exact image, unlike a mutable tag."
+  },
+  {
+   "id": "S-TAKEAWAYS",
+   "layout": "takeaways",
+   "notes": "Key Takeaways\n1. Writing a Dockerfile: Base images; core instructions; the build context\n2. Layers & Caching: Layer creation & reuse; instruction ordering for cache efficiency\n3. Image Optimization: Minimal base images; multi-stage builds; image size & attack surface\n4. Container Configuration: Environment variables, volumes & port mapping; secrets handling\n5. Multi-Container Apps & Registries: Compose: services, networks & dependencies; push & pull; tagging strategy & immutable tags"
+  },
+  {
+   "id": "S-NEXT",
+   "layout": "next",
+   "title": "Kubernetes Fundamentals"
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}

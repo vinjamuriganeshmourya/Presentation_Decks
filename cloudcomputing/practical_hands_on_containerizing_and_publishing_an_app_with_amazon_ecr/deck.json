@@ -1,0 +1,270 @@
+{
+ "engine": 1,
+ "meta": {
+  "title": "Containerizing and Publishing an App with Amazon ECR",
+  "course": "Cloud Computing",
+  "htmlName": "containerizing-and-publishing-an-app-with-amazon-ecr",
+  "labDeck": true
+ },
+ "slides": [
+  {
+   "id": "S-WELCOME",
+   "layout": "brand"
+  },
+  {
+   "id": "D-LAB",
+   "layout": "breaker",
+   "index": 6,
+   "lab": true,
+   "kicker": "Practical Hands-On",
+   "title": "Containerizing and Publishing an App with Amazon ECR"
+  },
+  {
+   "id": "P26",
+   "layout": "lead",
+   "kicker": "Build To Deploy",
+   "title": "Two-Instance Workflow",
+   "lead": "A small Flask app is containerized on one EC2 instance, pushed to Amazon ECR (Elastic Container Registry), then run unchanged on a second EC2 instance\nNeeded before starting: an AWS account, VS Code with the Remote-SSH extension, and basic Docker commands from the earlier container session",
+   "leadW": 1000,
+   "figure": {
+    "type": "custom",
+    "name": "K_P26",
+    "props": {
+     "steps": 3
+    }
+   },
+   "figW": 1000,
+   "figH": 300,
+   "notes": "Practical overview (TR Slide 26). The same packaged image runs on both instances; only the configuration changes."
+  },
+  {
+   "id": "P27",
+   "layout": "lead",
+   "kicker": "Connect And Build",
+   "title": "SSH To First Push",
+   "figure": {
+    "type": "custom",
+    "name": "K_P27",
+    "props": {
+     "steps": 6,
+     "items": [
+      {
+       "text": "Launch an x86 build EC2 instance and connect over SSH",
+       "icon": "img:images/aws-ec2.svg"
+      },
+      {
+       "text": "Install Docker on the build instance and verify it from VS Code",
+       "icon": "img:images/tech-docker.svg"
+      },
+      {
+       "text": "Write a small Flask app reading its message from an environment variable",
+       "icon": "img:images/tech-flask.svg"
+      },
+      {
+       "text": "Write a Dockerfile and build the image, observing layer caching on rebuild",
+       "icon": "i3d:layers"
+      },
+      {
+       "text": "Run the image locally on the build instance and test it with curl",
+       "icon": "i3d:terminal"
+      },
+      {
+       "text": "Create an immutable-tag ECR repository, attach a push role, log in to ECR, and push the image tagged v1",
+       "icon": "img:images/aws-ecr.svg"
+      }
+     ]
+    }
+   },
+   "figW": 1100,
+   "figH": 440,
+   "notes": "Practical steps 1-6 (TR Slide 27)."
+  },
+  {
+   "id": "P27-B",
+   "layout": "screenshot",
+   "kicker": "Connect And Build",
+   "title": "SSH To First Push",
+   "step": {
+    "text": "VS Code command palette with Remote-SSH commands listed",
+    "icon": "img:images/tech-vscode.svg"
+   },
+   "image": "images/tr27-remote-ssh-palette.png",
+   "rings": [
+    [
+     604,
+     106,
+     1468,
+     58
+    ]
+   ],
+   "notes": "Practical step 1: connect VS Code to the build instance with Remote-SSH."
+  },
+  {
+   "id": "P27-C",
+   "layout": "screenshot",
+   "kicker": "Connect And Build",
+   "title": "SSH To First Push",
+   "step": {
+    "text": "SSH config file with host, hostname, identity file and user",
+    "icon": "i3d:key"
+   },
+   "image": "images/tr27-ssh-config.png",
+   "rings": [
+    [
+     200,
+     298,
+     1100,
+     196
+    ]
+   ],
+   "notes": "Practical step 1: the SSH config entry for the build instance (address blurred)."
+  },
+  {
+   "id": "P28",
+   "layout": "screenshot",
+   "kicker": "Files And Local Test",
+   "title": "Project Then Container",
+   "step": {
+    "text": "VS Code Explorer showing app.py, Dockerfile and requirements.txt on the EC2 instance",
+    "icon": "i3d:folder"
+   },
+   "image": "images/tr28-explorer-files.png",
+   "rings": [
+    [
+     52,
+     428,
+     700,
+     166
+    ]
+   ],
+   "notes": "Practical steps 3 and 4: the project files on the build instance."
+  },
+  {
+   "id": "P28-B",
+   "layout": "screenshot",
+   "kicker": "Files And Local Test",
+   "title": "Project Then Container",
+   "step": {
+    "text": "Terminal showing docker ps output and a curl response from the running container",
+    "icon": "i3d:terminal"
+   },
+   "image": "images/tr28-docker-ps-curl.png",
+   "rings": [
+    [
+     28,
+     126,
+     1570,
+     176,
+     "band"
+    ],
+    [
+     116,
+     386,
+     1270,
+     138
+    ]
+   ],
+   "notes": "Practical step 5: run the image locally and test it with curl."
+  },
+  {
+   "id": "P29",
+   "layout": "screenshot",
+   "kicker": "Image In Registry",
+   "title": "Tag v1 Pushed",
+   "step": {
+    "text": "ECR console showing the l8-cloud-app repository with image tag v1",
+    "icon": "img:images/aws-ecr.svg"
+   },
+   "image": "images/tr29-ecr-image-v1.png",
+   "rings": [
+    [
+     138,
+     132,
+     340,
+     74
+    ],
+    [
+     326,
+     744,
+     74,
+     66
+    ]
+   ],
+   "notes": "Practical step 6: the pushed image in the immutable-tag repository."
+  },
+  {
+   "id": "P30",
+   "layout": "lead",
+   "kicker": "Pull Run Verify",
+   "title": "Final Browser Check",
+   "figure": {
+    "type": "custom",
+    "name": "K_P30",
+    "props": {
+     "steps": 5,
+     "items": [
+      {
+       "text": "Launch a second EC2 instance with an ECR-pull role, port 80 open, and Docker installed",
+       "icon": "img:images/aws-ec2.svg"
+      },
+      {
+       "text": "Log in to ECR and pull the v1 image",
+       "icon": "img:images/aws-ecr.svg"
+      },
+      {
+       "text": "Run the pulled image mapped to port 80 and verify it with curl",
+       "icon": "i3d:terminal"
+      },
+      {
+       "text": "Open the public IP in a browser to confirm the deployed page",
+       "icon": "i3d:globe"
+      },
+      {
+       "text": "Clean up: remove the container, terminate both instances, and delete the ECR repository, IAM roles and security groups",
+       "icon": "i3d:trash"
+      }
+     ],
+     "start": 7
+    }
+   },
+   "figW": 1100,
+   "figH": 440,
+   "notes": "Practical steps 7-11 (TR Slide 30)."
+  },
+  {
+   "id": "P30-B",
+   "layout": "screenshot",
+   "kicker": "Pull Run Verify",
+   "title": "Final Browser Check",
+   "step": {
+    "text": "Browser showing the deployed application page with its message",
+    "icon": "i3d:globe"
+   },
+   "image": "images/tr30-browser-page.png",
+   "rings": [
+    [
+     44,
+     44,
+     1492,
+     316
+    ]
+   ],
+   "note": {
+    "text": "Key idea: ECR stores the image and EC2 runs it; the same packaged image is what CI/CD pipelines and Kubernetes consume next, and only the configuration changed between the two runs",
+    "tone": "info",
+    "bg": "blue"
+   },
+   "notes": "Practical step 10: the deployed page. Key idea from the TR."
+  },
+  {
+   "id": "S-THANKS",
+   "layout": "thanks",
+   "title": "Thank You"
+  },
+  {
+   "id": "S-BEST",
+   "layout": "thanks",
+   "title": "All the Best"
+  }
+ ]
+}
