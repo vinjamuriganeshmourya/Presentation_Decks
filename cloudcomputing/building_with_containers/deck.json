@@ -589,31 +589,31 @@
   },
   {
    "id": "T10",
-   "layout": "points",
+   "layout": "lead",
    "kicker": "Multi-Stage Builds",
    "title": "Build Then Ship",
    "lead": "A single-stage Dockerfile that compiles and runs code ships the whole build toolchain inside the final image, even though runtime never uses it",
-   "points": [
-    {
-     "text": "Lines 1-4: Build stage installs dependencies and compiles the app with the full toolchain",
-     "icon": "img:images/tech-nodejs.svg"
-    },
-    {
-     "text": "Lines 6-7: Final stage copies only the compiled output into a clean runtime image",
-     "icon": "img:images/tech-nginx.svg"
-    }
-   ],
    "figure": {
     "type": "custom",
     "name": "D_T10",
     "props": {
-     "steps": 2
+     "steps": 2,
+     "points": [
+      {
+       "text": "Build stage installs dependencies and compiles the app with the full toolchain",
+       "icon": "img:images/tech-nodejs.svg"
+      },
+      {
+       "text": "Final stage copies only the compiled output into a clean runtime image",
+       "icon": "img:images/tech-nginx.svg"
+      }
+     ]
     }
    },
-   "figH": 380,
-   "pointsW": 500,
-   "pointsLoop": 4,
-   "notes": "\"Trace the two FROM lines: first builds, second ships. Emphasise only the last stage becomes the final image, so compilers never reach production.\""
+   "notes": "\"Trace the two FROM lines: first builds, second ships. Emphasise only the last stage becomes the final image, so compilers never reach production.\"",
+   "figW": 1110,
+   "figH": 345,
+   "pointsLoop": 4
   },
   {
    "id": "T10-B",
@@ -1190,37 +1190,37 @@
   },
   {
    "id": "T21",
-   "layout": "points",
+   "layout": "lead",
    "kicker": "Compose File Traced",
    "title": "Two Linked Services",
    "lead": "A two-service file shows how the web application and its database are declared and wired together in practice",
-   "points": [
-    {
-     "text": "Lines 2-7: web is built from the local Dockerfile and waits for db to start first",
-     "icon": "i3d:webpage"
-    },
-    {
-     "text": "Lines 8-11: db runs the official `postgres:16` image",
-     "icon": "img:images/tech-postgresql.svg",
-     "at": 2
-    },
-    {
-     "text": "With its password read from the `DB_PASSWORD` variable instead of being written in the file",
-     "icon": "i3d:key",
-     "at": 2
-    }
-   ],
    "figure": {
     "type": "custom",
     "name": "D_T21",
     "props": {
-     "steps": 2
+     "steps": 2,
+     "points": [
+      {
+       "text": "web is built from the local Dockerfile and waits for db to start first",
+       "icon": "i3d:webpage"
+      },
+      {
+       "text": "db runs the official `postgres:16` image",
+       "icon": "img:images/tech-postgresql.svg",
+       "at": 2
+      },
+      {
+       "text": "With its password read from the `DB_PASSWORD` variable instead of being written in the file",
+       "icon": "i3d:key",
+       "at": 2
+      }
+     ]
     }
    },
-   "figH": 420,
-   "pointsW": 520,
-   "pointsLoop": 4,
-   "notes": "\"Walk through build versus image: web is built locally, db pulls a ready image. Point out port 80 on the host mapping to the container's 5000, same pattern as a single-container run.\""
+   "notes": "\"Walk through build versus image: web is built locally, db pulls a ready image. Point out port 80 on the host mapping to the container's 5000, same pattern as a single-container run.\"",
+   "figW": 1110,
+   "figH": 345,
+   "pointsLoop": 4
   },
   {
    "id": "T22",

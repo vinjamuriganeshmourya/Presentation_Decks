@@ -2,6 +2,8 @@ import type { CSSProperties, ReactNode } from 'react'
 import { colors, fonts } from '@/design/tokens'
 import { useInstant } from '@/motion/instant'
 import { Ico3D, type Ico3DName, type Loop } from '@/engine/icons3d'
+import { Icon, Rich } from '@/engine/icon'
+import type { IconRef } from '@/engine/types'
 import { EASE, ORANGE, Frame, Show, Plinth, MarkTile, Panel, Wire, Token, keyframes, tag, heading, useHeld, useHot, type Pt } from '@/engine/figkit'
 import dockerMark from '../images/tech-docker.svg'
 import nodeMark from '../images/tech-nodejs.svg'
@@ -17,9 +19,9 @@ import pgMark from '../images/tech-postgresql.svg'
  * Loops are transform / opacity on HTML elements only. Held (?still): the full final picture, nothing lit, nothing
  * moving. Class prefix `s19d-`.
  *
- *   slide 25 D_T10   586 x 380  the TR's Dockerfile on a code card, each band bracketed into the image it makes: lines 1-4
- *                               build the heavy layer stack (1); lines 6-7 make the light NGINX image, only the Output
- *                               riding the COPY --from arrow into it (2)
+ *   slide 25 D_T10  1110 x 345  (lead) the TR's Dockerfile on a code card left, the images it makes right: lines 1-4 build
+ *                               the heavy layer stack (1); lines 6-7 the light NGINX image, only the Output riding the
+ *                               COPY --from arrow into it (2); each point shown only while its part is lit
  *   slide 26 D_T10B  586 x 380  a heavy Build Stage (source, packages, tools, output) and a light Final Stage; the
  *                               COPY --from step (replica) between them: only the output rides across, source and tools
  *                               bounce off with an orange cross (1)
@@ -28,9 +30,9 @@ import pgMark from '../images/tech-postgresql.svg'
  *   slide 33 D_T14   566 x 380  image with its ENV default, the -e flag, the running container's value slot and its
  *                               app: the ENV default fills the slot (1), -e overrides it and the app reads it through
  *                               getenv (2), nothing set and the app falls back to its coded default (3)
- *   slide 47 D_T21   566 x 420  the TR's compose.yaml on a code card with its depends_on arrow to the db block, each band
- *                               bracketed into its service: web built from the Dockerfile, 80 -> 5000, waiting (1); db
- *                               from postgres:16 with the key from DB_PASSWORD, db up, then web up (2)
+ *   slide 47 D_T21  1110 x 345  (lead) the TR's compose.yaml on a code card left with its depends_on arrow to the db block;
+ *                               right, web built from the Dockerfile, 80 -> 5000, waiting (1); db from postgres:16 with the
+ *                               key from DB_PASSWORD, db up, then web up (2); the point(s) shown only while lit
  */
 
 type Fig = (p: Record<string, unknown>) => ReactNode
@@ -103,7 +105,7 @@ const Cross = ({ size = 24 }: { size?: number }) => (
   </span>
 )
 
-/* ------------------------------------------------------------------ the code card (T10, T21) */
+/* ------------------------------------------------------------------ the code card and the point card (T10, T21) */
 
 /** one code token: plain, keyword (bold dark blue), punctuation (muted), a YAML string (teal) */
 type Tok = { t: string; c?: string; b?: boolean }
@@ -111,27 +113,35 @@ const KW = (t: string): Tok => ({ t, c: colors.brandDark, b: true })
 const TX = (t: string): Tok => ({ t })
 const PU = (t: string): Tok => ({ t, c: colors.muted })
 const ST = (t: string): Tok => ({ t, c: '#0E7A6E' })
-/** a display row: the TR line number (none on a wrapped continuation) and its tokens */
-type Row = { n?: number; t: Tok[] }
+/** a code line: its TR line number and its tokens */
+type Row = { n: number; t: Tok[] }
 type CodeCardSpec = { x: number; y: number; w: number; h: number; top: number; lh: number; fs: number; gutter: number; rows: Row[]; bands: { from: number; to: number }[] }
 const LIT_BG = '#E3ECFF'
 
-/** the code card: title row, hairline, one DOM block per row; band i tinted blue while it is the lit one (rule 55) */
-function CodeCard({ c, title, lit }: { c: CodeCardSpec; title: ReactNode; lit: number }) {
+/** the code card: title row, hairline, one DOM block per line; band i tinted blue while it is the lit one (rule 55),
+ *  with its bracket just outside the card's right edge */
+function CodeCard({ c, title, lit, shown }: { c: CodeCardSpec; title: ReactNode; lit: number; shown: (i: number) => boolean }) {
   const instant = useInstant()
   const tx = c.x + 20
   return (
     <>
       <Panel x={c.x} y={c.y} w={c.w} h={c.h} radius={16} />
-      <div style={{ ...box(tx, c.y + 14, c.w - 40, 36), zIndex: 3, display: 'flex', alignItems: 'center', gap: 10 }}>{title}</div>
+      <div style={{ ...box(tx, c.y + 10, c.w - 40, c.top - 20 - (c.y + 10)), zIndex: 3, display: 'flex', alignItems: 'center', gap: 10 }}>{title}</div>
       <span aria-hidden style={{ ...box(tx, c.top - 10, c.w - 40, 1.5), zIndex: 3, background: '#D3DEF6', borderRadius: 1 }} />
-      {c.bands.map((b, i) => (
-        <span key={i} aria-hidden style={{ ...box(tx - 8, c.top + b.from * c.lh, c.w - 24, (b.to - b.from + 1) * c.lh), zIndex: 2, borderRadius: 8, background: lit === i ? LIT_BG : 'rgba(227,236,255,0)', boxShadow: lit === i ? `inset 0 0 0 1.5px ${BLUE}55` : 'inset 0 0 0 1.5px rgba(45,99,251,0)', transition: instant ? 'none' : `background 420ms ${EASE}, box-shadow 420ms ${EASE}` }} />
-      ))}
+      {c.bands.map((b, i) => {
+        const on = lit === i
+        const col = on ? ORANGE : BLUE
+        return (
+          <div key={i}>
+            <span aria-hidden style={{ ...box(tx - 8, c.top + b.from * c.lh, c.w - 24, (b.to - b.from + 1) * c.lh), zIndex: 2, borderRadius: 8, background: on ? LIT_BG : 'rgba(227,236,255,0)', boxShadow: on ? `inset 0 0 0 1.5px ${BLUE}55` : 'inset 0 0 0 1.5px rgba(45,99,251,0)', transition: instant ? 'none' : `background 420ms ${EASE}, box-shadow 420ms ${EASE}` }} />
+            <span aria-hidden style={{ ...box(c.x + c.w + 6, c.top + b.from * c.lh, 8, (b.to - b.from + 1) * c.lh), zIndex: 3, borderRight: `2.5px solid ${col}`, borderTop: `2.5px solid ${col}`, borderBottom: `2.5px solid ${col}`, borderRadius: '0 8px 8px 0', opacity: shown(i) ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, border-color 420ms ${EASE}` }} />
+          </div>
+        )
+      })}
       <div style={{ ...box(tx, c.top, c.w - 40, c.rows.length * c.lh), zIndex: 3 }}>
         {c.rows.map((r, i) => (
           <div key={i} style={{ height: c.lh, display: 'flex', alignItems: 'center', fontFamily: MONO, ...NOLIG, fontSize: c.fs, whiteSpace: 'pre' }}>
-            <span style={{ width: c.gutter, flexShrink: 0, color: colors.muted, fontWeight: 500, fontSize: c.fs - 1.5 }}>{r.n ?? ''}</span>
+            <span style={{ width: c.gutter, flexShrink: 0, color: colors.muted, fontWeight: 500, fontSize: c.fs - 1.5 }}>{r.n}</span>
             <span>{r.t.map((tk, j) => <span key={j} style={{ color: tk.c ?? colors.ink, fontWeight: tk.b ? 700 : 500 }}>{tk.t}</span>)}</span>
           </div>
         ))}
@@ -140,18 +150,49 @@ function CodeCard({ c, title, lit }: { c: CodeCardSpec; title: ReactNode; lit: n
   )
 }
 
-/** a band's bracket just outside the card's right edge (rows from..to), and the connector from its middle-ish y to the picture */
-function BandLink({ c, band, cy, toX, on, lit }: { c: CodeCardSpec; band: { from: number; to: number }; cy: number; toX: number; on: boolean; lit: boolean }) {
+/** the lit band's connector: from its bracket's midpoint, an elbow through the gap beside the card into the point
+ *  card's left edge at y `toY` (x `toX`), turning at `midX`. Only the lit band's shows; it fades (opacity only). */
+function BandWires({ c, lit, toX, toY, midX }: { c: CodeCardSpec; lit: number; toX: number; toY: number[]; midX: number }) {
   const instant = useInstant()
-  const y0 = c.top + band.from * c.lh + 4
-  const h = (band.to - band.from + 1) * c.lh - 8
-  const bx = c.x + c.w + 6
+  const bx = c.x + c.w + 6 + 8
   return (
     <>
-      <span aria-hidden style={{ ...box(bx, y0, 8, h), zIndex: 3, borderRight: `2.5px solid ${lit ? ORANGE : BLUE}`, borderTop: `2.5px solid ${lit ? ORANGE : BLUE}`, borderBottom: `2.5px solid ${lit ? ORANGE : BLUE}`, borderRadius: '0 8px 8px 0', opacity: on ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}, border-color 420ms ${EASE}` }} />
-      <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
-        <Wire pts={[[bx + 8, cy], [toX, cy]]} on={on} lit={lit} head={8} width={2.4} delay={250} />
-      </div>
+      {c.bands.map((b, i) => {
+        const y = c.top + ((b.from + b.to + 1) / 2) * c.lh
+        return (
+          <div key={i} style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none', opacity: lit === i ? 1 : 0, transition: instant ? 'none' : `opacity 420ms ${EASE}` }}>
+            <Wire pts={[[bx, y], [midX, y], [midX, toY[i]], [toX, toY[i]]]} lit head={8} width={2.2} />
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
+/** the slide's points, shown ONLY while their part is lit: one fixed slot, each step's point(s) cross-fading in
+ *  (opacity / transform). The card is the engine's lit point card (LitPoints, `on`): icon tile + text, blue rim. */
+type Pt8 = { text: string; icon?: string; at?: number }
+const isMark = (icon?: string) => !!icon && icon.startsWith('img:')
+function PointSlot({ x, y, w, points, lit }: { x: number; y: number; w: number; points: Pt8[]; lit: number }) {
+  const instant = useInstant()
+  const steps = [...new Set(points.map((pt, i) => pt.at ?? i + 1))]
+  return (
+    <>
+      {steps.map((k) => {
+        const on = lit === k - 1
+        return (
+          <div key={k} aria-hidden={!on} style={{ ...box(x, y, w, 0), height: 'auto', zIndex: 6, display: 'flex', flexDirection: 'column', gap: 8, opacity: on ? 1 : 0, transform: on ? 'none' : 'translateY(8px)', pointerEvents: 'none', transition: instant ? 'none' : `opacity 420ms ${EASE}, transform 420ms ${EASE}` }}>
+            {points.filter((pt, i) => (pt.at ?? i + 1) === k).map((pt, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, borderRadius: 16, padding: '10px 14px', background: 'linear-gradient(180deg, #F4F8FF 0%, #E3ECFD 100%)', boxShadow: `inset 0 0 0 2px ${colors.brand}, 0 12px 24px -14px ${colors.brand}` }}>
+                <span aria-hidden style={{ display: 'grid', placeItems: 'center', width: 38, height: 38, flexShrink: 0, borderRadius: 11, background: isMark(pt.icon) ? colors.white : colors.brand, color: colors.white, boxShadow: isMark(pt.icon) ? `inset 0 0 0 2px ${colors.brand}` : 'none' }}>
+                  <Icon name={pt.icon as IconRef} size={18} />
+                </span>
+                <span style={{ minWidth: 0, fontSize: 18, lineHeight: 1.375, color: colors.ink }}><Rich text={pt.text} /></span>
+              </div>
+            ))}
+          </div>
+        )
+      })}
     </>
   )
 }
@@ -159,22 +200,23 @@ function BandLink({ c, band, cy, toX, on, lit }: { c: CodeCardSpec; band: { from
 /* ================================================================== slide 25 · D_T10 · the Dockerfile and the two images it makes */
 
 /*
- * 586 x 380. Left: the TR's Dockerfile (lines 1-7, 12.5 px, 30 px rows from y 92; line 7 wraps once after /app/dist so
- * the card stays 316 wide) on a card x 20..336, y 20..352. Two bands: lines 1-4 (rows 0-3) and lines 6-7 (rows 5-7),
- * each with a bracket outside the card (x 342) and a connector into the picture (x 366).
- * Right (x 366..506): the HEAVY build image beside lines 1-4: five slabs 140 x 24, 5 px apart, y 70..210 (Node.js
- * base, Toolchain, Dependencies, Source, Output on top), `Build Stage` above it. The LIGHT final image beside lines
- * 6-7: the NGINX base (y 288..312) and the empty slot (y 259..283), `Final Stage` under it. The TR's arrow labelled
- * `COPY --from`: from the heavy Output's right edge out to x 530, down, and back into the slot's right edge; its label
- * between the two stacks.
- * Press 1: band 1-4 tints, its bracket and connector, the heavy stack builds layer by layer (Output last, glowing).
- * Press 2: band 6-7 tints, the light stack appears, a copy of Output rides COPY --from into the slot, the heavy stack
- * dims (it stays behind). Walk: lines 1-4 + the heavy stack (Output ringed), then lines 6-7 + the light stack (a dot
- * rides COPY --from, the landed Output ringed). Held: the final picture, nothing lit.
+ * 1110 x 345, a `lead` figure (round 8: code left, visual right, the point shown only while its part is lit).
+ * Left: the TR's Dockerfile, lines 1-7 on one line each (14 px, 30 px rows from y 76) on a card x 20..536,
+ * y 20..306. Bands: lines 1-4 (rows 0-3) and lines 6-7 (rows 5-6), each tinted while lit, its bracket outside the card.
+ * Right, x 600..1070: the HEAVY build image (five slabs 190 x 26, 5 px apart, x 600..790, y 46..196: Node.js base,
+ * Toolchain, Dependencies, Source, Output on top) and the LIGHT final image (x 880..1070: the NGINX base y 170..196,
+ * the empty slot y 139..165), `Build Stage` / `Final Stage` under them. The TR's arrow labelled `COPY --from` (label
+ * above it): from the heavy Output's right edge level to x 975, then down onto the slot. The point slot x 576..1090
+ * from y 244.
+ * Press 1: lines 1-4 tint, the heavy stack builds layer by layer (Output last, glowing), point 1.
+ * Press 2: lines 6-7 tint, the light stack appears, a copy of Output rides COPY --from into the slot, the heavy stack
+ * dims, point 2. Then the lit step follows the engine's `litAt` (pointsLoop): band, part and point together. The lit
+ * band's bracket is wired to the point card (an elbow turning at x 563 into the card's left edge at y 278).
+ * Held: the final picture, nothing lit, no point.
  */
-const L = { W: 586, H: 380, SX: 366, SW: 140, SH: 24, GAP: 5, HB: 210, AX: 530, PER: 2.6 }
+const L = { W: 1110, H: 345, HX: 600, LX: 880, SW: 190, SH: 26, GAP: 5, HB: 196, PER: 4 }
 const A_CODE: CodeCardSpec = {
-  x: 20, y: 20, w: 316, h: 332, top: 92, lh: 30, fs: 12.5, gutter: 26,
+  x: 20, y: 20, w: 516, h: 286, top: 76, lh: 30, fs: 14, gutter: 30,
   rows: [
     { n: 1, t: [KW('FROM'), TX(' node:24-alpine '), KW('AS'), TX(' build')] },
     { n: 2, t: [KW('WORKDIR'), TX(' /app')] },
@@ -182,21 +224,21 @@ const A_CODE: CodeCardSpec = {
     { n: 4, t: [KW('RUN'), TX(' npm install && npm run build')] },
     { n: 5, t: [] },
     { n: 6, t: [KW('FROM'), TX(' nginx:alpine')] },
-    { n: 7, t: [KW('COPY'), TX(' --from=build /app/dist')] },
-    { t: [TX('     /usr/share/nginx/html')] },
+    { n: 7, t: [KW('COPY'), TX(' --from=build /app/dist /usr/share/nginx/html')] },
   ],
-  bands: [{ from: 0, to: 3 }, { from: 5, to: 7 }],
+  bands: [{ from: 0, to: 3 }, { from: 5, to: 6 }],
 }
 const hY = (i: number) => L.HB - L.SH - i * (L.SH + L.GAP)          // heavy stack: top of layer i (0 = base)
 const OUT_Y = hY(4)
-const BASE_Y = 288
+const BASE_Y = L.HB - L.SH
 const SLOT_Y = BASE_Y - L.SH - L.GAP
-const L_ARROW: Pt[] = [[L.SX + L.SW, OUT_Y + L.SH / 2], [L.AX, OUT_Y + L.SH / 2], [L.AX, SLOT_Y + L.SH / 2], [L.SX + L.SW, SLOT_Y + L.SH / 2]]
-const L_RIDE = K.ride('t10-copy', [[L.SX + L.SW + 6, OUT_Y + L.SH / 2], [L.AX, OUT_Y + L.SH / 2], [L.AX, SLOT_Y + L.SH / 2], [L.SX + L.SW + 12, SLOT_Y + L.SH / 2]], 0.2, 1.8, L.PER)
-const FLY_X = 26
+const L_CX = L.LX + L.SW / 2
+const L_ARROW: Pt[] = [[L.HX + L.SW, OUT_Y + L.SH / 2], [L_CX, OUT_Y + L.SH / 2], [L_CX, SLOT_Y]]
+const L_RIDE = K.ride('t10-copy', [[L.HX + L.SW + 6, OUT_Y + L.SH / 2], [L_CX, OUT_Y + L.SH / 2], [L_CX, SLOT_Y - 10]], 0.3, 2.2, L.PER)
+const FLY_X = L.LX - L.HX
 const FLY_Y = SLOT_Y - OUT_Y
-const L_FLY = `@keyframes s19d-t10-fly { 0% { transform: translate(0px, 0px) } 18% { transform: translate(${FLY_X}px, 0px) } 78% { transform: translate(${FLY_X}px, ${FLY_Y}px) } 100% { transform: translate(0px, ${FLY_Y}px) } }
-.s19d-t10-fly { animation: s19d-t10-fly 1600ms ${EASE} 450ms both; }`
+const L_FLY = `@keyframes s19d-t10-fly { 0% { transform: translate(0px, 0px) } 60% { transform: translate(${FLY_X}px, 0px) } 100% { transform: translate(${FLY_X}px, ${FLY_Y}px) } }
+.s19d-t10-fly { animation: s19d-t10-fly 1700ms ${EASE} 450ms both; }`
 
 type Layer = { label: string; icon?: Ico3DName; mark?: string; bg: string }
 const NAVY = 'linear-gradient(180deg, #2B4FA8 0%, #1E3A86 100%)'
@@ -214,13 +256,13 @@ function Slab({ x, y, layer, glow = false, lit = false }: { x: number; y: number
   const ring = lit ? `inset 0 0 0 2.5px ${ORANGE}, ` : ''
   const halo = glow ? '0 0 0 3px rgba(35,199,156,0.18), 0 8px 20px -6px rgba(19,165,127,0.75)' : '0 8px 14px -10px rgba(20,40,100,0.65)'
   return (
-    <div style={{ ...box(x, y, L.SW, L.SH), borderRadius: 8, background: layer.bg, boxShadow: `${ring}inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -2px 0 rgba(0,0,0,0.16), ${halo}`, display: 'flex', alignItems: 'center', gap: 7, padding: '0 8px', transition: instant ? 'none' : `box-shadow 420ms ${EASE}` }}>
-      {layer.mark ? <MarkTile src={layer.mark} size={18} scale={0.74} /> : (
-        <span style={{ display: 'grid', placeItems: 'center', width: 18, height: 18, borderRadius: 5, background: '#FFFFFF', flexShrink: 0 }}>
-          <Ico3D name={layer.icon ?? 'doc'} size={14} loop="none" />
+    <div style={{ ...box(x, y, L.SW, L.SH), borderRadius: 9, background: layer.bg, boxShadow: `${ring}inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -2px 0 rgba(0,0,0,0.16), ${halo}`, display: 'flex', alignItems: 'center', gap: 9, padding: '0 10px', transition: instant ? 'none' : `box-shadow 420ms ${EASE}` }}>
+      {layer.mark ? <MarkTile src={layer.mark} size={22} scale={0.74} /> : (
+        <span style={{ display: 'grid', placeItems: 'center', width: 22, height: 22, borderRadius: 6, background: '#FFFFFF', flexShrink: 0 }}>
+          <Ico3D name={layer.icon ?? 'doc'} size={17} loop="none" />
         </span>
       )}
-      <span style={{ ...heading(12, '#FFFFFF'), whiteSpace: 'nowrap' }}>{layer.label}</span>
+      <span style={{ ...heading(14, '#FFFFFF'), whiteSpace: 'nowrap' }}>{layer.label}</span>
     </div>
   )
 }
@@ -232,40 +274,41 @@ const D_T10: Fig = (p) => {
   const c = A_CODE
   return (
     <Frame w={L.W} h={L.H}>
-      <CodeCard c={c} lit={hot} title={<><MarkTile src={dockerMark} size={32} /><span style={{ ...heading(15), whiteSpace: 'nowrap' }}>Dockerfile</span></>} />
-      <BandLink c={c} band={c.bands[0]} cy={hY(2) + L.SH / 2} toX={L.SX} on={s(1)} lit={hot === 0} />
-      <BandLink c={c} band={c.bands[1]} cy={BASE_Y + L.SH / 2} toX={L.SX} on={s(2)} lit={hot === 1} />
+      <CodeCard c={c} lit={hot} shown={(i) => s(i + 1)} title={<><MarkTile src={dockerMark} size={28} /><span style={{ ...heading(16), whiteSpace: 'nowrap' }}>Dockerfile</span></>} />
 
       {/* the heavy build image, layer by layer */}
-      <Show on={s(1)} style={{ ...box(L.SX, 40, L.SW, 18), ...tag(14, colors.ink), zIndex: 3 }}>Build Stage</Show>
       <div style={{ position: 'absolute', inset: 0, zIndex: 3, opacity: dim ? 0.38 : 1, transition: instant ? 'none' : `opacity 620ms ${EASE}` }}>
         {[...L_LAYERS, OUTPUT].map((ly, i) => (
           <Show key={ly.label} on={s(1)} delay={300 + i * 200} lift={10} style={{ position: 'absolute', inset: 0 }}>
-            <Slab x={L.SX} y={hY(i)} layer={ly} glow={i === 4} lit={i === 4 && hot === 0} />
+            <Slab x={L.HX} y={hY(i)} layer={ly} glow={i === 4} lit={i === 4 && hot === 0} />
           </Show>
         ))}
       </div>
+      <Show on={s(1)} style={{ ...box(L.HX, L.HB + 10, L.SW, 20), ...tag(15, colors.ink), zIndex: 3 }}>Build Stage</Show>
 
       {/* the light final image: its base and the slot the output lands in */}
       <Show on={s(2)} style={{ position: 'absolute', inset: 0, zIndex: 3 }}>
-        <Slab x={L.SX} y={BASE_Y} layer={{ label: 'NGINX', mark: nginxMark, bg: NAVY }} />
-        <span aria-hidden style={{ ...box(L.SX, SLOT_Y, L.SW, L.SH), borderRadius: 8, border: '2px dashed #A9BEEA', background: 'rgba(237,243,255,0.7)', boxSizing: 'border-box' }} />
-        <span style={{ ...box(L.SX, BASE_Y + L.SH + 12, L.SW, 18), ...tag(14, colors.ink) }}>Final Stage</span>
+        <Slab x={L.LX} y={BASE_Y} layer={{ label: 'NGINX', mark: nginxMark, bg: NAVY }} />
+        <span aria-hidden style={{ ...box(L.LX, SLOT_Y, L.SW, L.SH), borderRadius: 9, border: '2px dashed #A9BEEA', background: 'rgba(237,243,255,0.7)', boxSizing: 'border-box' }} />
+        <span style={{ ...box(L.LX, L.HB + 10, L.SW, 20), ...tag(15, colors.ink) }}>Final Stage</span>
       </Show>
 
       {/* the TR's arrow labelled COPY --from, and what rides it */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
-        <Wire pts={L_ARROW} on={s(2)} lit={hot === 1} head={9} delay={200} />
+        <Wire pts={L_ARROW} on={s(2)} lit={hot === 1} head={10} delay={200} />
         <Token cls={L_RIDE} on={done && hot === 1} />
       </div>
-      <Show on={s(2)} delay={300} style={{ ...box(L.AX - 12 - 110, (hY(0) + L.SH + SLOT_Y) / 2 - 9, 110, 18), zIndex: 4, display: 'flex', justifyContent: 'flex-end' }}>
-        <span style={mono(13, hot === 1 ? ORANGE : colors.brandDeep)}>COPY --from</span>
+      <Show on={s(2)} delay={300} style={{ ...box(L.HX + L.SW, OUT_Y + L.SH / 2 - 38, L_CX - L.HX - L.SW, 20), zIndex: 4, display: 'flex', justifyContent: 'center' }}>
+        <span style={mono(14, hot === 1 ? ORANGE : colors.brandDeep)}>COPY --from</span>
       </Show>
       {s(2) && (
-        <div className={held || instant ? undefined : 's19d-t10-fly'} style={{ position: 'absolute', left: 0, top: 0, zIndex: 5, transform: held || instant ? `translate(0px, ${FLY_Y}px)` : undefined }}>
-          <Slab x={L.SX} y={OUT_Y} layer={OUTPUT} glow lit={hot === 1} />
+        <div className={held || instant ? undefined : 's19d-t10-fly'} style={{ position: 'absolute', left: 0, top: 0, zIndex: 5, transform: held || instant ? `translate(${FLY_X}px, ${FLY_Y}px)` : undefined }}>
+          <Slab x={L.HX} y={OUT_Y} layer={OUTPUT} glow lit={hot === 1} />
         </div>
       )}
+
+      <BandWires c={c} lit={hot} toX={576} toY={[278, 278]} midX={563} />
+      <PointSlot x={576} y={244} w={514} points={(p.points as Pt8[]) ?? []} lit={hot} />
     </Frame>
   )
 }
@@ -472,22 +515,24 @@ const D_T14: Fig = (p) => {
 /* ================================================================== slide 47 · D_T21 · the compose file and what it starts */
 
 /*
- * 566 x 420. Left: the TR's compose.yaml (lines 1-11, indentation kept, 12 px, 24 px rows from y 82; line 11 wraps
- * once after `=`) on a card x 20..276, y 20..390. Bands: web = lines 2-7 (rows 1-6), db = lines 8-11 (rows 7-10),
- * each with a bracket outside the card and a connector into its service card (x 304). The TR's own arrow: from the
+ * 1110 x 345, a `lead` figure (round 8: code left, visual right, the point(s) shown only while their part is lit).
+ * Left: the TR's compose.yaml, lines 1-11 on one line each, indentation kept (12.5 px, 20 px rows from y 74) on a card
+ * x 20..426, y 20..314. Bands: web = lines 2-7 (rows 1-6), db = lines 8-11 (rows 7-10). The TR's own arrow: from the
  * end of line 6 `depends_on:` round to the `db:` key on line 8.
- * Right: the web card x 304..454, y 124..236 (webpage tile, `web`, its status, and the 80 → 5000 port pair: host port
- * 80 into the container's 5000); the local Dockerfile (doc + turning gear) at (506, 162) building into it. The db card
- * x 304..454, y 252..328 (database tile, `db`, its light); the official `postgres:16` image (PostgreSQL mark + Docker
- * mark) at (506, 290) into it; the DB_PASSWORD variable (key) at (330, 380) under it, the key riding up into db.
- * Press 1: band 2-7, the depends_on arrow, the Dockerfile builds into web, the ports; web waits (hourglass).
- * Press 2: band 8-11, postgres:16 and the key come in; db's light goes green, then web's hourglass gives way to green.
- * Walk: web (dot down the depends_on arrow, dot from the Dockerfile), then db (dot from postgres:16, the key riding).
- * Held: everything up, both lights green, nothing lit.
+ * Right, one row: the web card x 470..680, y 60..170 (webpage tile, `web`, its status; the 80 -> 5000 port pair: host
+ * port 80 into the container's 5000) with the local Dockerfile (doc + turning gear) at (735, 108) building into its
+ * right edge. The db card x 800..970, y 84..160 (database tile, `db`, its light), the official `postgres:16` image
+ * (PostgreSQL mark + Docker mark) at (1040, 122) into its right edge, the DB_PASSWORD variable (key) at (860, 40) above
+ * it, a key riding down into db's top edge. The point slot x 470..1090 from y 190 (on step 2 the two points stack).
+ * Press 1: lines 2-7, the depends_on arrow, the Dockerfile builds into web, the ports; web waits (hourglass); point 1.
+ * Press 2: lines 8-11, postgres:16 and the key come in; db's light goes green, then web's; points 2 and 3.
+ * Then the lit step follows the engine's `litAt`. The lit band's bracket is wired to the point card (an elbow turning at
+ * x 455 into the left edge: point 1 at y 224, the first stacked at-2 point at y 218).
+ * Held: everything up, both lights green, nothing lit, no point, no connector.
  */
-const Q = { W: 566, H: 420, CX: 304, CW: 150, WY: 124, WH: 112, DY: 252, DH: 76, SX: 506, TS: 40, VX: 330, VY: 380, PER: 2.8 }
+const Q = { W: 1110, H: 345, WX: 470, WY: 60, WW: 210, WH: 110, DX: 800, DY: 84, DW: 170, DH: 76, TS: 44, PER: 4 }
 const D_CODE: CodeCardSpec = {
-  x: 20, y: 20, w: 256, h: 370, top: 82, lh: 24, fs: 12, gutter: 24,
+  x: 20, y: 20, w: 406, h: 294, top: 74, lh: 20, fs: 12.5, gutter: 28,
   rows: [
     { n: 1, t: [KW('services'), PU(':')] },
     { n: 2, t: [PU('  '), KW('web'), PU(':')] },
@@ -499,28 +544,29 @@ const D_CODE: CodeCardSpec = {
     { n: 8, t: [PU('  '), KW('db'), PU(':')] },
     { n: 9, t: [PU('    '), KW('image'), PU(':'), TX(' postgres:16')] },
     { n: 10, t: [PU('    '), KW('environment'), PU(':')] },
-    { n: 11, t: [PU('      - '), TX('POSTGRES_PASSWORD=')] },
-    { t: [TX('        ${DB_PASSWORD}')] },
+    { n: 11, t: [PU('      - '), TX('POSTGRES_PASSWORD=${DB_PASSWORD}')] },
   ],
-  bands: [{ from: 1, to: 6 }, { from: 7, to: 11 }],
+  bands: [{ from: 1, to: 6 }, { from: 7, to: 10 }],
 }
 const CH = D_CODE.fs * 0.65   // the mono face advance, measured
 const rowY = (r: number) => D_CODE.top + r * D_CODE.lh + D_CODE.lh / 2
 const TX0 = D_CODE.x + 20 + D_CODE.gutter
-const Q_DEP: Pt[] = [[TX0 + 15 * CH + 8, rowY(5)], [TX0 + 15 * CH + 30, rowY(5)], [TX0 + 15 * CH + 30, rowY(7)], [TX0 + 5 * CH + 10, rowY(7)]]
-const Q_R_DEP = K.ride('t21-dep', [...Q_DEP.slice(0, -1), [Q_DEP[3][0] + 8, rowY(7)]], 0.1, 1.3, Q.PER)
-const Q_WMID = Q.WY + 20 + 18
-const Q_DMID = Q.DY + Q.DH / 2
-const Q_DOCK: Pt[] = [[Q.SX - Q.TS / 2, Q_WMID], [Q.CX + Q.CW, Q_WMID]]
-const Q_PG: Pt[] = [[Q.SX - Q.TS / 2, Q_DMID], [Q.CX + Q.CW, Q_DMID]]
-const Q_KEY: Pt[] = [[Q.VX, Q.VY - 17], [Q.VX, Q.DY + Q.DH]]
-const Q_R_DOCK = K.ride('t21-dock', [Q_DOCK[0], [Q_DOCK[1][0] + 10, Q_WMID]], 0.2, 1.2, Q.PER)
-const Q_R_PG = K.ride('t21-pg', [Q_PG[0], [Q_PG[1][0] + 10, Q_DMID]], 0.15, 1.1, Q.PER)
-const Q_R_KEY = K.ride('t21-key', [[Q.VX, Q.VY - 17], [Q.VX, Q.DY + Q.DH + 14]], 1.2, 2.2, Q.PER, 0.6)
+const Q_DEP: Pt[] = [[TX0 + 15 * CH + 8, rowY(5)], [TX0 + 15 * CH + 32, rowY(5)], [TX0 + 15 * CH + 32, rowY(7)], [TX0 + 5 * CH + 10, rowY(7)]]
+const Q_R_DEP = K.ride('t21-dep', [...Q_DEP.slice(0, -1), [Q_DEP[3][0] + 8, rowY(7)]], 0.2, 1.8, Q.PER)
+/* the sources */
+const DOCK = { x: 735, y: Q.WY + 20 + 18 + 10 }
+const PG = { x: 1040, y: Q.DY + Q.DH / 2 }
+const VAR = { x: 860, y: 40 }
+const Q_DOCK: Pt[] = [[DOCK.x - Q.TS / 2, DOCK.y], [Q.WX + Q.WW, DOCK.y]]
+const Q_PG: Pt[] = [[PG.x - Q.TS / 2, PG.y], [Q.DX + Q.DW, PG.y]]
+const Q_KEY: Pt[] = [[VAR.x, VAR.y + 20], [VAR.x, Q.DY]]
+const Q_R_DOCK = K.ride('t21-dock', [Q_DOCK[0], [Q_DOCK[1][0] + 10, DOCK.y]], 0.3, 1.6, Q.PER)
+const Q_R_PG = K.ride('t21-pg', [Q_PG[0], [Q_PG[1][0] + 10, PG.y]], 0.2, 1.4, Q.PER)
+const Q_R_KEY = K.ride('t21-key', [Q_KEY[0], [VAR.x, Q.DY - 12]], 1.6, 2.8, Q.PER, 0.6)
 /* the port pair inside the web card */
 const P_Y = Q.WY + Q.WH - 20 - 13
-const P80 = { x: Q.CX + 20, w: 34 }
-const P5000 = { x: Q.CX + Q.CW - 20 - 50, w: 50 }
+const P80 = { x: Q.WX + 20, w: 38 }
+const P5000 = { x: Q.WX + 20 + 38 + 40, w: 56 }
 
 /** a status light: off (grey) or up (green); colour on a press, no loop */
 function Light({ x, y, up, delay }: { x: number; y: number; up: boolean; delay: number }) {
@@ -528,7 +574,7 @@ function Light({ x, y, up, delay }: { x: number; y: number; up: boolean; delay: 
   return <span aria-hidden style={{ ...box(x - 7, y - 7, 14, 14), zIndex: 3, borderRadius: 99, background: up ? GREEN : '#C5CFE2', boxShadow: up ? `0 0 0 4px ${GREEN}2e, 0 0 12px ${GREEN}` : 'inset 0 1px 2px rgba(0,0,0,0.25)', transition: instant ? 'none' : `background 420ms ${EASE} ${up ? delay : 0}ms, box-shadow 420ms ${EASE} ${up ? delay : 0}ms` }} />
 }
 const Port = ({ x, w, label }: { x: number; w: number; label: string }) => (
-  <span style={{ ...box(x, P_Y - 13, w, 26), zIndex: 3, display: 'grid', placeItems: 'center', borderRadius: 8, background: '#FFFFFF', boxShadow: '0 0 0 1.5px #B9CEFB, 0 6px 12px -8px rgba(31,64,140,0.6)', ...mono(13, colors.brandDeep), fontWeight: 700 }}>{label}</span>
+  <span style={{ ...box(x, P_Y - 13, w, 26), zIndex: 3, display: 'grid', placeItems: 'center', borderRadius: 8, background: '#FFFFFF', boxShadow: '0 0 0 1.5px #B9CEFB, 0 6px 12px -8px rgba(31,64,140,0.6)', ...mono(14, colors.brandDeep), fontWeight: 700 }}>{label}</span>
 )
 
 const D_T21: Fig = (p) => {
@@ -538,59 +584,59 @@ const D_T21: Fig = (p) => {
   const head = (tile: ReactNode, name: string) => (
     <div style={{ position: 'absolute', left: 20, top: 20, height: 36, display: 'flex', alignItems: 'center', gap: 10 }}>
       {tile}
-      <span style={{ ...mono(16, colors.ink), fontWeight: 700 }}>{name}</span>
+      <span style={{ ...mono(17, colors.ink), fontWeight: 700 }}>{name}</span>
     </div>
   )
+  const statusY = (y: number) => y + 20 + 18
   return (
     <Frame w={Q.W} h={Q.H}>
-      <CodeCard c={c} lit={hot} title={<><MarkTile src={dockerMark} size={30} /><span style={{ ...mono(15, colors.ink), fontWeight: 700 }}>compose.yaml</span></>} />
+      <CodeCard c={c} lit={hot} shown={(i) => s(i + 1)} title={<><MarkTile src={dockerMark} size={28} /><span style={{ ...mono(16, colors.ink), fontWeight: 700 }}>compose.yaml</span></>} />
       {/* the TR's arrow: depends_on → the db block */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
         <Wire pts={Q_DEP} on={s(1)} lit={hot === 0} head={8} width={2.4} delay={300} />
         <Token cls={Q_R_DEP} on={live && hot === 0} />
       </div>
-      <BandLink c={c} band={c.bands[0]} cy={Q_WMID + 20} toX={Q.CX} on={s(1)} lit={hot === 0} />
-      <BandLink c={c} band={c.bands[1]} cy={Q_DMID + 8} toX={Q.CX} on={s(2)} lit={hot === 1} />
 
       {/* web: built from the Dockerfile, its port pair, waiting until db is up */}
-      <Panel x={Q.CX} y={Q.WY} w={Q.CW} h={Q.WH} radius={16} lit={hot === 0}>
+      <Panel x={Q.WX} y={Q.WY} w={Q.WW} h={Q.WH} radius={16} lit={hot === 0}>
         {head(<Plinth size={36}><Ico3D name="webpage" size={26} loop="bob" /></Plinth>, 'web')}
       </Panel>
-      <Show on={s(1) && !s(2)} style={{ ...box(Q.CX + Q.CW - 20 - 22, Q.WY + 20 + 7, 22, 22), zIndex: 3 }}>
+      <Show on={s(1) && !s(2)} style={{ ...box(Q.WX + Q.WW - 20 - 22, statusY(Q.WY) - 11, 22, 22), zIndex: 3 }}>
         <Ico3D name="hourglass" size={22} loop={held ? 'none' : 'pulse'} />
       </Show>
-      {(s(2) || !s(1)) && <Light x={Q.CX + Q.CW - 20 - 9} y={Q.WY + 20 + 18} up={s(2)} delay={1500} />}
+      {(s(2) || !s(1)) && <Light x={Q.WX + Q.WW - 20 - 9} y={statusY(Q.WY)} up={s(2)} delay={1500} />}
       <Show on={s(1)} delay={300} style={{ position: 'absolute', inset: 0, zIndex: 3 }}>
         <Port x={P80.x} w={P80.w} label="80" />
         <Port x={P5000.x} w={P5000.w} label="5000" />
       </Show>
-      <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
-        <Wire pts={[[P80.x + P80.w + 6, P_Y], [P5000.x - 4, P_Y]]} on={s(1)} lit={hot === 0} head={8} width={2.2} delay={500} />
-      </div>
-      <Node x={Q.SX} y={Q_WMID} label="Dockerfile" on={s(1)} lit={hot === 0} icon="doc" loop="none" size={Q.TS} />
-      <Show on={s(1)} style={{ ...box(Q.SX + 4, Q_WMID + 2, 22, 22), zIndex: 4 }}>
-        <span style={{ display: 'grid', placeItems: 'center', width: 22, height: 22, borderRadius: 7, background: '#FFFFFF', boxShadow: '0 0 0 1.5px #D3DEF6, 0 4px 8px -4px rgba(31,64,140,0.5)' }}><Ico3D name="gear" size={17} loop={held ? 'none' : 'spin'} t={6} /></span>
+      <Node x={DOCK.x} y={DOCK.y} label="Dockerfile" on={s(1)} lit={hot === 0} icon="doc" loop="none" size={Q.TS} />
+      <Show on={s(1)} style={{ ...box(DOCK.x + 6, DOCK.y + 2, 24, 24), zIndex: 4 }}>
+        <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 7, background: '#FFFFFF', boxShadow: '0 0 0 1.5px #D3DEF6, 0 4px 8px -4px rgba(31,64,140,0.5)' }}><Ico3D name="gear" size={18} loop={held ? 'none' : 'spin'} t={6} /></span>
       </Show>
 
       {/* db: the official postgres:16 image, the password from the variable */}
-      <Panel x={Q.CX} y={Q.DY} w={Q.CW} h={Q.DH} radius={16} lit={hot === 1}>
+      <Panel x={Q.DX} y={Q.DY} w={Q.DW} h={Q.DH} radius={16} lit={hot === 1}>
         {head(<Plinth size={36}><Ico3D name="database" size={26} loop="bob" d={0.4} /></Plinth>, 'db')}
       </Panel>
-      <Light x={Q.CX + Q.CW - 20 - 9} y={Q.DY + 20 + 18} up={s(2)} delay={500} />
-      <Node x={Q.SX} y={Q_DMID} label="postgres:16" tagMono mark={pgMark} on={s(2)} lit={hot === 1} size={Q.TS} />
-      <Show on={s(2)} style={{ ...box(Q.SX + 4, Q_DMID + 2, 22, 22), zIndex: 4 }}>
-        <MarkTile src={dockerMark} size={22} scale={0.72} />
+      <Light x={Q.DX + Q.DW - 20 - 9} y={statusY(Q.DY)} up={s(2)} delay={500} />
+      <Node x={PG.x} y={PG.y} label="postgres:16" tagMono mark={pgMark} on={s(2)} lit={hot === 1} size={Q.TS} />
+      <Show on={s(2)} style={{ ...box(PG.x + 6, PG.y + 2, 24, 24), zIndex: 4 }}>
+        <MarkTile src={dockerMark} size={24} scale={0.72} />
       </Show>
-      <Node x={Q.VX} y={Q.VY} icon="key" label="DB_PASSWORD" tagMono side on={s(2)} lit={hot === 1} loop="swing" size={34} delay={200} />
+      <Node x={VAR.x} y={VAR.y} icon="key" label="DB_PASSWORD" tagMono side on={s(2)} lit={hot === 1} loop="swing" size={40} delay={200} />
 
       <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
-        <Wire pts={Q_DOCK} on={s(1)} lit={hot === 0} head={9} delay={300} />
-        <Wire pts={Q_PG} on={s(2)} lit={hot === 1} head={9} delay={200} />
-        <Wire pts={Q_KEY} on={s(2)} lit={hot === 1} head={9} delay={300} />
+        <Wire pts={[[P80.x + P80.w + 6, P_Y], [P5000.x - 4, P_Y]]} on={s(1)} lit={hot === 0} head={8} width={2.2} delay={500} />
+        <Wire pts={Q_DOCK} on={s(1)} lit={hot === 0} head={10} delay={300} />
+        <Wire pts={Q_PG} on={s(2)} lit={hot === 1} head={10} delay={200} />
+        <Wire pts={Q_KEY} on={s(2)} lit={hot === 1} head={10} delay={300} />
         <Token cls={Q_R_DOCK} on={live && hot === 0} />
         <Token cls={Q_R_PG} on={live && hot === 1} />
         <Rider cls={Q_R_KEY} icon="key" size={22} on={live && hot === 1} />
       </div>
+
+      <BandWires c={c} lit={hot} toX={470} toY={[224, 218]} midX={455} />
+      <PointSlot x={470} y={190} w={620} points={(p.points as Pt8[]) ?? []} lit={hot} />
     </Frame>
   )
 }
