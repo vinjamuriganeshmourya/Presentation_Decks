@@ -33,6 +33,14 @@
       "author": "Pallavi",
       "text": "deisgn in a way like don'e add line 1 -4 instead show as visual",
       "at": 1795772750864
+    },
+    "mwysyqsz5wl5ti": {
+      "replies": {},
+      "resolved": false,
+      "slide": "T11-B",
+      "author": "Pallavi",
+      "text": "in row 1 column 1 change the ubuntu to python as\n\nubuntu:22.04 (full OS)  to \n✅ python:3.12 (full image)",
+      "at": 1795773145414
     }
   }
 }
