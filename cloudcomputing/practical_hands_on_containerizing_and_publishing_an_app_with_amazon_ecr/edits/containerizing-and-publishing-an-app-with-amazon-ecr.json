@@ -9,6 +9,14 @@
       "author": "Pallavi",
       "text": "\" from the earlier container session\" remove this from text",
       "at": 1795774244376
+    },
+    "mwytq9pahowd9s": {
+      "replies": {},
+      "resolved": false,
+      "slide": "P30",
+      "author": "Pallavi",
+      "text": "change the first point\n\nLaunch a second EC2 instance with an ECR-pull role...\n✅ Launch a second x86 EC2 instance with an ECR-pull role...",
+      "at": 1795774429552
     }
   }
 }
