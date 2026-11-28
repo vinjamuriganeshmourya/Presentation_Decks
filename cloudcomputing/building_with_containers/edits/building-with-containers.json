@@ -68,7 +68,7 @@
     },
     "mwytas136gn6nd": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T15-D",
       "author": "Pallavi",
       "text": "cahgne teh first point\n\n-p is the instruction that actually publishes that port\n\nto this \n\n\n✅ -p is the docker run flag that actually publishes that port",
