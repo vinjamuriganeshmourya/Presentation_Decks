@@ -12,7 +12,7 @@
     },
     "mwytq9pahowd9s": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "P30",
       "author": "Pallavi",
       "text": "change the first point\n\nLaunch a second EC2 instance with an ECR-pull role...\n✅ Launch a second x86 EC2 instance with an ECR-pull role...",
