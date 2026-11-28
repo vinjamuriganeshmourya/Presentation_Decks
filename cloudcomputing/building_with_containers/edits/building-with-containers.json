@@ -12,7 +12,7 @@
     },
     "mwysh4ehv6n2gv": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T04-B",
       "author": "Pallavi",
       "text": "Now:\nOutside File ➝ ❌ ➝ dashed line up to the .dockerignore funnel\n\nChange to:\nOutside File ➝ ❌ ➝ dashed line to the Project box border",
