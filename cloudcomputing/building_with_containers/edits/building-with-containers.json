@@ -36,7 +36,7 @@
     },
     "mwysyqsz5wl5ti": {
       "replies": {},
-      "resolved": false,
+      "resolved": true,
       "slide": "T11-B",
       "author": "Pallavi",
       "text": "in row 1 column 1 change the ubuntu to python as\n\nubuntu:22.04 (full OS)  to \n✅ python:3.12 (full image)",
